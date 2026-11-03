@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Запис змахів</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#120a06;color:#f3e6c8;font:16px/1.35 Georgia,serif;overscroll-behavior:none}
+#bar{position:fixed;left:0;right:0;top:0;padding:10px 12px;background:#20130a;display:flex;flex-wrap:wrap;gap:8px;align-items:center;z-index:2}
+button,select,input{font:inherit;padding:6px 10px;border-radius:6px;border:1px solid #8a6230;background:#2b1a0e;color:#f6e2ae}
+#pad{position:fixed;inset:0;touch-action:none;cursor:crosshair}
+#log{position:fixed;left:12px;right:12px;bottom:10px;font-size:14px;color:#d8c6a2;pointer-events:none;white-space:pre-wrap}
+video{position:fixed;right:12px;top:64px;width:140px;transform:scaleX(-1);border-radius:6px;z-index:2}
+</style>
+</head>
+<body>
+<div id="pad"><canvas id="cv"></canvas></div>
+<div id="bar">
+  <input id="who" placeholder="хто махає" size="10">
+  <select id="mode"><option value="pointer">палець / мишка</option><option value="camera">камера</option></select>
+  <b id="n">0 змахів</b>
+  <button id="undo">Прибрати останній</button>
+  <button id="save">Зберегти JSON</button>
+  <button id="clear">Очистити</button>
+  <span id="msg"></span>
+</div>
+<video id="v" playsinline muted hidden></video>
+<div id="log"></div>
+<script src="../logic.js"></script>
+<script>
+// Local tool, not linked from the game: records real waves with the game's own measuring code.
+// Then: node tools/simulate.js --validate waves.json
+const { strokeMetrics, TR, CAM, camMap, camSmooth, camSpeed, camStep } = WandLogic;
+const $ = s => document.querySelector(s), cv = $('#cv'), x = cv.getContext('2d');
+const KEY = 'wand-record'; let waves = []; try { waves = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (_) { }
+let W, H, MIN; function size() { W = innerWidth; H = innerHeight; MIN = Math.min(W, H); cv.width = W; cv.height = H; } size(); addEventListener('resize', size);
+function refresh(line) {
+  $('#n').textContent = waves.length + ' змахів'; try { localStorage.setItem(KEY, JSON.stringify(waves)); } catch (_) { }
+  if (line != null) $('#log').textContent = line;
+}
+function finish(pts, mode) {
+  if (pts.length < 4) return refresh('Надто коротко, спробуй ще.');
+  const m = strokeMetrics(pts, MIN);
+  if (m.len < MIN * .35 || m.dur < .2) return refresh('Надто коротко, спробуй ще.');
+  const t0 = pts[0].t, traits = Object.fromEntries(TR.map(k => [k, +m[k].toFixed(3)]));
+  waves.push({ mode, who: $('#who').value || null, viewport: [W, H], dur: +m.dur.toFixed(3), lenOverMin: +(m.len / MIN).toFixed(3), traits, pts: pts.map(p => [Math.round(p.x), Math.round(p.y), Math.round(p.t - t0)]) });
+  refresh(TR.map(k => k + ' ' + traits[k].toFixed(2)).join('   ') + `   (${m.dur.toFixed(2)} с)`);
+}
+function drawPath(pts) { x.clearRect(0, 0, W, H); x.strokeStyle = '#f0c878'; x.lineWidth = 3; x.lineCap = 'round'; x.beginPath(); pts.forEach((p, i) => i ? x.lineTo(p.x, p.y) : x.moveTo(p.x, p.y)); x.stroke(); }
+
+/* pointer */
+let pp = null; const pad = $('#pad');
+pad.addEventListener('pointerdown', e => { if ($('#mode').value !== 'pointer') return; pad.setPointerCapture(e.pointerId); pp = [{ x: e.clientX, y: e.clientY, t: performance.now() }]; });
+pad.addEventListener('pointermove', e => { if (!pp) return; for (const ev of e.getCoalescedEvents ? e.getCoalescedEvents() : [e]) pp.push({ x: ev.clientX, y: ev.clientY, t: performance.now() }); drawPath(pp); });
+const endP = () => { if (pp) { const q = pp; pp = null; finish(q, 'pointer'); } }; pad.addEventListener('pointerup', endP); pad.addEventListener('pointercancel', endP);
+
+/* camera, the same pipeline as the game */
+const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+const video = $('#v'); let hl = null, running = false, stream = null;
+async function startCam() {
+  $('#msg').textContent = 'Завантажую модель…';
+  stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+  video.srcObject = stream; video.hidden = false; await video.play();
+  if (!hl) { const mod = await import(MP + '/vision_bundle.mjs'), files = await mod.FilesetResolver.forVisionTasks(MP + '/wasm'); hl = await mod.HandLandmarker.createFromOptions(files, { baseOptions: { modelAssetPath: MODEL, delegate: 'GPU' }, runningMode: 'VIDEO', numHands: 1 }); }
+  $('#msg').textContent = 'Махай. Початок і кінець змаху визначаються самі.'; running = true; camLoop();
+}
+function stopCam() { running = false; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; video.hidden = true; $('#msg').textContent = ''; }
+let sm = null, seen = -1e9, first = 0, hist = [], cap = { active: false }, cpts = [], lastT = -1, lastTs = 0;
+function camLoop(t) {
+  if (!running) return; requestAnimationFrame(camLoop); if (t == null || video.currentTime === lastT) return; lastT = video.currentTime;
+  lastTs = Math.max(t, lastTs + 1); const r = hl.detectForVideo(video, lastTs), lm = r.landmarks && r.landmarks[0];
+  if (!lm) { if (cap.active && t - seen > 350) { const q = cpts; cap = { active: false }; cpts = []; finish(q, 'camera'); } return; }
+  const { x: mx, y: my } = camMap(lm[8], video.videoWidth, video.videoHeight, W, H, MIN);
+  if (!sm || t - seen > 400) { sm = { x: mx, y: my }; hist = []; first = t; } else camSmooth(sm, mx, my, t - seen);
+  seen = t; hist.push({ x: sm.x, y: sm.y, t }); if (hist.length > 10) hist.shift();
+  const ev = camStep(cap, camSpeed(hist, MIN), t, first);
+  if (ev === 'start') { cap.active = true; cap.t0 = hist[Math.max(0, hist.length - 3)].t; cpts = hist.slice(-3).map(q => ({ ...q })); return; }
+  if (ev === 'wait') return;
+  cpts.push({ x: sm.x, y: sm.y, t }); drawPath(cpts);
+  if (ev === 'end' || t - cap.t0 > 4200) { const end = ev === 'end' ? cap.slow - CAM.lag : t, q = cpts.filter(p => p.t <= end); cap = { active: false }; cpts = []; finish(q, 'camera'); }
+}
+$('#mode').addEventListener('change', e => { if (e.target.value === 'camera') startCam().catch(err => { $('#msg').textContent = 'Камера: ' + err.message; }); else stopCam(); });
+
+$('#undo').addEventListener('click', () => { waves.pop(); x.clearRect(0, 0, W, H); refresh(''); });
+$('#clear').addEventListener('click', () => { if (confirm('Видалити всі записані змахи?')) { waves = []; refresh(''); } });
+$('#save').addEventListener('click', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ savedAt: new Date().toISOString(), userAgent: navigator.userAgent, waves })], { type: 'application/json' })); a.download = 'waves.json'; a.click(); URL.revokeObjectURL(a.href); });
+refresh('Змахни пальцем або мишкою, як у грі. Потрібно приблизно 30 змахів.');
+</script>
+</body>
+</html>

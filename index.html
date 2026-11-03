@@ -26,7 +26,8 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 .st-title{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 7vh);text-align:center;pointer-events:none;transition:opacity .6s,transform .8s;padding:0 18px}
 .st-title h1{font-weight:600;font-size:clamp(38px,8.6vw,72px);line-height:1;letter-spacing:.01em;background:linear-gradient(180deg,#fff4d2 10%,#e8c27a 55%,#b4823e);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(255,200,120,.35)) drop-shadow(0 2px 2px rgba(0,0,0,.6))}
 .st-title p{margin:12px auto 0;max-width:560px;font-style:italic;font-size:clamp(17px,4vw,23px);line-height:1.3;color:#e2d6bd;text-shadow:0 1px 8px rgba(0,0,0,.9)}
-#cta{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 5.5vh);transform:translateX(-50%);padding:13px 30px;border-radius:999px;background:linear-gradient(180deg,#f4d895,#c99a4e);border:1px solid #fff0c4;color:#2a170b;font:inherit;font-size:clamp(19px,4.6vw,22px);font-weight:700;letter-spacing:.01em;white-space:nowrap;cursor:pointer;box-shadow:0 8px 30px rgba(0,0,0,.55),0 0 26px rgba(255,200,110,.35);animation:ctap 2.6s ease-in-out infinite;transition:opacity .5s}
+#cta{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + max(5.5vh, 34px));transform:translateX(-50%);padding:13px 30px;border-radius:999px;background:linear-gradient(180deg,#f4d895,#c99a4e);border:1px solid #fff0c4;color:#2a170b;font:inherit;font-size:clamp(19px,4.6vw,22px);font-weight:700;letter-spacing:.01em;white-space:nowrap;cursor:pointer;box-shadow:0 8px 30px rgba(0,0,0,.55),0 0 26px rgba(255,200,110,.35);animation:ctap 2.6s ease-in-out infinite;transition:opacity .5s}
+.st-fan{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 7px);text-align:center;font-style:italic;font-size:12.5px;line-height:1.2;padding:0 12px;font-weight:600;color:#232b45;pointer-events:none;transition:opacity .5s}
 @keyframes ctap{50%{box-shadow:0 8px 30px rgba(0,0,0,.55),0 0 44px rgba(255,200,110,.65);transform:translateX(-50%) translateY(-3px)}}
 .tw{animation:tw 2.2s ease-in-out infinite}
 @keyframes tw{50%{opacity:.25}}
@@ -211,6 +212,7 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
     <canvas id="snowFront" class="full"></canvas>
     <div class="st-title" id="stTitle"><h1 id="stT"></h1><p id="stS"></p></div>
     <button id="cta" type="button"></button>
+    <p class="st-fan" id="stFan"></p>
   </section>
 
 
@@ -257,15 +259,14 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
   <div class="topbar"><div id="lang" role="group" aria-label="Language"><button data-l="ua">UA</button><button data-l="en">EN</button></div><button id="snd" aria-label="Sound"></button></div>
 </div>
 
+<script src="logic.js"></script>
 <script>
 (() => {
 'use strict';
+const { clamp, lerp, wrapA, TR, WANDS, wandDist, strokeMetrics, averageTraits, bestMatch, chooseCandidate, isChosen, isNearMiss, CAM, camMap, camSmooth, camSpeed, camStep } = WandLogic;
 const $ = s => document.querySelector(s);
-const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
-const lerp = (a, b, t) => a + (b - a) * t;
 const easeIO = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const easeOut = t => 1 - Math.pow(1 - t, 3);
-const wrapA = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -316,7 +317,7 @@ const S = {
   warmIcam: ['Змахни рукою перед камерою, ніби вже тримаєш паличку.', 'Wave your hand in front of the camera as if you already hold a wand.'],
   warmDone: ['Так-так… Цікава рука. Зараз щось знайдемо.', 'I see, I see… An interesting hand. Let’s find something.'],
   ollK: ['Олівандер', 'Ollivander'],
-  unknownMake: ['Склад цієї палички не записано в жодній книзі.', 'This wand’s make isn’t written in any book.'],
+  unknownMake: ['Склад цієї палички в каноні не названо.', 'This wand’s make isn’t named in canon.'],
   spellDraw: ['Промов уголос або подумки <b>«{s}!»</b> — і змахни паличкою пальцем чи мишкою.', 'Say it aloud or in your head: <b>“{s}!”</b> — and wave the wand with your finger or mouse.'],
   spellCam: ['Промов уголос або подумки <b>«{s}!»</b> — і змахни рукою перед камерою.', 'Say it aloud or in your head: <b>“{s}!”</b> — and wave your hand in front of the camera.'],
   tooShort: ['Надто обережно. Сміливіше — змах хоча б через пів екрана.', 'Too timid. Be bolder — sweep at least halfway across the screen.'],
@@ -340,7 +341,8 @@ const S = {
   fine: ['Це гра: палички відчувають рух руки, а не характер.', 'Just a game: wands sense how your hand moves, not who you are.'],
   cardFoot: ['Крамниця Олівандера · зимовий ритуал', 'Ollivanders · a winter ritual'],
   sndOn: ['Увімкнути звук', 'Turn sound on'], sndOff: ['Вимкнути звук', 'Turn sound off'],
-  unkSpec: ['деревина та серцевина в книжках не названі', 'wood and core not named in the books']
+  unkSpec: ['у каноні не названо', 'not named in canon'],
+  fan: ['Неофіційний фан-проєкт. Не пов’язаний із Warner Bros. чи Дж. К. Ролінґ.', 'Unofficial fan project. Not affiliated with Warner Bros. or J.K. Rowling.']
 };
 const LI = lang => lang === 'en' ? 1 : 0;
 function T(k, v) { let s = S[k][LI(lang)]; if (v) for (const x in v) s = s.split('{' + x + '}').join(v[x]); return s; }
@@ -374,7 +376,6 @@ const WIN = [
 ];
 
 /* ================= traits & wands ================= */
-const TR = ['speed', 'amp', 'sharp', 'flow', 'curl'];
 const TR_UI = {
   speed: [['Темп', 'повільно', 'швидко'], ['Tempo', 'slow', 'fast']],
   amp: [['Розмах', 'стримано', 'широко'], ['Sweep', 'compact', 'wide']],
@@ -390,30 +391,6 @@ const PHR = {
   flow: { hi: ['Ритм рівний, мов дихання.', 'Your rhythm is even, like breathing.'], mid: ['Ритм живий: то пришвидшується, то стихає.', 'Your rhythm is alive: speeding up, settling down.'], lo: ['Ритм поривчастий — рух ривками, як вітер.', 'Your rhythm comes in gusts, like the wind.'] },
   curl: { hi: ['Рука любить завитки й кола.', 'Your hand loves curls and circles.'], mid: ['Трохи завитків — рівно стільки, скільки треба.', 'A few curls — just enough.'], lo: ['Рух прямий, без зайвих петель.', 'Your movement is direct, no extra loops.'] }
 };
-const sp = (wu, we, cu, ce, lu, le, n, fu, fe) => ({ wood: { ua: wu, en: we }, core: { ua: cu, en: ce }, len: { ua: lu, en: le }, lenN: n, flex: fu ? { ua: fu, en: fe } : null });
-const PHX = ['перо фенікса', 'phoenix feather'], DRG = ['жила з серця дракона', 'dragon heartstring'], UNI = ['волос єдинорога', 'unicorn hair'];
-// t = displayed taste [speed, amp, sharp, flow, curl]; tc = calibrated profile used for matching; b = calibration bias
-const WANDS = [
-  { id: 'harry', name: { ua: 'Паличка Гаррі Поттера', en: 'Harry Potter’s wand' }, spec: sp('Остролист', 'Holly', ...PHX, '11 дюймів', '11 inches', 11, 'гнучка', 'supple'), col: ['#b0703c', '#6e3c1a', '#2e170a'], handle: 'ridge', box: '#6b2420', t: [.82, .62, .55, .45, .35], lore: { ua: 'Остролист обирає тих, хто діє раніше, ніж устигає злякатися.', en: 'Holly chooses those who act before they have time to be afraid.' } },
-  { id: 'hermione', name: { ua: 'Паличка Герміони Ґрейнджер', en: 'Hermione Granger’s wand' }, spec: sp('Виноградна лоза', 'Vine', ...DRG, '10¾ дюйма', '10¾ inches', 10.75), col: ['#c08e5a', '#7e5432', '#3e2412'], handle: 'spiral', box: '#2c3a5a', t: [.5, .35, .3, .85, .5], lore: { ua: 'Лоза тягнеться до тих, хто бачить форму там, де інші бачать хаос.', en: 'Vine reaches for those who see shape where others see chaos.' } },
-  { id: 'ron', name: { ua: 'Паличка Рона Візлі', en: 'Ron Weasley’s wand' }, spec: sp('Верба', 'Willow', ...UNI, '14 дюймів', '14 inches', 14), col: ['#dcc195', '#a3825a', '#5a4228'], handle: 'plain', box: '#7a4a1e', t: [.55, .88, .5, .3, .4], lore: { ua: 'Верба любить широкі жести — і тих, хто не боїться трохи наплутати.', en: 'Willow loves big gestures — and those unafraid of a little mess.' } },
-  { id: 'dumbledore', name: { ua: 'Бузинова паличка Альбуса Дамблдора', en: 'Albus Dumbledore’s Elder Wand' }, spec: sp('Бузина', 'Elder', 'волос із хвоста тестрала', 'Thestral tail hair', '15 дюймів', '15 inches', 15), col: ['#9a907e', '#625a4c', '#2e2a24'], handle: 'nodes', box: '#3d2c4a', rare: true, t: [.3, .85, .1, .95, .85], lore: { ua: 'Бузина рідко когось обирає. Сьогодні — обрала.', en: 'Elder rarely chooses anyone. Today, it did.' } },
-  { id: 'mcgonagall', name: { ua: 'Паличка Мінерви Макґонеґел', en: 'Minerva McGonagall’s wand' }, spec: sp('Ялиця', 'Fir', ...DRG, '9½ дюйма', '9½ inches', 9.5, 'тверда', 'rigid'), col: ['#6a4a32', '#3e2a1a', '#1a0f08'], handle: 'band', box: '#1f3a2c', t: [.55, .4, .78, .82, .15], lore: { ua: 'Ялиця шанує чіткість: жодного зайвого руху.', en: 'Fir honours precision: not a single wasted motion.' } },
-  { id: 'sirius', name: { ua: 'Паличка Сіріуса Блека', en: 'Sirius Black’s wand' }, spec: null, lenN: 12.5, col: ['#5a463a', '#2e221c', '#100a08'], handle: 'ridge', box: '#3a1418', t: [.88, .8, .7, .3, .3], lore: { ua: 'Ця паличка не терпить кліток — ні дерев’яних, ні кам’яних.', en: 'This wand cannot stand cages — wooden or stone.' } },
-  { id: 'fred', name: { ua: 'Паличка Фреда Візлі', en: 'Fred Weasley’s wand' }, spec: null, lenN: 12, col: ['#c4884e', '#8a5428', '#3e220e'], handle: 'plain', box: '#8a3a16', t: [.78, .62, .4, .2, .75], lore: { ua: 'Паличка-пустунка: вибухає сміхом раніше, ніж закляттям.', en: 'A mischief-maker: it bursts with laughter before it bursts with spells.' } },
-  { id: 'george', name: { ua: 'Паличка Джорджа Візлі', en: 'George Weasley’s wand' }, spec: null, lenN: 12, col: ['#b8804a', '#7e4c24', '#3a200c'], handle: 'band', box: '#6a3a14', t: [.68, .72, .58, .28, .6], lore: { ua: 'Вона завжди знає, де її пара, — і завжди готова до жарту.', en: 'It always knows where its twin is — and is always up for a prank.' } },
-  { id: 'ginny', name: { ua: 'Паличка Джині Візлі', en: 'Ginny Weasley’s wand' }, spec: null, lenN: 11, col: ['#d8b07a', '#9a6c3c', '#4a301a'], handle: 'spiral', box: '#4a2a3e', t: [.88, .42, .65, .58, .55], lore: { ua: 'Швидка, влучна й безстрашна — краще її не злити.', en: 'Quick, precise and fearless — best not to annoy it.' } },
-  { id: 'neville', name: { ua: 'Паличка Невіла Лонґботома', en: 'Neville Longbottom’s wand' }, spec: sp('Вишня', 'Cherry', ...UNI, '13 дюймів', '13 inches', 13), col: ['#b44e36', '#72281a', '#381008'], handle: 'band', box: '#2f4a2e', t: [.2, .45, .2, .7, .35], lore: { ua: 'Вишня відкривається повільно — але тим, хто вміє чекати, назавжди.', en: 'Cherry opens up slowly — but to those who can wait, forever.' } },
-  { id: 'luna', name: { ua: 'Паличка Луни Лавґуд', en: 'Luna Lovegood’s wand' }, spec: null, lenN: 12, col: ['#e0d2b8', '#a89a7a', '#5a4e3a'], handle: 'nodes', box: '#2a4a5e', t: [.3, .6, .15, .55, .9], lore: { ua: 'Вона чує те, чого інші навіть не помічають.', en: 'It hears what others don’t even notice.' } },
-  { id: 'draco', name: { ua: 'Паличка Драко Мелфоя', en: 'Draco Malfoy’s wand' }, spec: sp('Глід', 'Hawthorn', ...UNI, '10 дюймів', '10 inches', 10, 'досить пружна', 'reasonably springy'), col: ['#4a3e36', '#241c18', '#0a0706'], handle: 'band', box: '#1e2a22', t: [.6, .28, .65, .7, .25], lore: { ua: 'Глід суперечливий: він однаково вправно лікує й ранить.', en: 'Hawthorn is contradictory: it heals and harms with equal skill.' } },
-  { id: 'snape', name: { ua: 'Паличка Северуса Снейпа', en: 'Severus Snape’s wand' }, spec: null, lenN: 13, col: ['#3a322c', '#1a1410', '#050403'], handle: 'plain', box: '#141418', t: [.42, .25, .85, .9, .1], lore: { ua: 'Жодного зайвого руху. Жодного зайвого слова.', en: 'Not one wasted motion. Not one wasted word.' } },
-  { id: 'lupin', name: { ua: 'Паличка Ремуса Люпина', en: 'Remus Lupin’s wand' }, spec: sp('Кипарис', 'Cypress', ...UNI, '10¼ дюйма', '10¼ inches', 10.25, 'податлива', 'pliable'), col: ['#a87a52', '#6e4a2c', '#33200e'], handle: 'ridge', box: '#4a3a2a', t: [.35, .58, .3, .75, .55], lore: { ua: 'Кипарис обирає шляхетних — і тих, хто вміє бути лагідним.', en: 'Cypress chooses the noble — and those who know how to be gentle.' } },
-  { id: 'bellatrix', name: { ua: 'Паличка Белатриси Лестранж', en: 'Bellatrix Lestrange’s wand' }, spec: sp('Горіх', 'Walnut', ...DRG, '12¾ дюйма', '12¾ inches', 12.75, 'непіддатлива', 'unyielding'), col: ['#5e463a', '#2e1e16', '#0e0806'], handle: 'nodes', box: '#2a1626', t: [.92, .7, .9, .15, .65], lore: { ua: 'Горіх слухається лише надзвичайно сильної волі.', en: 'Walnut obeys only the strongest of wills.' } },
-  { id: 'voldemort', name: { ua: 'Паличка Лорда Волдеморта', en: 'Lord Voldemort’s wand' }, spec: sp('Тис', 'Yew', ...PHX, '13½ дюйма', '13½ inches', 13.5), col: ['#f2eadb', '#bcae90', '#6d6450'], handle: 'bone', box: '#1d1d24', t: [.75, .6, .88, .78, .3], lore: { ua: 'Тис не терпить вагань. Він чує кожен гострий кут.', en: 'Yew tolerates no hesitation. It hears every sharp angle.' } }
-];
-const BIAS = { harry: -0.004, hermione: 0.015, ron: 0.014, dumbledore: 0.028, mcgonagall: -0.02, sirius: -0.023, fred: 0.011, george: 0.004, ginny: 0.005, neville: 0.023, luna: 0.021, draco: 0.001, snape: -0.025, lupin: 0.016, bellatrix: -0.024, voldemort: -0.018 };
-WANDS.forEach(w => { w.tc = w.t.map(v => .5 + (v - .5) * .55); w.b = BIAS[w.id] || 0; w.lenN = w.spec ? w.spec.lenN : w.lenN; });
-function wandDist(w, tr) { let s = 0, n = 0; TR.forEach((k, i) => { if (tr && tr[k] != null) { s += (tr[k] - w.tc[i]) ** 2; n++; } }); return n ? Math.sqrt(s / n) + w.b : 0; }
 
 /* ================= state ================= */
 const st = {
@@ -1007,49 +984,8 @@ function nudgeNote() { noteIn.classList.remove('nudge'); void noteIn.offsetWidth
 function noteTop() { return note.classList.contains('show') ? note.getBoundingClientRect().top : H; }
 
 /* ================= metrics ================= */
-function resample(pts, step) {
-  if (!pts.length) return []; const out = [{ x: pts[0].x, y: pts[0].y }]; let acc = 0;
-  for (let i = 1; i < pts.length; i++) {
-    let ax = pts[i - 1].x, ay = pts[i - 1].y; const bx = pts[i].x, by = pts[i].y; let d = Math.hypot(bx - ax, by - ay);
-    while (acc + d >= step && d > 0) { const r = (step - acc) / d; ax += (bx - ax) * r; ay += (by - ay) * r; out.push({ x: ax, y: ay }); d = Math.hypot(bx - ax, by - ay); acc = 0; }
-    acc += d;
-  }
-  return out;
-}
-function pathLen(p) { let l = 0; for (let i = 1; i < p.length; i++) l += Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y); return l; }
-// Traits are measured on a fixed time grid, so a 120 Hz mouse and a 30 Hz camera tracing the same motion read the same.
-const METRIC_STEP = 33;
-function resampleTime(pts, step) {
-  const out = [{ x: pts[0].x, y: pts[0].y, t: pts[0].t }], end = pts[pts.length - 1].t; let i = 1;
-  for (let t = pts[0].t + step; t < end; t += step) {
-    while (pts[i].t < t) i++;
-    const a = pts[i - 1], b = pts[i], u = (t - a.t) / Math.max(1e-6, b.t - a.t);
-    out.push({ x: lerp(a.x, b.x, u), y: lerp(a.y, b.y, u), t });
-  }
-  const z = pts[pts.length - 1]; out.push({ x: z.x, y: z.y, t: z.t });
-  return out;
-}
-function strokeMetrics(raw) {
-  const pts = resampleTime(raw, METRIC_STEP), len = pathLen(pts), dur = Math.max(.08, (pts[pts.length - 1].t - pts[0].t) / 1000);
-  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const p of pts) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
-  const v = len / MIN / dur, speed = clamp((v - .35) / 2.4);
-  const a = Math.sqrt(Math.max(x1 - x0, MIN * .02) * Math.max(y1 - y0, MIN * .02)) / MIN, amp = clamp((a - .12) / .66);
-  const rs = resample(pts, MIN * .025); let corners = 0, turn = 0, n = 0, last = -9, signed = 0;
-  for (let i = 2; i < rs.length - 2; i++) {
-    const a1 = Math.atan2(rs[i].y - rs[i - 2].y, rs[i].x - rs[i - 2].x), a2 = Math.atan2(rs[i + 2].y - rs[i].y, rs[i + 2].x - rs[i].x);
-    const d = Math.abs(wrapA(a2 - a1)); turn += d; n++; if (d > 1.05 && i - last > 3) { corners++; last = i; }
-  }
-  for (let i = 1; i < rs.length - 1; i++) { const a1 = Math.atan2(rs[i].y - rs[i - 1].y, rs[i].x - rs[i - 1].x), a2 = Math.atan2(rs[i + 1].y - rs[i].y, rs[i + 1].x - rs[i].x); signed += wrapA(a2 - a1); }
-  const sharp = clamp(.65 * clamp(corners / 5) + .35 * clamp((n ? turn / n : 0) / 1.0));
-  const curl = clamp(Math.abs(signed) / (Math.PI * 2) / 1.6);
-  // rhythm: variation of speed across ~60ms windows
-  const sp = []; let j = 0;
-  for (let i = 1; i < pts.length; i++) { if (pts[i].t - pts[j].t >= 60) { sp.push(Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y) / (pts[i].t - pts[j].t)); j = i; } }
-  let flow = .6; if (sp.length >= 3) { const m = sp.reduce((s, v) => s + v, 0) / sp.length; const sd = Math.sqrt(sp.reduce((s, v) => s + (v - m) ** 2, 0) / sp.length); flow = clamp(1 - (sd / Math.max(m, 1e-6) - .2) / .9); }
-  return { len, dur, speed, amp, sharp, flow, curl };
-}
-function mergeTraits(extra) { const all = extra ? [...st.obs, extra] : st.obs; if (!all.length) return null; const t = {}; TR.forEach(k => t[k] = all.reduce((s, o) => s + o[k], 0) / all.length); return t; }
-function bestWand(tr) { return WANDS.filter(w => !st.tried.includes(w)).sort((a, b) => wandDist(a, tr) - wandDist(b, tr))[0]; }
+function mergeTraits(extra) { return averageTraits(extra ? [...st.obs, extra] : st.obs); }
+function bestWand(tr) { return bestMatch(tr, st.tried); }
 
 /* ================= input: pointer ================= */
 const stage = $('#stage');
@@ -1077,7 +1013,7 @@ function addPoint(p) {
 }
 function finishCapture() {
   const c = st.cap; if (!c || !c.active) return;
-  const m = c.pts.length > 3 ? strokeMetrics(c.pts) : { len: 0, dur: 0 };
+  const m = c.pts.length > 3 ? strokeMetrics(c.pts, MIN) : { len: 0, dur: 0 };
   if (m.len < MIN * .35 || m.dur < .2) {
     c.active = false; c.pts = []; c.fast = 0; c.slow = 0; c.msgUntil = performance.now() + 2500; if (c.trail) { c.trail.fade = performance.now(); c.trail = null; }
     if (st.wand && c.cand) st.wand.mode = 'float';
@@ -1096,14 +1032,12 @@ function liveTick(t) {
     if (waited > 25000) return toPointer('camAuto'); // the game never waits forever
   }
   if (!c.active || t - (c.lastLive || 0) < 160 || c.pts.length < 6) return; c.lastLive = t;
-  if (c.cand) { const tr = mergeTraits(strokeMetrics(c.pts)); const bw = bestWand(tr); const d = wandDist(c.cand, tr) - wandDist(bw, tr); st.live = clamp(1 - d * 6); }
+  if (c.cand) { const tr = mergeTraits(strokeMetrics(c.pts, MIN)); const bw = bestWand(tr); const d = wandDist(c.cand, tr) - wandDist(bw, tr); st.live = clamp(1 - d * 6); }
 }
 
 /* ================= input: camera (MediaPipe) ================= */
 const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
-// Hand position maps uniformly: the long side of the video spans CAM_SPAN × MIN, so traits read on the same scale as pointer strokes.
-const CAM_SPAN = 1.75;
 const cam = { on: false, hl: null, loading: null, video: $('#camv'), stream: null, token: 0, fresh: false, lastT: -1, lastTs: 0, lastFrame: 0, errs: 0, fps: 0, fpsN: 0, fpsT: 0, sm: null, seen: -1e9, firstSeen: 0, hist: [] };
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 function loadHand() {
@@ -1177,25 +1111,20 @@ function camTick(t) {
   const lm = r && r.landmarks && r.landmarks[0];
   $('#camBox').classList.toggle('seen', !!lm);
   if (lm) {
-    const p = lm[8], vw = v.videoWidth || 4, vh = v.videoHeight || 3, vm = Math.max(vw, vh), span = CAM_SPAN * MIN;
-    const x = W / 2 + (.5 - p.x) * vw / vm * span, y = H / 2 + (p.y - .5) * vh / vm * span;
+    const { x, y } = camMap(lm[8], v.videoWidth || 4, v.videoHeight || 3, W, H, MIN);
     if (!cam.sm || t - cam.seen > 400) { cam.sm = { x, y }; cam.hist = []; cam.firstSeen = t; }
-    else { const a = 1 - Math.exp(-(t - cam.seen) / 42); cam.sm.x += (x - cam.sm.x) * a; cam.sm.y += (y - cam.sm.y) * a; }
+    else camSmooth(cam.sm, x, y, t - cam.seen);
     cam.seen = t; cam.hist.push({ x: cam.sm.x, y: cam.sm.y, t }); while (cam.hist.length > 10) cam.hist.shift();
     camWave(t);
   } else if (st.cap && st.cap.active && t - cam.seen > 350) finishCapture();
 }
-function camSpeed() { const h = cam.hist; if (h.length < 3) return 0; const a = h[h.length - 3], b = h[h.length - 1]; return Math.hypot(b.x - a.x, b.y - a.y) / Math.max(1, b.t - a.t) * 1000 / MIN; }
 function camWave(t) {
-  const c = st.cap; if (!c || c.done || st.input !== 'cam') return; const s = camSpeed();
-  if (!c.active) {
-    if (t - cam.firstSeen < 350) return; // a hand entering the frame is not a wave
-    if (s > .6) { c.fast = (c.fast || 0) + 1; if (c.fast >= 2) { c.slow = 0; startCapture(cam.hist.slice(-3).map(q => ({ ...q }))); } } else c.fast = 0;
-    return;
-  }
+  const c = st.cap; if (!c || c.done || st.input !== 'cam') return;
+  const ev = camStep(c, camSpeed(cam.hist, MIN), t, cam.firstSeen);
+  if (ev === 'start') return startCapture(cam.hist.slice(-3).map(q => ({ ...q })));
+  if (ev === 'wait') return;
   addPoint({ x: cam.sm.x, y: cam.sm.y, t });
-  // the wave ended just before the slowdown registered (smoothing lags ~2 frames); drop the pause so it reads like a released pointer
-  if (s < .22) { if (!c.slow) c.slow = t; if (t - c.slow > 320 && t - c.t0 > 500) { const end = c.slow - 66; c.pts = c.pts.filter(q => q.t <= end); finishCapture(); } } else c.slow = 0;
+  if (ev === 'end') { const end = c.slow - CAM.lag; c.pts = c.pts.filter(q => q.t <= end); finishCapture(); }
 }
 
 /* ================= shelf box & presentation ================= */
@@ -1235,12 +1164,6 @@ async function flyOut(el, w) {
 
 /* ================= ritual ================= */
 function pickNo(arr, used, keep) { const pool = arr.map((_, i) => i).filter(i => !used.includes(i)); const i = pick(pool.length ? pool : arr.map((_, i) => i)); used.push(i); while (used.length > keep) used.shift(); return i; }
-function chooseCandidate() {
-  const pool = WANDS.filter(w => !st.tried.includes(w)).sort((a, b) => wandDist(a, st.traits) - wandDist(b, st.traits));
-  const q = [.3, .42, .58, .75, .9, 1][Math.min(st.attempt - 1, 5)];
-  if (Math.random() < q) return pool[0];
-  const others = pool.slice(1, 8); return others[Math.floor(Math.pow(Math.random(), 1.4) * others.length)];
-}
 async function ritual() {
   st.obs = []; st.traits = null; st.tried = []; st.attempt = 0; st.history = []; st.stroke = null; st.winner = null; st.camHelp = false;
   setNote(() => ({ kicker: T('warmK'), hand: T('warmH'), instr: T(st.input === 'cam' ? 'warmIcam' : 'warmIdraw') }));
@@ -1251,7 +1174,7 @@ async function ritual() {
   await wait(1700);
   while (true) {
     st.attempt++;
-    const cand = chooseCandidate();
+    const cand = chooseCandidate(st.traits, st.tried, st.attempt);
     const oi = pickNo(OFFER, st.usedOffers, 4), si = pickNo(SPELLS, st.usedSpells, 4);
     setNote(() => ({ kicker: T('ollK'), hand: L(OFFER[oi]), instr: cand.spec ? [L(cand.spec.wood), L(cand.spec.core), L(cand.spec.len)].join(', ') + (cand.spec.flex ? ', ' + L(cand.spec.flex) : '') + '.' : T('unknownMake') }));
     const el = pullShelfBox(cand); await wait(650); await flyOut(el, cand);
@@ -1259,10 +1182,9 @@ async function ritual() {
     r = await captureWave(cand);
     st.obs.push(r.m); st.traits = mergeTraits();
     const best = bestWand(st.traits);
-    if (cand === best || st.attempt >= 6) { stopCamera(); st.stroke = r.pts; await success(cand); return; }
+    if (isChosen(cand, best, st.attempt)) { stopCamera(); st.stroke = r.pts; await success(cand); return; }
     st.tried.push(cand);
-    const near = wandDist(cand, st.traits) - wandDist(best, st.traits) < .025;
-    await REACT[pickReact(near)](cand);
+    await REACT[pickReact(isNearMiss(cand, best, st.traits))](cand);
     await wait(500);
   }
 }
@@ -1325,7 +1247,7 @@ function fillResult() {
   const dk = TR.reduce((a, k) => Math.abs(tr[k] - ru.tc[TR.indexOf(k)]) > Math.abs(tr[a] - ru.tc[TR.indexOf(a)]) ? k : a, TR[0]);
   const tried = st.tried.map(x => lcFirst(L(x.name)));
   $('#rAlmost').innerHTML = `<p><b>${T('almost')}</b> ${L(ru.name)}. ${T('differ', { t: LOC[dk][LI(lang)] })}</p><p>${tried.length ? `<b>${T('triedL')}</b> ${tried.join(', ')}.` : T('first')}</p>`;
-  $('#bSave').textContent = T('save'); $('#bAgain').textContent = T('again'); $('#rFine').textContent = T('fine');
+  $('#bSave').textContent = T('save'); $('#bAgain').textContent = T('again'); $('#rFine').textContent = T('fine') + ' ' + T('fan');
 }
 function showResult() {
   fillResult(); $('#rMsg').textContent = ''; stopCamera();
@@ -1395,7 +1317,7 @@ $('#bSave').addEventListener('click', async () => {
 /* ================= language ================= */
 function applyLang() {
   document.documentElement.lang = lang === 'en' ? 'en' : 'uk'; document.title = T('title');
-  $('#stT').textContent = T('title'); $('#stS').textContent = T('sub'); $('#cta').textContent = T('cta');
+  $('#stT').textContent = T('title'); $('#stS').textContent = T('sub'); $('#cta').textContent = T('cta'); $('#stFan').textContent = T('fan');
   $('#sign1').textContent = T('sign1'); $('#sign2').textContent = T('sign2');
   document.querySelectorAll('#lang button').forEach(b => b.classList.toggle('on', b.dataset.l === lang));
   sndBtn.setAttribute('aria-label', T(A.on ? 'sndOff' : 'sndOn'));
@@ -1408,7 +1330,7 @@ document.querySelectorAll('#lang button').forEach(b => b.addEventListener('click
 async function enterShop() {
   if (st.phase !== 'street') return; st.phase = 'entering';
   if (A.on) SFX.bell();
-  $('#cta').style.opacity = 0; $('#stTitle').style.opacity = 0; $('#stTitle').style.transform = 'translateY(-20px)';
+  $('#cta').style.opacity = 0; $('#stFan').style.opacity = 0; $('#stTitle').style.opacity = 0; $('#stTitle').style.transform = 'translateY(-20px)';
   const dr = $('#doorHit').getBoundingClientRect(), cx = dr.left + dr.width / 2, cy = dr.top + dr.height * .55;
   ['stSky', 'stTown', 'stShop', 'stFg'].map(id => layers[id]).forEach(Ly => { const r = Ly.el.getBoundingClientRect(); Ly.el.style.transformOrigin = `${(cx - r.left) / Ly.s}px ${(cy - r.top) / Ly.s}px`; });
   const fl = $('#flash'); fl.style.setProperty('--fx', cx + 'px'); fl.style.setProperty('--fy', cy + 'px');
