@@ -35,6 +35,11 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - The stream and detection stop after the final wave, on the result card, on fallback and while the tab is hidden.
 - Common in-app browsers default to the pointer with a one-line hint.
 
+## Result card
+- Shows the wand's name, 3D view, spec, one plain lore sentence, one line about the wave, sharing and Try again, plus the fan notice.
+- The share image is a 1080×1350 PNG from `makeCard`, drawn from `SHAPES`, and made ahead of the click because browsers need the share sheet right after a tap.
+- With file sharing: Share and Copy link. Without it: Download, links to LinkedIn, X, Facebook and Telegram, and Copy link. In-app browsers show the image to press and hold. A cancelled share stays silent.
+
 ## 3D view
 - three.js r160 from jsDelivr, loaded only on the result screen. Geometry and texture come from `SHAPES`, with custom drag-to-rotate.
 - The 2D drawing stays underneath as the fallback if WebGL or the CDN fails. Rendering stops when offscreen or hidden.

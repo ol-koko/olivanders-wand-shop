@@ -23,8 +23,10 @@ console.log('== normal');
   const yaw1 = await page.evaluate(() => __wand.v3.yaw); check(Math.abs(yaw1 - yaw0) > .5, `a drag turns the wand (yaw ${yaw0.toFixed(2)} → ${yaw1.toFixed(2)})`);
   await page.screenshot({ path: path.join(SHOTS, '3d-turned.png') });
   const f = () => page.evaluate(() => __wand.v3.frames), a = await f(); await sleep(500); const b = await f(); check(b > a, `renders while visible (${b - a} frames in 0.5 s)`);
+  await page.setViewportSize({ width: 390, height: 420 }); await sleep(300); // the card fits a full phone screen, so make it short enough to scroll the model away
   await page.evaluate(() => { document.querySelector('#result').scrollTop = 99999; }); await sleep(400); const c = await f(); await sleep(500); const d = await f();
   check(d === c, 'stops rendering when scrolled offscreen');
+  check((await page.evaluate(() => document.querySelector('#result').scrollTop)) > 150, 'the page really scrolled');
   await page.evaluate(() => { document.querySelector('#result').scrollTop = 0; }); await sleep(400); const e = await f(); await sleep(400); check((await f()) > e, 'resumes when back on screen');
   check(!errors.length, 'no page errors ' + errors.join(' | '));
 }
