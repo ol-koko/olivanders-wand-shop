@@ -73,9 +73,9 @@ function camLoop(t) {
   if (!running) return; requestAnimationFrame(camLoop); if (t == null || video.currentTime === lastT) return; lastT = video.currentTime;
   lastTs = Math.max(t, lastTs + 1); const r = hl.detectForVideo(video, lastTs), lm = r.landmarks && r.landmarks[0];
   if (stat) { stat.frames++; if (lm) { stat.hand++; if (stat.lastHand) stat.gap = Math.max(stat.gap, t - stat.lastHand); stat.lastHand = t; } }
-  if (!lm) { if (cap.active && t - seen > 350) { const q = cpts; cap = { active: false }; cpts = []; finish(q, 'camera', diagOf(t)); } return; }
+  if (!lm) { if (cap.active && t - seen > 450) { const q = cpts; cap = { active: false }; cpts = []; finish(q, 'camera', diagOf(t)); } return; }
   const { x: mx, y: my } = camMap(lm[8], video.videoWidth, video.videoHeight, W, H, MIN);
-  if (!sm || t - seen > 400) { sm = { x: mx, y: my }; hist = []; first = t; } else camSmooth(sm, mx, my, t - seen);
+  if (!sm || t - seen > 500) { sm = { x: mx, y: my }; hist = []; first = t; } else camSmooth(sm, mx, my, t - seen);
   seen = t; hist.push({ x: sm.x, y: sm.y, t }); if (hist.length > 10) hist.shift();
   const ev = camStep(cap, camSpeed(hist, MIN), t, first);
   if (ev === 'start') { cap.active = true; cap.t0 = hist[Math.max(0, hist.length - 3)].t; cpts = hist.slice(-3).map(q => ({ ...q })); stat = { t0: t, frames: 0, hand: 0, gap: 0, lastHand: 0 }; return; }

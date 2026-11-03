@@ -22,10 +22,10 @@ function abstractPlayer() { const mean = TR.map(() => Math.random()), waves = []
 /* ---------- stroke model: one person has a habit, each wave varies around it ---------- */
 const FAMILIES = [
   // shares and ranges tuned so the trait spread matches recorded waves (see --validate)
-  { w: .08, f: () => ({ kind: 'sweep', bow: rand(-.4, .4) }) },           // one arc across
-  { w: .3, f: () => ({ kind: 'zig', n: 3 + Math.floor(rand(0, 9)) }) },  // back and forth, angular
-  { w: .47, f: () => ({ kind: 'swirl', loops: rand(1, 6) }) },            // circles and spirals
-  { w: .15, f: () => ({ kind: 's', n: rand(2, 6) }) }                     // soft S-curves
+  { w: .05, f: () => ({ kind: 'sweep', bow: rand(-.4, .4) }) },           // one arc across
+  { w: .2, f: () => ({ kind: 'zig', n: 3 + Math.floor(rand(0, 9)) }) },  // back and forth, angular
+  { w: .67, f: () => ({ kind: 'swirl', loops: rand(1.5, 7) }) },            // circles and spirals
+  { w: .08, f: () => ({ kind: 's', n: rand(2, 6) }) }                     // soft S-curves
 ];
 function habit() {
   let r = Math.random(), fam = FAMILIES[0];
@@ -57,8 +57,8 @@ function viaPointer(m, hz = 60) {
   return out;
 }
 // Frame sampling and landmark noise around the same camSmooth/camSpeed/camStep the game runs.
-// Recordings: a hand covers about 70% of a finger's sweep at about a third of its speed.
-const HAND_AMP = .85, HAND_SLOW = 2.2;
+// Recordings: a hand covers about 65% of a finger's sweep at about half its speed.
+const HAND_AMP = .65, HAND_SLOW = 1.33;
 function viaCamera(m, fps = 30) {
   const gain = HAND_AMP, noise = .0015 * CAM.span * MIN, dt = 1000 / fps, T = m[m.length - 1].t * HAND_SLOW, base = 2000;
   const at = t => { const raw = t <= 0 ? m[0] : t >= T ? m[m.length - 1] : m[Math.min(m.length - 1, Math.floor(t / T * (m.length - 1)))]; return { x: MIN + (raw.x - MIN) * gain, y: MIN + (raw.y - MIN) * gain }; };
