@@ -102,7 +102,13 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 .r-kicker{font-size:12.5px;letter-spacing:.26em;text-transform:uppercase;color:#c79a55;font-weight:700}
 .rcard h1{font-weight:700;font-size:clamp(30px,7.4vw,40px);line-height:1.05;margin-top:8px;background:linear-gradient(180deg,#fff2cc,#e2b866 60%,#b07c38);-webkit-background-clip:text;background-clip:text;color:transparent}
 .rare{display:inline-block;margin-top:10px;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#1a0f08;background:linear-gradient(90deg,#e8c983,#fff1c2,#e8c983);padding:3px 10px;border-radius:999px;font-weight:700}
-#rWand{width:100%;height:96px;display:block;margin:10px 0 4px}
+#rStage{position:relative;height:150px;margin:6px -12px 0}
+#rWand{width:100%;height:100%;display:block;transition:opacity .5s}
+#rStage.is3d #rWand{opacity:0}
+#rWand3d{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:pan-y;opacity:0;transition:opacity .5s;pointer-events:none}
+#rStage.is3d #rWand3d{opacity:1;pointer-events:auto}
+#rWand3d:active{cursor:grabbing}
+.r-spin{font-size:14px;font-style:italic;color:#a8916c;margin:-4px 0 8px}
 .r-specs{font-size:18px;color:#ecdcb8;font-weight:600}
 .r-specs.unk{font-style:italic;font-weight:500;color:#c9b48c}
 .r-lore{font-style:italic;font-size:19px;line-height:1.35;color:#d6c3a0;margin-top:10px}
@@ -244,7 +250,8 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
     <div class="r-kicker" id="rKicker"></div>
     <h1 id="rName"></h1>
     <div id="rRare" hidden><span class="rare" id="rRareT"></span></div>
-    <canvas id="rWand"></canvas>
+    <div id="rStage"><canvas id="rWand"></canvas><canvas id="rWand3d"></canvas></div>
+    <div class="r-spin" id="rSpin" hidden></div>
     <div class="r-specs" id="rSpecs"></div>
     <p class="r-lore" id="rLore"></p>
     <div class="r-sec"><h2 id="rWhyH"></h2><ul id="rWhy"></ul></div>
@@ -275,6 +282,7 @@ let W = innerWidth, H = innerHeight, MIN = Math.min(W, H);
 const DPR = Math.min(2, window.devicePixelRatio || 1);
 let now = performance.now();
 const hasHover = matchMedia('(hover:hover) and (pointer:fine)').matches;
+const reduceMotion = matchMedia('(prefers-reduced-motion:reduce)').matches;
 const IN_APP = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|LinkedInApp|musical_ly|BytedanceWebview|TikTok/i.test(navigator.userAgent); // these webviews rarely give camera access
 
 /* ================= i18n ================= */
@@ -334,6 +342,7 @@ const S = {
   first: ['Вона обрала тебе з першої ж спроби.', 'It chose you on the very first try.'],
   save: ['Зберегти картку', 'Save card'],
   again: ['Пройти ще раз', 'Try again'],
+  spin: ['Покрути паличку пальцем або мишкою', 'Turn the wand with your finger or mouse'],
   saving: ['Олівандер готує картку…', 'Ollivander is preparing your card…'],
   saved: ['Картку збережено.', 'Card saved.'],
   declined: ['Добре, картка лишається тут.', 'All right, the card stays here.'],
@@ -1341,20 +1350,21 @@ function fillResult() {
   const dk = TR.reduce((a, k) => Math.abs(tr[k] - ru.tc[TR.indexOf(k)]) > Math.abs(tr[a] - ru.tc[TR.indexOf(a)]) ? k : a, TR[0]);
   const tried = st.tried.map(x => lcFirst(L(x.name)));
   $('#rAlmost').innerHTML = `<p><b>${T('almost')}</b> ${L(ru.name)}. ${T('differ', { t: LOC[dk][LI(lang)] })}</p><p>${tried.length ? `<b>${T('triedL')}</b> ${tried.join(', ')}.` : T('first')}</p>`;
-  $('#bSave').textContent = T('save'); $('#bAgain').textContent = T('again'); $('#rFine').textContent = T('fine') + ' ' + T('fan');
+  $('#rSpin').textContent = T('spin'); $('#bSave').textContent = T('save'); $('#bAgain').textContent = T('again'); $('#rFine').textContent = T('fine') + ' ' + T('fan');
 }
 function showResult() {
   fillResult(); $('#rMsg').textContent = ''; stopCamera();
   const res = $('#result'); res.hidden = false; res.scrollTop = 0; st.wand = null; note.classList.remove('show'); st.noteFn = null;
   requestAnimationFrame(() => {
     res.classList.add('show'); const w = st.winner;
-    const rw = $('#rWand'), cw = rw.clientWidth, x = sizeCanvas(rw, cw, 96); drawWand(x, cw / 2, 48, Math.min(cw * .92, 420) * (.8 + .2 * (w.lenN - 9.5) / 5.5), -.05, w, .5);
+    const rw = $('#rWand'), cw = rw.clientWidth, chh = rw.clientHeight, x = sizeCanvas(rw, cw, chh); drawWand(x, cw / 2, chh / 2, Math.min(cw * .92, 420) * (.8 + .2 * (w.lenN - 9.5) / 5.5), -.05, w, .5);
     const sg = $('#rSig'), y = sizeCanvas(sg, sg.clientWidth, sg.clientHeight); drawSigil(y, st.stroke, 0, 0, sg.clientWidth, sg.clientHeight);
     setTimeout(() => document.querySelectorAll('.mf').forEach(m => m.style.width = (+m.dataset.v * 100).toFixed(1) + '%'), 250);
+    show3D(w);
   });
 }
 $('#bAgain').addEventListener('click', () => {
-  const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
+  const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700); hide3D();
   st.replay = null; st.trails = []; st.halo = null; st.winner = null;
   setTimeout(async () => {
     if (st.input === 'cam') { try { await withTimeout(startCamera(), 8000); } catch (e) { st.input = 'pointer'; stopCamera(); } }
@@ -1376,6 +1386,60 @@ function drawSigil(c, pts, X, Y, Wd, Hd) {
   for (let i = 0; i < 26; i++) { const p = fp[Math.floor(R() * fp.length)]; c.beginPath(); c.arc(p.x + (R() - .5) * 30 * sc, p.y + (R() - .5) * 30 * sc, R() * 1.6 * sc + .4, 0, 6.283); c.fill(); }
   const e = fp[fp.length - 1]; c.fillStyle = 'rgba(255,248,225,1)'; c.beginPath(); c.arc(e.x, e.y, 4 * sc, 0, 6.283); c.fill();
   c.globalCompositeOperation = 'source-over';
+}
+
+/* ================= 3D view of the chosen wand ================= */
+// three.js loads only here, on the result screen. The 2D drawing stays underneath until the model is ready, and for good if WebGL or the CDN fails.
+const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
+const v3 = { gl: null, three: null, scene: null, cam: null, yawG: null, rollG: null, mesh: null, wand: null, run: false, seen: true, frames: 0, yaw: -.16, roll: .2, drag: null, raf: 0, last: 0 };
+function wandGeometry(THREE, w) {
+  // same radius and centreline as the 2D drawing; v runs round the wand as the texture expects: top .25, front .5, bottom .75
+  const N = 220, M = 18, pos = [], uv = [], idx = [];
+  for (let i = 0; i <= N; i++) {
+    const s = i / N, a = wandY(w, Math.max(0, s - .003)), b = wandY(w, Math.min(1, s + .003)), dx = (s < .003 || s > .997 ? .003 : .006), ty = -(b - a), len = Math.hypot(dx, ty);
+    const nx = -ty / len, ny = dx / len, cx = s - .5, cy = -wandY(w, s), r = i === 0 || i === N ? 0 : wandR(w, s);
+    for (let j = 0; j <= M; j++) { const f = j / M * 2 * Math.PI; pos.push(cx + nx * r * Math.cos(f), cy + ny * r * Math.cos(f), r * Math.sin(f)); uv.push(s, .25 + j / M); }
+  }
+  for (let i = 0; i < N; i++) for (let j = 0; j < M; j++) { const a = i * (M + 1) + j, b = a + M + 1; idx.push(a, a + 1, b, b, a + 1, b + 1); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+  const n = g.attributes.normal; for (let i = 0; i <= N; i++) { const a = i * (M + 1), b = a + M; const x = n.getX(a) + n.getX(b), y = n.getY(a) + n.getY(b), z = n.getZ(a) + n.getZ(b), l = Math.hypot(x, y, z) || 1; n.setXYZ(a, x / l, y / l, z / l); n.setXYZ(b, x / l, y / l, z / l); }
+  return g;
+}
+async function show3D(w) {
+  v3.wand = w; const stage = $('#rStage'), cv = $('#rWand3d');
+  try {
+    if (!v3.three) v3.three = await withTimeout(import(THREE_URL), 15000);
+    if (v3.wand !== w || $('#result').hidden) return; const THREE = v3.three;
+    if (!v3.gl) {
+      v3.gl = new THREE.WebGLRenderer({ canvas: cv, alpha: true, antialias: true }); v3.gl.setPixelRatio(Math.min(2, DPR));
+      v3.scene = new THREE.Scene(); v3.cam = new THREE.PerspectiveCamera(18, 1, .1, 20);
+      v3.yawG = new THREE.Group(); v3.rollG = new THREE.Group(); v3.yawG.add(v3.rollG); v3.scene.add(v3.yawG);
+      // candlelight: warm from above, a soft fill, an amber rim from behind
+      const key = new THREE.DirectionalLight(0xffe6c4, 3.6); key.position.set(-.6, 1.4, 1.6); const rim = new THREE.DirectionalLight(0xff9a50, 1.6); rim.position.set(.8, -.3, -1.4);
+      v3.scene.add(key, rim, new THREE.HemisphereLight(0xfff4e4, 0x3a2412, 1.9));
+      new IntersectionObserver(es => { v3.seen = es[0].isIntersecting; wake3D(); }).observe(cv);
+      document.addEventListener('visibilitychange', wake3D);
+      cv.addEventListener('webglcontextlost', () => { v3.run = false; stage.classList.remove('is3d'); $('#rSpin').hidden = true; });
+      cv.addEventListener('pointerdown', e => { v3.drag = { x: e.clientX, y: e.clientY }; try { cv.setPointerCapture(e.pointerId); } catch (_) { } });
+      cv.addEventListener('pointermove', e => { if (!v3.drag) return; v3.yaw += (e.clientX - v3.drag.x) * .012; if (e.pointerType === 'mouse') v3.roll += (e.clientY - v3.drag.y) * .012; v3.drag = { x: e.clientX, y: e.clientY }; });
+      const up = () => { v3.drag = null; }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    }
+    if (v3.mesh) { v3.rollG.remove(v3.mesh); v3.mesh.geometry.dispose(); v3.mesh.material.map.dispose(); v3.mesh.material.dispose(); }
+    const tex = new THREE.CanvasTexture(wandTexture(w)); tex.colorSpace = THREE.SRGBColorSpace; tex.wrapT = THREE.RepeatWrapping; tex.flipY = false; tex.anisotropy = 4;
+    v3.mesh = new THREE.Mesh(wandGeometry(THREE, w), new THREE.MeshStandardMaterial({ map: tex, roughness: .62, metalness: .04 }));
+    const k = .8 + .2 * (w.lenN - 9.5) / 5.5; v3.mesh.scale.setScalar(k); v3.rollG.add(v3.mesh);
+    const cw = cv.clientWidth, chh = cv.clientHeight; v3.gl.setSize(cw, chh, false); v3.cam.aspect = cw / chh; v3.cam.position.z = (.98 / v3.cam.aspect / 2) / Math.tan(9 * Math.PI / 180); v3.cam.updateProjectionMatrix();
+    v3.yaw = -.16; v3.roll = .2; v3.run = true; v3.gl.render(v3.scene, v3.cam); stage.classList.add('is3d'); $('#rSpin').hidden = false; wake3D();
+  } catch (e) { v3.run = false; stage.classList.remove('is3d'); $('#rSpin').hidden = true; } // the 2D drawing stays
+}
+function hide3D() { v3.wand = null; v3.run = false; $('#rStage').classList.remove('is3d'); $('#rSpin').hidden = true; }
+function wake3D() { if (v3.run && v3.seen && !document.hidden && !v3.raf) { v3.last = performance.now(); v3.raf = requestAnimationFrame(tick3D); } }
+function tick3D(t) {
+  v3.raf = 0; if (!v3.run || !v3.seen || document.hidden) return; // stops when offscreen or hidden; wake3D restarts it
+  const dt = Math.min(50, t - v3.last); v3.last = t;
+  if (!v3.drag && !reduceMotion) v3.roll += dt * .00035;
+  v3.yawG.rotation.y = v3.yaw; v3.rollG.rotation.x = v3.roll; v3.gl.render(v3.scene, v3.cam); v3.frames++;
+  v3.raf = requestAnimationFrame(tick3D);
 }
 
 /* ================= save card ================= */
