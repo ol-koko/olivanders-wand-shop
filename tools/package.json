@@ -1,0 +1,6 @@
+{
+  "name": "ollivanders-tools",
+  "private": true,
+  "description": "Local test tooling. Not part of the site.",
+  "devDependencies": { "playwright-core": "1.48.2" }
+}
