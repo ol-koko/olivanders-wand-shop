@@ -22,10 +22,11 @@ console.log('== content');
   console.log('    ' + text.replace(/\n+/g, ' | '));
   for (const gone of ['Твій почерк', 'сигіл', 'Майже', 'Чому вона', 'Це гра']) check(!text.includes(gone), 'removed: ' + gone);
   check(/Твій змах: швидкий, широкий, з різкими кутами\./.test(text), 'wave line');
-  check(/Неофіційний фан-проєкт/.test(text), 'fan notice');
+  check(!/Неофіційний фан-проєкт/.test(text), 'fan notice only on the street, not on the card');
+  check(!/Копіювати|LinkedIn|Telegram/.test(text), 'no copy link, no social links');
   const h = await page.evaluate(() => document.querySelector('.rcard').offsetHeight); check(h < 844, `card fits one phone screen (${h}px)`);
   await show(page, 'dumbledore', 'en'); await sleep(1200); await page.screenshot({ path: path.join(SHOTS, 'card-en-rare.png') });
-  const en = await page.evaluate(() => document.querySelector('.rcard').innerText); check(/Your wave:/.test(en) && /Unofficial fan project/.test(en) && /A RARE CHOICE/i.test(en), 'English, rare badge');
+  const en = await page.evaluate(() => document.querySelector('.rcard').innerText); check(/Your wave:/.test(en) && /A RARE CHOICE/i.test(en), 'English, rare badge');
   await show(page, 'luna'); await sleep(300); check(/у каноні не названо/.test(await page.evaluate(() => document.querySelector('#rSpecs').textContent)), 'no canon spec wording');
   await show(page, 'neville'); await sleep(200); const nev = await page.evaluate(() => document.querySelector('#rSpecs').textContent); check(!/дюйм/.test(nev), 'Neville has no length: ' + nev);
   check(!errors.length, 'no page errors ' + errors.join(' | '));
@@ -40,16 +41,11 @@ for (const [id, lang] of [['voldemort', 'ua'], ['hermione', 'en']]) {
 }
 console.log('== desktop: no file sharing');
 {
-  const { page, errors, browser } = await open(url, { viewport: DESK, init: `delete Navigator.prototype.share; delete Navigator.prototype.canShare;` });
-  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  const { page, errors } = await open(url, { viewport: DESK, init: `delete Navigator.prototype.share; delete Navigator.prototype.canShare;` });
   await show(page, 'harry', 'en'); await sleep(800);
-  check(!(await visible(page, '#bShare')) && await visible(page, '#bDown') && await visible(page, '#rSocial'), 'download and social links, no Share button');
-  const links = await page.$$eval('#rSocial a', a => a.map(x => x.textContent + ' ' + x.href)); console.log('    ' + links.join('\n    '));
-  check(links.length === 4 && links.every(l => /localhost/.test(decodeURIComponent(l))), 'four links carry the site URL');
+  check(!(await visible(page, '#bShare')) && await visible(page, '#bDown'), 'Download, no Share button');
   const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), page.click('#bDown')]);
   const buf = fs.readFileSync(await dl.path()); check(dl.suggestedFilename() === 'my-wand.png' && pngSize(buf)[1] === 1350, 'download gives the PNG: ' + dl.suggestedFilename());
-  await page.click('#bCopy'); await sleep(200);
-  check((await page.textContent('#rMsg')) === 'Link copied.', 'copy link confirms'); check((await page.evaluate(() => navigator.clipboard.readText())).startsWith('http://localhost'), 'clipboard holds the site URL');
   await page.screenshot({ path: path.join(SHOTS, 'card-desktop.png') });
   check(!errors.length, 'no page errors ' + errors.join(' | '));
 }
@@ -57,14 +53,14 @@ console.log('== phone: share sheet');
 {
   const mock = kind => `window.__shared = []; navigator.canShare = () => true; navigator.share = async d => { window.__shared.push({ names: d.files.map(f => f.name + ':' + f.type), text: d.text, url: d.url }); ${kind} };`;
   { const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: mock('') });
-    await show(page, 'harry'); await sleep(800); check(await visible(page, '#bShare') && !(await visible(page, '#bDown')) && !(await visible(page, '#rSocial')), 'Share button only');
+    await show(page, 'harry'); await sleep(800); check(await visible(page, '#bShare') && !(await visible(page, '#bDown')), 'Share button only');
     await page.tap('#bShare'); await sleep(300); const s = await page.evaluate(() => __shared[0]); console.log('    ', JSON.stringify(s)); check(s && /png/.test(s.names[0]) && s.text && s.url, 'shares PNG, text and URL'); check(!errors.length, 'no page errors ' + errors.join(' | ')); }
   { const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: mock(`throw new DOMException('x', 'AbortError');`) });
     await show(page, 'harry'); await sleep(800); await page.tap('#bShare'); await sleep(300);
-    check((await page.textContent('#rMsg')) === '' && await visible(page, '#bShare') && !(await visible(page, '#bDown')), 'cancel stays silent'); check(!errors.length, 'no page errors ' + errors.join(' | ')); }
+    check(await visible(page, '#bShare') && !(await visible(page, '#bDown')), 'cancel stays silent'); check(!errors.length, 'no page errors ' + errors.join(' | ')); }
   { const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: mock(`throw new DOMException('x', 'NotAllowedError');`) });
     await show(page, 'harry'); await sleep(800); await page.tap('#bShare'); await sleep(300);
-    check(await visible(page, '#bDown') && await visible(page, '#rSocial'), 'a failed share offers download and links'); check(!errors.length, 'no page errors ' + errors.join(' | ')); }
+    check(await visible(page, '#bDown'), 'a failed share offers the download'); check(!errors.length, 'no page errors ' + errors.join(' | ')); }
 }
 console.log('== in-app browser');
 {

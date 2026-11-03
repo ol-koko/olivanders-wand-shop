@@ -36,9 +36,9 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - Common in-app browsers default to the pointer with a one-line hint.
 
 ## Result card
-- Shows the wand's name, 3D view, spec, one plain lore sentence, one line about the wave, sharing and Try again, plus the fan notice.
+- Shows the wand's name, 3D view, spec, one plain lore sentence, one line about the wave, sharing and Try again. The fan notice appears only on the street screen.
 - The share image is a 1080×1350 PNG from `makeCard`, drawn from `SHAPES`, and made ahead of the click because browsers need the share sheet right after a tap.
-- With file sharing: Share and Copy link. Without it: Download, links to LinkedIn, X, Facebook and Telegram, and Copy link. In-app browsers show the image to press and hold. A cancelled share stays silent.
+- With file sharing: Share. Without it, or when a share fails: Download. In-app browsers show the image to press and hold. A cancelled share stays silent.
 
 ## 3D view
 - three.js r160 from jsDelivr, loaded only on the result screen. Geometry and texture come from `SHAPES`, with custom drag-to-rotate.

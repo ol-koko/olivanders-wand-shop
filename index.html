@@ -117,12 +117,8 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 .r-btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:22px}
 .r-btns button{font:inherit;font-weight:700;font-size:17px;padding:10px 18px;border-radius:999px;cursor:pointer;border:1px solid #8a6230;background:#2b1a0e;color:var(--gold2)}
 .r-btns button.pri{background:linear-gradient(180deg,#f2d38e,#c99a4e);color:#2a170b;border-color:#f2d38e}
-.r-social{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;margin-top:14px}
-.r-social a{color:var(--gold2);font-size:16px;font-weight:600;text-underline-offset:3px}
 #rSaved{margin-top:12px}
 #rSaved img{width:100%;max-width:280px;border-radius:6px;display:block;margin:0 auto;-webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default}
-.r-msg{min-height:20px;margin-top:10px;font-size:15px;color:#c9b48c;font-style:italic}
-.r-fine{margin-top:6px;font-size:13.5px;color:#8f7b5c;font-style:italic}
 @media (prefers-reduced-motion:reduce){.curtain,#cta,.tw{animation:none}}
 </style>
 </head>
@@ -247,13 +243,9 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
     <div class="r-btns">
       <button class="pri" id="bShare" hidden></button>
       <button class="pri" id="bDown" hidden></button>
-      <button id="bCopy"></button>
       <button id="bAgain"></button>
     </div>
-    <div class="r-social" id="rSocial" hidden></div>
-    <div class="r-msg" id="rMsg" role="status"></div>
     <div id="rSaved" hidden><img id="rSavedImg" alt=""><p class="cap" id="rSavedCap"></p></div>
-    <div class="r-fine" id="rFine"></div>
   </div></div>
 
   <div class="topbar"><div id="lang" role="group" aria-label="Language"><button data-l="ua">UA</button><button data-l="en">EN</button></div><button id="snd" aria-label="Sound"></button></div>
@@ -329,9 +321,6 @@ const S = {
   spin: ['Покрути паличку пальцем або мишкою', 'Turn the wand with your finger or mouse'],
   share: ['Поділитися', 'Share'],
   download: ['Завантажити картинку', 'Download image'],
-  copy: ['Копіювати посилання', 'Copy link'],
-  copied: ['Посилання скопійовано.', 'Link copied.'],
-  copyFail: ['Не вдалося скопіювати. Посилання: {u}', 'Couldn’t copy. The link: {u}'],
   saveHold: ['Утримуй картинку, щоб зберегти її.', 'Press and hold the image to save it.'],
   again: ['Спробувати ще раз', 'Try again'],
   invite: ['Паличка обрала мене. А яка обере тебе?', 'The wand chose me — which one will choose you?'],
@@ -1327,9 +1316,9 @@ function fillResult() {
   $('#rKicker').textContent = T('rKicker'); $('#rName').textContent = L(w.name); $('#rRare').hidden = !w.rare; $('#rRareT').textContent = T('rare');
   const spc = $('#rSpecs'); spc.textContent = specText(w); spc.classList.toggle('unk', !w.spec);
   $('#rLore').textContent = L(w.lore); $('#rWave').textContent = waveLine(tr);
-  $('#rSpin').textContent = T('spin'); $('#bShare').textContent = T('share'); $('#bDown').textContent = T('download'); $('#bCopy').textContent = T('copy'); $('#bAgain').textContent = T('again');
-  $('#rFine').textContent = T('fan'); $('#rSavedCap').textContent = T('saveHold');
-  fillSocial(); $('#rMsg').textContent = ''; refreshCard();
+  $('#rSpin').textContent = T('spin'); $('#bShare').textContent = T('share'); $('#bDown').textContent = T('download'); $('#bAgain').textContent = T('again');
+  $('#rSavedCap').textContent = T('saveHold');
+  refreshCard();
 }
 function showResult() {
   fillResult(); stopCamera(); setShareMode(canShareFiles());
@@ -1421,8 +1410,7 @@ async function makeCard() {
   wrapText(x, L(w.name), CW / 2, 290, 900, 92);
   drawWand(x, CW / 2, 650, 880 * (.8 + .2 * (w.lenN - 9.5) / 5.5), -.05, w, .6);
   x.fillStyle = '#ecdcb8'; x.font = `italic 500 44px ${serif}`; wrapText(x, L(w.lore), CW / 2, 910, 860, 56);
-  x.fillStyle = '#e8c27a'; x.font = `600 38px ${serif}`; x.fillText(location.host, CW / 2, 1170);
-  x.fillStyle = '#a8916c'; x.font = `italic 500 25px ${serif}`; x.fillText(T('fan'), CW / 2, 1250);
+  x.fillStyle = '#e8c27a'; x.font = `600 38px ${serif}`; x.fillText(location.host, CW / 2, 1230);
   return new Promise(r => c.toBlob(r, 'image/png'));
 }
 // Made ahead of the click: browsers only allow the share sheet right after a tap, with no long wait before it.
@@ -1432,24 +1420,15 @@ const cardFile = async () => new File([cardBlob || await refreshCard.job], lang 
 function canShareFiles() {
   try { return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [new File([new Blob(['x'], { type: 'image/png' })], 'x.png', { type: 'image/png' })] })); } catch (_) { return false; }
 }
-function setShareMode(sheet) { $('#bShare').hidden = !sheet; $('#bDown').hidden = sheet; $('#rSocial').hidden = sheet; }
-function fillSocial() {
-  const u = encodeURIComponent(siteUrl()), t = encodeURIComponent(T('invite')), links = [['LinkedIn', `https://www.linkedin.com/sharing/share-offsite/?url=${u}`], ['X', `https://twitter.com/intent/tweet?text=${t}&url=${u}`], ['Facebook', `https://www.facebook.com/sharer/sharer.php?u=${u}`], ['Telegram', `https://t.me/share/url?url=${u}&text=${t}`]];
-  $('#rSocial').innerHTML = links.map(([n, h]) => `<a href="${h}" target="_blank" rel="noopener">${n}</a>`).join('');
-}
+function setShareMode(sheet) { $('#bShare').hidden = !sheet; $('#bDown').hidden = sheet; }
 $('#bShare').addEventListener('click', async () => {
   try { await navigator.share({ files: [await cardFile()], text: T('invite'), url: siteUrl() }); }
-  catch (e) { if (e && e.name !== 'AbortError') setShareMode(false); } // a cancelled sheet stays silent; anything else offers the other ways
+  catch (e) { if (e && e.name !== 'AbortError') setShareMode(false); } // a cancelled sheet stays silent; anything else offers the download
 });
 $('#bDown').addEventListener('click', async () => {
   const file = await cardFile(), url = URL.createObjectURL(file);
   if (IN_APP) { $('#rSavedImg').src = url; $('#rSaved').hidden = false; return; } // these webviews usually block downloads, but pressing on an image works
   const a = document.createElement('a'); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
-});
-$('#bCopy').addEventListener('click', async () => {
-  const msg = $('#rMsg'), u = siteUrl();
-  try { await navigator.clipboard.writeText(u); msg.textContent = T('copied'); }
-  catch (_) { msg.textContent = T('copyFail', { u }); }
 });
 
 /* ================= language ================= */
