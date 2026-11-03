@@ -24,8 +24,8 @@ waves trial wands, and one of 16 character wands eventually chooses them.
   metrics, re-run `node tools/simulate.js --calibrate`.
 - `strokeMetrics` measures on a fixed 33 ms grid and on the min(w, h) scale, so input rate doesn't change traits. `SCALES` in `logic.js` holds separate ranges for pointer and camera, read from recorded waves, because a hand moves far slower than a finger. Check changes against real waves with `node tools/simulate.js --validate`.
 - Wand looks: `SHAPES` in `index.html` is the single shape spec. The box, hand, result card, saved card and 3D view all render from it. Matching doesn't use it.
-- Canon facts only: wands whose wood/core are not named in canon have `spec: null` and show
-  "not named in canon". Do not invent canon specs. A detail no source confirms stays out: Neville's wand shows no length.
+- Canon facts only: wands whose wood/core are not named in canon have `spec: null` and show no spec line, with no label about it.
+  Do not invent canon specs. A detail no source confirms stays out: Neville's wand shows no length.
 
 ## Camera mode
 - The video shows inside a vintage portrait frame (`#camBox`, SVG drawn in code), like the magical portraits at Hogwarts.

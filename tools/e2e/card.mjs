@@ -27,7 +27,7 @@ console.log('== content');
   const h = await page.evaluate(() => document.querySelector('.rcard').offsetHeight); check(h < 844, `card fits one phone screen (${h}px)`);
   await show(page, 'dumbledore', 'en'); await sleep(1200); await page.screenshot({ path: path.join(SHOTS, 'card-en-rare.png') });
   const en = await page.evaluate(() => document.querySelector('.rcard').innerText); check(/Your wave:/.test(en) && /A RARE CHOICE/i.test(en), 'English, rare badge');
-  await show(page, 'luna'); await sleep(300); check(/у каноні не названо/.test(await page.evaluate(() => document.querySelector('#rSpecs').textContent)), 'no canon spec wording');
+  await show(page, 'luna'); await sleep(300); const luna = await page.evaluate(() => document.querySelector('.rcard').innerText); check(!/канон|canon|книж|книз|book/i.test(luna) && !(await visible(page, '#rSpecs')), 'a wand with no canon spec shows no spec line and no label');
   await show(page, 'neville'); await sleep(200); const nev = await page.evaluate(() => document.querySelector('#rSpecs').textContent); check(!/дюйм/.test(nev), 'Neville has no length: ' + nev);
   check(!errors.length, 'no page errors ' + errors.join(' | '));
 }
