@@ -39,13 +39,13 @@ function refresh(line) {
   $('#n').textContent = waves.length + ' змахів'; try { localStorage.setItem(KEY, JSON.stringify(waves)); } catch (_) { }
   if (line != null) $('#log').textContent = line;
 }
-function finish(pts, mode) {
+function finish(pts, mode, diag) {
   if (pts.length < 4) return refresh('Надто коротко, спробуй ще.');
   const m = strokeMetrics(pts, MIN, mode);
   if (m.len < MIN * .35 || m.dur < .2) return refresh('Надто коротко, спробуй ще.');
   const t0 = pts[0].t, traits = Object.fromEntries(TR.map(k => [k, +m[k].toFixed(3)]));
-  waves.push({ mode, who: $('#who').value || null, viewport: [W, H], dur: +m.dur.toFixed(3), lenOverMin: +(m.len / MIN).toFixed(3), traits, pts: pts.map(p => [Math.round(p.x), Math.round(p.y), Math.round(p.t - t0)]) });
-  refresh(TR.map(k => k + ' ' + traits[k].toFixed(2)).join('   ') + `   (${m.dur.toFixed(2)} с)`);
+  waves.push({ mode, diag, who: $('#who').value || null, viewport: [W, H], dur: +m.dur.toFixed(3), lenOverMin: +(m.len / MIN).toFixed(3), traits, pts: pts.map(p => [Math.round(p.x), Math.round(p.y), Math.round(p.t - t0)]) });
+  refresh(TR.map(k => k + ' ' + traits[k].toFixed(2)).join('   ') + `   (${m.dur.toFixed(2)} с)` + (diag ? `\nкамера: ${diag.fps} кадрів/с, рука в ${diag.handPct}% кадрів, найдовший розрив ${diag.maxGap} мс` : ''));
 }
 function drawPath(pts) { x.clearRect(0, 0, W, H); x.strokeStyle = '#f0c878'; x.lineWidth = 3; x.lineCap = 'round'; x.beginPath(); pts.forEach((p, i) => i ? x.lineTo(p.x, p.y) : x.moveTo(p.x, p.y)); x.stroke(); }
 
@@ -68,18 +68,20 @@ async function startCam() {
 }
 function stopCam() { running = false; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; video.hidden = true; $('#msg').textContent = ''; }
 let sm = null, seen = -1e9, first = 0, hist = [], cap = { active: false }, cpts = [], lastT = -1, lastTs = 0;
+let stat = null; const diagOf = t => { const s = stat, dur = Math.max(1, t - s.t0); stat = null; return { fps: Math.round(s.frames * 1000 / dur), handPct: Math.round(s.hand * 100 / Math.max(1, s.frames)), maxGap: Math.round(s.gap), delegate: 'GPU' }; };
 function camLoop(t) {
   if (!running) return; requestAnimationFrame(camLoop); if (t == null || video.currentTime === lastT) return; lastT = video.currentTime;
   lastTs = Math.max(t, lastTs + 1); const r = hl.detectForVideo(video, lastTs), lm = r.landmarks && r.landmarks[0];
-  if (!lm) { if (cap.active && t - seen > 350) { const q = cpts; cap = { active: false }; cpts = []; finish(q, 'camera'); } return; }
+  if (stat) { stat.frames++; if (lm) { stat.hand++; if (stat.lastHand) stat.gap = Math.max(stat.gap, t - stat.lastHand); stat.lastHand = t; } }
+  if (!lm) { if (cap.active && t - seen > 350) { const q = cpts; cap = { active: false }; cpts = []; finish(q, 'camera', diagOf(t)); } return; }
   const { x: mx, y: my } = camMap(lm[8], video.videoWidth, video.videoHeight, W, H, MIN);
   if (!sm || t - seen > 400) { sm = { x: mx, y: my }; hist = []; first = t; } else camSmooth(sm, mx, my, t - seen);
   seen = t; hist.push({ x: sm.x, y: sm.y, t }); if (hist.length > 10) hist.shift();
   const ev = camStep(cap, camSpeed(hist, MIN), t, first);
-  if (ev === 'start') { cap.active = true; cap.t0 = hist[Math.max(0, hist.length - 3)].t; cpts = hist.slice(-3).map(q => ({ ...q })); return; }
+  if (ev === 'start') { cap.active = true; cap.t0 = hist[Math.max(0, hist.length - 3)].t; cpts = hist.slice(-3).map(q => ({ ...q })); stat = { t0: t, frames: 0, hand: 0, gap: 0, lastHand: 0 }; return; }
   if (ev === 'wait') return;
   cpts.push({ x: sm.x, y: sm.y, t }); drawPath(cpts);
-  if (ev === 'end' || t - cap.t0 > CAM.maxWave) { const end = ev === 'end' ? cap.slow - CAM.lag : t, q = cpts.filter(p => p.t <= end); cap = { active: false }; cpts = []; finish(q, 'camera'); }
+  if (ev === 'end' || t - cap.t0 > CAM.maxWave) { const end = ev === 'end' ? cap.slow - CAM.lag : t, q = cpts.filter(p => p.t <= end); cap = { active: false }; cpts = []; finish(q, 'camera', diagOf(t)); }
 }
 $('#mode').addEventListener('change', e => { if (e.target.value === 'camera') startCam().catch(err => { $('#msg').textContent = 'Камера: ' + err.message; }); else stopCam(); });
 

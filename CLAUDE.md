@@ -28,6 +28,7 @@ waves trial wands, and one of 16 character wands eventually chooses them.
   "not named in canon". Do not invent canon specs. A detail no source confirms stays out: Neville's wand shows no length.
 
 ## Camera mode
+- The video shows inside a vintage portrait frame (`#camBox`, SVG drawn in code), like the magical portraits at Hogwarts.
 - MediaPipe Tasks Vision HandLandmarker 0.10.14 from jsDelivr, model from storage.googleapis.com.
 - Tracks landmark 8 (index fingertip), mirrored. A wave starts when the hand speeds up, ends when it stops.
 - Requires https or localhost (getUserMedia). Falls back to finger/mouse on any error, and the game never waits forever:
