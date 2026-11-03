@@ -33,3 +33,8 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - Talk to the user in Ukrainian. UI copy must exist in both UA and EN.
 - Keep the visual style: warm candlelight, gold #d9b46a, parchment notes, Cormorant Garamond + Marck Script.
 - Test on desktop (1440×900) and phone (390×844) after changes.
+
+## Git & GitHub workflow
+- One branch and one PR per task. No direct commits to `main`, no force-push, no pushing to other remotes.
+- Nothing is pushed without the owner's approval.
+- No AI attribution anywhere: no "Co-Authored-By", "Generated with Claude Code" or similar lines in commits, PR titles or PR descriptions.
