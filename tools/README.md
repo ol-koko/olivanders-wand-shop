@@ -14,3 +14,19 @@ Then:
     node tools/e2e/reactions.mjs       # forces all 10 reactions, plays at 390×844, screenshots in tools/e2e/shots
 
 They start their own headless Chrome and test server, so open browser tabs stay untouched. To reach the game's internals, the test server adds an inspection hook to its own copy of `index.html`; the real file has none.
+
+## Wand balance
+No dependencies:
+
+    node tools/simulate.js              # distribution for the current BIAS, both player models
+    node tools/simulate.js --calibrate  # search for BIAS values, printed at the end
+    node tools/simulate.js --parity     # the same motion through pointer and camera capture
+
+The simulator runs the game's own `logic.js`. Re-run it after any change to wand profiles or metrics.
+
+## Recording real waves
+Open `http://localhost:8000/tools/record.html` (from `python3 -m http.server 8000` in the repo root), wave about 30 times, press "Зберегти JSON", then:
+
+    node tools/simulate.js --validate waves.json
+
+The page saves in the browser as you go, and it isn't linked from the game.
