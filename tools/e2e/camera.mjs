@@ -96,7 +96,7 @@ const scenarios = {
     check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close();
   },
   async watchdog() {
-    // the model stalls for 40 s: button at ~6 s, automatic fallback at ~15 s
+    // the model stalls for 40 s: button at ~6 s, automatic fallback ~15 s after permission
     const { browser, page, errors } = await open(url, { video: 'wave.y4m', route: p => p.route(/hand_landmarker\.task/, async r => { await sleep(40000); r.continue().catch(() => { }); }) });
     await enter(page); await chooseCamera(page);
     await sleep(3000); let n = await note(page); check(!n.btns.length, 'no way out button in the first seconds');
@@ -107,8 +107,8 @@ const scenarios = {
     check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close();
   },
   async latePermission() {
-    const { browser, page, errors } = await open(url, { video: 'wave.y4m', init: `{ const o = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); window.__late = []; navigator.mediaDevices.getUserMedia = async c => { await new Promise(r => setTimeout(r, 17000)); const s = await o(c); __late.push(s); return s; }; }` });
-    await enter(page); await chooseCamera(page); await sleep(18500);
+    const { browser, page, errors } = await open(url, { video: 'wave.y4m', init: `{ const o = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); window.__late = []; navigator.mediaDevices.getUserMedia = async c => { await new Promise(r => setTimeout(r, 31000)); const s = await o(c); __late.push(s); return s; }; }` });
+    await enter(page); await chooseCamera(page); await sleep(32500);
     const tracks = await page.evaluate(() => __late.flatMap(s => s.getTracks().map(t => t.readyState))), s = await camState(page);
     check(tracks.length === 1 && tracks[0] === 'ended', 'a grant after the fallback is dropped, the camera light goes off');
     check(s.input === 'pointer', 'game stays on pointer');

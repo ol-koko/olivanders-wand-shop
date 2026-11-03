@@ -7,7 +7,7 @@ const wrapA = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) 
 
 /* ================= wands ================= */
 const TR = ['speed', 'amp', 'sharp', 'flow', 'curl'];
-const sp = (wu, we, cu, ce, lu, le, n, fu, fe) => ({ wood: { ua: wu, en: we }, core: { ua: cu, en: ce }, len: { ua: lu, en: le }, lenN: n, flex: fu ? { ua: fu, en: fe } : null });
+const sp = (wu, we, cu, ce, lu, le, n, fu, fe) => ({ wood: { ua: wu, en: we }, core: { ua: cu, en: ce }, len: lu ? { ua: lu, en: le } : null, lenN: n, flex: fu ? { ua: fu, en: fe } : null });
 const PHX = ['перо фенікса', 'phoenix feather'], DRG = ['жила з серця дракона', 'dragon heartstring'], UNI = ['волос єдинорога', 'unicorn hair'];
 // t = displayed taste [speed, amp, sharp, flow, curl]; tc = calibrated profile used for matching; b = calibration bias
 const WANDS = [
@@ -20,7 +20,7 @@ const WANDS = [
   { id: 'fred', name: { ua: 'Паличка Фреда Візлі', en: 'Fred Weasley’s wand' }, spec: null, lenN: 12, box: '#8a3a16', t: [.78, .62, .4, .2, .75], lore: { ua: 'Паличка-пустунка: вибухає сміхом раніше, ніж закляттям.', en: 'A mischief-maker: it bursts with laughter before it bursts with spells.' } },
   { id: 'george', name: { ua: 'Паличка Джорджа Візлі', en: 'George Weasley’s wand' }, spec: null, lenN: 12, box: '#6a3a14', t: [.68, .72, .58, .28, .6], lore: { ua: 'Вона завжди знає, де її пара, — і завжди готова до жарту.', en: 'It always knows where its twin is — and is always up for a prank.' } },
   { id: 'ginny', name: { ua: 'Паличка Джині Візлі', en: 'Ginny Weasley’s wand' }, spec: null, lenN: 11, box: '#4a2a3e', t: [.88, .42, .65, .58, .55], lore: { ua: 'Швидка, влучна й безстрашна — краще її не злити.', en: 'Quick, precise and fearless — best not to annoy it.' } },
-  { id: 'neville', name: { ua: 'Паличка Невіла Лонґботома', en: 'Neville Longbottom’s wand' }, spec: sp('Вишня', 'Cherry', ...UNI, '13 дюймів', '13 inches', 13), box: '#2f4a2e', t: [.2, .45, .2, .7, .35], lore: { ua: 'Вишня відкривається повільно — але тим, хто вміє чекати, назавжди.', en: 'Cherry opens up slowly — but to those who can wait, forever.' } },
+  { id: 'neville', name: { ua: 'Паличка Невіла Лонґботома', en: 'Neville Longbottom’s wand' }, spec: sp('Вишня', 'Cherry', ...UNI, null, null, 13), box: '#2f4a2e', t: [.2, .45, .2, .7, .35], lore: { ua: 'Вишня відкривається повільно — але тим, хто вміє чекати, назавжди.', en: 'Cherry opens up slowly — but to those who can wait, forever.' } },
   { id: 'luna', name: { ua: 'Паличка Луни Лавґуд', en: 'Luna Lovegood’s wand' }, spec: null, lenN: 12, box: '#2a4a5e', t: [.3, .6, .15, .55, .9], lore: { ua: 'Вона чує те, чого інші навіть не помічають.', en: 'It hears what others don’t even notice.' } },
   { id: 'draco', name: { ua: 'Паличка Драко Мелфоя', en: 'Draco Malfoy’s wand' }, spec: sp('Глід', 'Hawthorn', ...UNI, '10 дюймів', '10 inches', 10, 'досить пружна', 'reasonably springy'), box: '#1e2a22', t: [.6, .28, .65, .7, .25], lore: { ua: 'Глід суперечливий: він однаково вправно лікує й ранить.', en: 'Hawthorn is contradictory: it heals and harms with equal skill.' } },
   { id: 'snape', name: { ua: 'Паличка Северуса Снейпа', en: 'Severus Snape’s wand' }, spec: null, lenN: 13, box: '#141418', t: [.42, .25, .85, .9, .1], lore: { ua: 'Жодного зайвого руху. Жодного зайвого слова.', en: 'Not one wasted motion. Not one wasted word.' } },
