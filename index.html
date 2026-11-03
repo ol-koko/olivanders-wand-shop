@@ -1087,6 +1087,7 @@ function nudgeNote() { noteIn.classList.remove('nudge'); void noteIn.offsetWidth
 function noteTop() { return note.classList.contains('show') ? note.getBoundingClientRect().top : H; }
 
 /* ================= metrics ================= */
+const inputMode = () => st.input === 'cam' ? 'camera' : 'pointer';
 function mergeTraits(extra) { return averageTraits(extra ? [...st.obs, extra] : st.obs); }
 function bestWand(tr) { return bestMatch(tr, st.tried); }
 
@@ -1116,7 +1117,7 @@ function addPoint(p) {
 }
 function finishCapture() {
   const c = st.cap; if (!c || !c.active) return;
-  const m = c.pts.length > 3 ? strokeMetrics(c.pts, MIN) : { len: 0, dur: 0 };
+  const m = c.pts.length > 3 ? strokeMetrics(c.pts, MIN, inputMode()) : { len: 0, dur: 0 };
   if (m.len < MIN * .35 || m.dur < .2) {
     c.active = false; c.pts = []; c.fast = 0; c.slow = 0; c.msgUntil = performance.now() + 2500; if (c.trail) { c.trail.fade = performance.now(); c.trail = null; }
     if (st.wand && c.cand) st.wand.mode = 'float';
@@ -1127,7 +1128,7 @@ function finishCapture() {
 }
 function liveTick(t) {
   const c = st.cap; if (!c) return;
-  if (c.active && t - c.t0 > 4200) return finishCapture();
+  if (c.active && t - c.t0 > (st.input === 'cam' ? CAM.maxWave : 4200)) return finishCapture();
   if (st.input === 'cam' && !c.active) {
     const waited = t - c.armed, handOn = cam.sm && t - cam.seen < 500;
     if (t > (c.msgUntil || 0)) setStatus(waited > 8000 ? T(handOn ? 'hintWave' : 'hintHand') : T(handOn ? 'handSeen' : 'noHand'));
@@ -1135,7 +1136,7 @@ function liveTick(t) {
     if (waited > 25000) return toPointer('camAuto'); // the game never waits forever
   }
   if (!c.active || t - (c.lastLive || 0) < 160 || c.pts.length < 6) return; c.lastLive = t;
-  if (c.cand) { const tr = mergeTraits(strokeMetrics(c.pts, MIN)); const bw = bestWand(tr); const d = wandDist(c.cand, tr) - wandDist(bw, tr); st.live = clamp(1 - d * 6); }
+  if (c.cand) { const tr = mergeTraits(strokeMetrics(c.pts, MIN, inputMode())); const bw = bestWand(tr); const d = wandDist(c.cand, tr) - wandDist(bw, tr); st.live = clamp(1 - d * 6); }
 }
 
 /* ================= input: camera (MediaPipe) ================= */

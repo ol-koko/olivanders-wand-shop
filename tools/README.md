@@ -27,6 +27,10 @@ The simulator runs the game's own `logic.js`. Re-run it after any change to wand
 ## Recording real waves
 Open `http://localhost:8000/tools/record.html` (from `python3 -m http.server 8000` in the repo root), wave about 30 times, press "Зберегти JSON", then:
 
-    node tools/simulate.js --validate waves.json
+    node tools/simulate.js --validate waves.json phone.json
 
 The page saves in the browser as you go, and it isn't linked from the game.
+
+For a finger on a phone, open the same page at the laptop's network address over the same Wi-Fi. The camera mode needs https or localhost, so on a phone over http only the pointer mode works.
+
+Validation re-measures the saved points with the current code, so old recordings stay usable after a metric change. Recordings hold your movements and stay out of git.

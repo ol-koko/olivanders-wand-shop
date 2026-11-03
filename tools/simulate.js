@@ -21,15 +21,16 @@ function abstractPlayer() { const mean = TR.map(() => Math.random()), waves = []
 
 /* ---------- stroke model: one person has a habit, each wave varies around it ---------- */
 const FAMILIES = [
-  { w: .24, f: () => ({ kind: 'sweep', bow: rand(-.4, .4) }) },           // one arc across
-  { w: .28, f: () => ({ kind: 'zig', n: 2 + Math.floor(rand(0, 6)) }) },  // back and forth, angular
-  { w: .22, f: () => ({ kind: 'swirl', loops: rand(.8, 3.2) }) },         // circles and spirals
-  { w: .26, f: () => ({ kind: 's', n: rand(1, 3.5) }) }                   // soft S-curves
+  // shares and ranges tuned so the trait spread matches recorded waves (see --validate)
+  { w: .08, f: () => ({ kind: 'sweep', bow: rand(-.4, .4) }) },           // one arc across
+  { w: .3, f: () => ({ kind: 'zig', n: 3 + Math.floor(rand(0, 9)) }) },  // back and forth, angular
+  { w: .47, f: () => ({ kind: 'swirl', loops: rand(1, 6) }) },            // circles and spirals
+  { w: .15, f: () => ({ kind: 's', n: rand(2, 6) }) }                     // soft S-curves
 ];
 function habit() {
   let r = Math.random(), fam = FAMILIES[0];
   for (const f of FAMILIES) { if (r < f.w) { fam = f; break; } r -= f.w; }
-  return { ...fam.f(), dur: logn(1, .6), amp: Math.min(1.25, logn(.62, .4)), gust: Math.pow(Math.random(), 1.3) * .9, tilt: rand(-.6, .6) };
+  return { ...fam.f(), dur: logn(1.5, .35), amp: Math.min(1.6, logn(1, .3)), gust: rand(.1, 1.3), tilt: rand(-.6, .6) };
 }
 function shape(s, u) {
   switch (s.kind) {
@@ -56,9 +57,10 @@ function viaPointer(m, hz = 60) {
   return out;
 }
 // Frame sampling and landmark noise around the same camSmooth/camSpeed/camStep the game runs.
-const HAND_REF = 1.6; // assumed: a wave across 1/1.6 of the video frame is the same gesture as a screen-sized pointer stroke
+// Recordings: a hand covers about 70% of a finger's sweep at about a third of its speed.
+const HAND_AMP = .85, HAND_SLOW = 2.2;
 function viaCamera(m, fps = 30) {
-  const gain = CAM.span / HAND_REF, noise = .0015 * CAM.span * MIN, dt = 1000 / fps, T = m[m.length - 1].t, base = 2000;
+  const gain = HAND_AMP, noise = .0015 * CAM.span * MIN, dt = 1000 / fps, T = m[m.length - 1].t * HAND_SLOW, base = 2000;
   const at = t => { const raw = t <= 0 ? m[0] : t >= T ? m[m.length - 1] : m[Math.min(m.length - 1, Math.floor(t / T * (m.length - 1)))]; return { x: MIN + (raw.x - MIN) * gain, y: MIN + (raw.y - MIN) * gain }; };
   const c = { active: false }, hist = []; let sm = null, prev = 0, pts = [];
   for (let t = -600; t < T + 1400; t += dt) {
@@ -69,7 +71,7 @@ function viaCamera(m, fps = 30) {
     if (ev === 'start') { c.active = true; c.t0 = hist[Math.max(0, hist.length - 3)].t; pts = hist.slice(-3).map(q => ({ ...q })); continue; }
     if (ev === 'wait') continue;
     pts.push({ x: sm.x, y: sm.y, t: now });
-    if (now - c.t0 > 4200) return pts;
+    if (now - c.t0 > CAM.maxWave) return pts;
     if (ev === 'end') return pts.filter(q => q.t <= c.slow - CAM.lag);
   }
   return c.active ? pts : null;
@@ -77,7 +79,7 @@ function viaCamera(m, fps = 30) {
 function wave(h, capture) {
   for (let tries = 0; tries < 6; tries++) {
     const pts = capture(motion(h));
-    if (pts && pts.length >= 4) { const m = strokeMetrics(pts, MIN); if (m.len >= MIN_LEN && m.dur >= MIN_DUR) return m; }
+    if (pts && pts.length >= 4) { const m = strokeMetrics(pts, MIN, capture === viaCamera ? 'camera' : 'pointer'); if (m.len >= MIN_LEN && m.dur >= MIN_DUR) return m; }
     h = { ...h, amp: h.amp * 1.25, dur: h.dur * 1.1 };
   }
   return null;
@@ -124,8 +126,8 @@ if (arg === '--parity') {
     const d = Object.fromEntries(TR.map(k => [k, []])); let missed = 0, n = 0;
     while (n < 3000) {
       const m = motion(habit()), a = viaPointer(m), b = viaCamera(m, fps); n++;
-      const ok = x => { if (!x || x.length < 4) return null; const r = strokeMetrics(x, MIN); return r.len >= MIN_LEN && r.dur >= MIN_DUR ? r : null; };
-      const ma = ok(a), mb = ok(b); if (!ma) continue; if (!mb) { missed++; continue; }
+      const ok = (x, mode) => { if (!x || x.length < 4) return null; const r = strokeMetrics(x, MIN, mode); return r.len >= MIN_LEN && r.dur >= MIN_DUR ? r : null; };
+      const ma = ok(a, 'pointer'), mb = ok(b, 'camera'); if (!ma) continue; if (!mb) { missed++; continue; }
       TR.forEach(k => d[k].push(mb[k] - ma[k]));
     }
     console.log(`camera vs pointer at ${fps} fps (positive = camera reads higher), waves not caught ${(missed / n * 100).toFixed(1)}%`);
@@ -150,15 +152,21 @@ if (arg === '--parity') {
   report('fresh abstract players', tally(makePool(30000, abstractPlayer), 2));
   console.log('\nconst BIAS = { ' + WANDS.map(w => `${w.id}: ${w.b.toFixed(3)}`).join(', ') + ' };');
 } else if (arg === '--validate') {
-  // Real waves: each person-session is resampled into games, so this shows where those hands land.
-  const rec = JSON.parse(fs.readFileSync(path.resolve(process.argv[3]), 'utf8')), waves = rec.waves.map(w => w.traits);
-  console.log(`${waves.length} recorded waves (${rec.waves.filter(w => w.mode === 'camera').length} camera)`);
+  // Real waves re-measured from their saved points with the current code, then replayed as games. One person's waves show spread, not a fair share per wand.
+  const groups = {};
+  for (const f of process.argv.slice(3)) {
+    const rec = JSON.parse(fs.readFileSync(path.resolve(f), 'utf8')), kind = /iPhone|Android/.test(rec.userAgent) ? 'phone' : 'desktop';
+    for (const w of rec.waves) { const g = w.mode === 'camera' ? 'camera' : kind, min = Math.min(...w.viewport), m = strokeMetrics(w.pts.map(p => ({ x: p[0], y: p[1], t: p[2] })), min, w.mode); (groups[g] = groups[g] || []).push(m); }
+  }
   const q = (arr, f) => [...arr].sort((a, b) => a - b)[Math.floor(f * arr.length)].toFixed(2);
-  const syn = makePool(1500, strokePlayer).flatMap(p => p.waves);
-  console.log('trait     real p10 p50 p90     model p10 p50 p90');
-  for (const k of TR) { const r = waves.map(w => w[k]), m = syn.map(w => w[k]); console.log(' ', k.padEnd(7), [.1, .5, .9].map(f => q(r, f)).join(' '), '      ', [.1, .5, .9].map(f => q(m, f)).join(' ')); }
-  const players = Array.from({ length: 4000 }, () => ({ waves: Array.from({ length: MAX_ATTEMPTS + 1 }, () => waves[Math.floor(Math.random() * waves.length)]) }));
-  report('games replayed from these waves', tally(players, 1));
+  const syn = makePool(1500, strokePlayer), pools = { pointer: syn.filter(p => !p.camera).flatMap(p => p.waves), camera: syn.filter(p => p.camera).flatMap(p => p.waves) };
+  for (const g in groups) {
+    const waves = groups[g], model = g === 'camera' ? pools.camera : pools.pointer;
+    console.log(`\n${g}: ${waves.length} waves. trait, real p10 p50 p90, model p10 p50 p90`);
+    for (const k of TR) console.log(' ', k.padEnd(7), [.1, .5, .9].map(f => q(waves.map(w => w[k]), f)).join(' '), '   ', [.1, .5, .9].map(f => q(model.map(w => w[k]), f)).join(' '));
+    const players = Array.from({ length: 4000 }, () => ({ waves: Array.from({ length: MAX_ATTEMPTS + 1 }, () => waves[Math.floor(Math.random() * waves.length)]) }));
+    report(`  games replayed from ${g} waves`, tally(players, 1));
+  }
 } else {
   const strokes = makePool(8000, strokePlayer), abstract = makePool(30000, abstractPlayer);
   report('STROKE MODEL (all players)', tally(strokes, 4));
