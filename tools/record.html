@@ -41,7 +41,7 @@ function refresh(line) {
 }
 function finish(pts, mode) {
   if (pts.length < 4) return refresh('Надто коротко, спробуй ще.');
-  const m = strokeMetrics(pts, MIN);
+  const m = strokeMetrics(pts, MIN, mode);
   if (m.len < MIN * .35 || m.dur < .2) return refresh('Надто коротко, спробуй ще.');
   const t0 = pts[0].t, traits = Object.fromEntries(TR.map(k => [k, +m[k].toFixed(3)]));
   waves.push({ mode, who: $('#who').value || null, viewport: [W, H], dur: +m.dur.toFixed(3), lenOverMin: +(m.len / MIN).toFixed(3), traits, pts: pts.map(p => [Math.round(p.x), Math.round(p.y), Math.round(p.t - t0)]) });
@@ -79,7 +79,7 @@ function camLoop(t) {
   if (ev === 'start') { cap.active = true; cap.t0 = hist[Math.max(0, hist.length - 3)].t; cpts = hist.slice(-3).map(q => ({ ...q })); return; }
   if (ev === 'wait') return;
   cpts.push({ x: sm.x, y: sm.y, t }); drawPath(cpts);
-  if (ev === 'end' || t - cap.t0 > 4200) { const end = ev === 'end' ? cap.slow - CAM.lag : t, q = cpts.filter(p => p.t <= end); cap = { active: false }; cpts = []; finish(q, 'camera'); }
+  if (ev === 'end' || t - cap.t0 > CAM.maxWave) { const end = ev === 'end' ? cap.slow - CAM.lag : t, q = cpts.filter(p => p.t <= end); cap = { active: false }; cpts = []; finish(q, 'camera'); }
 }
 $('#mode').addEventListener('change', e => { if (e.target.value === 'camera') startCam().catch(err => { $('#msg').textContent = 'Камера: ' + err.message; }); else stopCam(); });
 

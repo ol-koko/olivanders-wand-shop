@@ -22,16 +22,16 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - Wand profiles: `t` = displayed taste, `tc` = calibrated profile (compressed toward 0.5), `BIAS` = per-wand
   offset tuned so each wand wins ~6–7% (Elder Wand ~2%, every wand at least 3%). After any change to profiles or
   metrics, re-run `node tools/simulate.js --calibrate`.
-- `strokeMetrics` measures on a fixed 33 ms grid and on the min(w, h) scale, so input rate and input mode don't change traits.
+- `strokeMetrics` measures on a fixed 33 ms grid and on the min(w, h) scale, so input rate doesn't change traits. `SCALES` in `logic.js` holds separate ranges for pointer and camera, read from recorded waves, because a hand moves far slower than a finger. Check changes against real waves with `node tools/simulate.js --validate`.
 - Wand looks: `SHAPES` in `index.html` is the single shape spec. The box, hand, result card, saved card and 3D view all render from it. Matching doesn't use it.
 - Canon facts only: wands whose wood/core are not named in canon have `spec: null` and show
-  "not named in canon". Do not invent canon specs.
+  "not named in canon". Do not invent canon specs. A detail no source confirms stays out: Neville's wand shows no length.
 
 ## Camera mode
 - MediaPipe Tasks Vision HandLandmarker 0.10.14 from jsDelivr, model from storage.googleapis.com.
 - Tracks landmark 8 (index fingertip), mirrored. A wave starts when the hand speeds up, ends when it stops.
 - Requires https or localhost (getUserMedia). Falls back to finger/mouse on any error, and the game never waits forever:
-  loading offers the pointer at 6 s and falls back at 15 s, a capture with no wave gives a hint at 8 s and falls back at 25 s.
+  loading offers the pointer at 6 s and falls back 15 s after permission (30 s for an unanswered prompt), a capture with no wave gives a hint at 8 s and falls back at 25 s.
 - The stream and detection stop after the final wave, on the result card, on fallback and while the tab is hidden.
 - Common in-app browsers default to the pointer with a one-line hint.
 

@@ -1087,6 +1087,7 @@ function nudgeNote() { noteIn.classList.remove('nudge'); void noteIn.offsetWidth
 function noteTop() { return note.classList.contains('show') ? note.getBoundingClientRect().top : H; }
 
 /* ================= metrics ================= */
+const inputMode = () => st.input === 'cam' ? 'camera' : 'pointer';
 function mergeTraits(extra) { return averageTraits(extra ? [...st.obs, extra] : st.obs); }
 function bestWand(tr) { return bestMatch(tr, st.tried); }
 
@@ -1116,7 +1117,7 @@ function addPoint(p) {
 }
 function finishCapture() {
   const c = st.cap; if (!c || !c.active) return;
-  const m = c.pts.length > 3 ? strokeMetrics(c.pts, MIN) : { len: 0, dur: 0 };
+  const m = c.pts.length > 3 ? strokeMetrics(c.pts, MIN, inputMode()) : { len: 0, dur: 0 };
   if (m.len < MIN * .35 || m.dur < .2) {
     c.active = false; c.pts = []; c.fast = 0; c.slow = 0; c.msgUntil = performance.now() + 2500; if (c.trail) { c.trail.fade = performance.now(); c.trail = null; }
     if (st.wand && c.cand) st.wand.mode = 'float';
@@ -1127,7 +1128,7 @@ function finishCapture() {
 }
 function liveTick(t) {
   const c = st.cap; if (!c) return;
-  if (c.active && t - c.t0 > 4200) return finishCapture();
+  if (c.active && t - c.t0 > (st.input === 'cam' ? CAM.maxWave : 4200)) return finishCapture();
   if (st.input === 'cam' && !c.active) {
     const waited = t - c.armed, handOn = cam.sm && t - cam.seen < 500;
     if (t > (c.msgUntil || 0)) setStatus(waited > 8000 ? T(handOn ? 'hintWave' : 'hintHand') : T(handOn ? 'handSeen' : 'noHand'));
@@ -1135,7 +1136,7 @@ function liveTick(t) {
     if (waited > 25000) return toPointer('camAuto'); // the game never waits forever
   }
   if (!c.active || t - (c.lastLive || 0) < 160 || c.pts.length < 6) return; c.lastLive = t;
-  if (c.cand) { const tr = mergeTraits(strokeMetrics(c.pts, MIN)); const bw = bestWand(tr); const d = wandDist(c.cand, tr) - wandDist(bw, tr); st.live = clamp(1 - d * 6); }
+  if (c.cand) { const tr = mergeTraits(strokeMetrics(c.pts, MIN, inputMode())); const bw = bestWand(tr); const d = wandDist(c.cand, tr) - wandDist(bw, tr); st.live = clamp(1 - d * 6); }
 }
 
 /* ================= input: camera (MediaPipe) ================= */
@@ -1159,6 +1160,7 @@ async function openStream(tok) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw Object.assign(new Error('unsupported'), { name: 'Unsupported' });
   const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
   if (tok !== cam.token) { stream.getTracks().forEach(t => t.stop()); return; }
+  if (cam.onGrant) cam.onGrant();
   cam.stream = stream; cam.video.srcObject = stream; $('#camBox').hidden = false;
   stream.getVideoTracks().forEach(tr => tr.addEventListener('ended', () => { if (cam.stream === stream) toPointer('camLost'); }));
   // video.currentTime of a live stream advances with the clock, so it can't tell new frames apart at full rate; this callback can
@@ -1279,7 +1281,7 @@ async function ritual() {
     st.attempt++;
     const cand = chooseCandidate(st.traits, st.tried, st.attempt);
     const oi = pickNo(OFFER, st.usedOffers, 4), si = pickNo(SPELLS, st.usedSpells, 4);
-    setNote(() => ({ kicker: T('ollK'), hand: L(OFFER[oi]), instr: cand.spec ? [L(cand.spec.wood), L(cand.spec.core), L(cand.spec.len)].join(', ') + (cand.spec.flex ? ', ' + L(cand.spec.flex) : '') + '.' : T('unknownMake') }));
+    setNote(() => ({ kicker: T('ollK'), hand: L(OFFER[oi]), instr: cand.spec ? [L(cand.spec.wood), L(cand.spec.core), L(cand.spec.len), L(cand.spec.flex)].filter(Boolean).join(', ') + '.' : T('unknownMake') }));
     const el = pullShelfBox(cand); await wait(650); await flyOut(el, cand);
     setNote(() => ({ kicker: T('ollK'), hand: L(OFFER[oi]), instr: '<span style="font-style:italic;font-weight:500">' + (cand.spec ? specText(cand) : T('unknownMake')) + '</span><br>' + T(st.input === 'cam' ? 'spellCam' : 'spellDraw', { s: L(SPELLS[si]) }) }), true);
     r = await captureWave(cand);
@@ -1336,7 +1338,7 @@ async function success(w) {
 /* ================= result ================= */
 function lvl(v) { return v > .62 ? 'hi' : v < .38 ? 'lo' : 'mid'; }
 function whyLines(w, tr) { return TR.map((k, i) => ({ k, s: (1 - Math.abs(tr[k] - w.t[i])) * (.35 + Math.abs(w.t[i] - .5)) })).sort((a, b) => b.s - a.s).slice(0, 3).map(o => PHR[o.k][lvl(tr[o.k])][LI(lang)]); }
-function specText(w) { return w.spec ? [L(w.spec.wood), L(w.spec.core), L(w.spec.len), w.spec.flex ? L(w.spec.flex) : null].filter(Boolean).join(' · ') : T('unkSpec'); }
+function specText(w) { return w.spec ? [L(w.spec.wood), L(w.spec.core), L(w.spec.len), L(w.spec.flex)].filter(Boolean).join(' · ') : T('unkSpec'); }
 function lcFirst(s) { return lang === 'ua' ? s.charAt(0).toLowerCase() + s.slice(1) : s; }
 function fillResult() {
   const w = st.winner, tr = st.traits; if (!w) return;
@@ -1531,10 +1533,12 @@ async function chooseCam() {
   st.input = 'cam'; let offer = false; const waiting = () => st.input === 'cam' && !cam.on;
   setNote(() => ({ kicker: T('shopK'), hand: T('camLoadH'), instr: T('camLoadI'), btns: offer ? [{ label: T('bInstead'), ghost: true, fn: choosePointer }] : [] }), true);
   const t6 = setTimeout(() => { if (waiting()) { offer = true; renderNote(); setStatus(T('camSlow')); } }, 6000);
-  const t15 = setTimeout(() => { if (waiting()) camFallback('camTimeout'); }, 15000); // a grant arriving after this is dropped in openStream
+  // 15 s to load once the camera is allowed, 30 s for an unanswered prompt. A grant arriving after the fallback is dropped in openStream.
+  const giveUp = () => { if (waiting()) camFallback('camTimeout'); }; let limit = setTimeout(giveUp, 30000);
+  cam.onGrant = () => { clearTimeout(limit); limit = setTimeout(giveUp, 15000); };
   try { if (await startCamera()) ritual(); }
   catch (e) { if (st.input === 'cam') camFallback(camErrKey(e)); } // otherwise the person has already moved on to the pointer
-  finally { clearTimeout(t6); clearTimeout(t15); }
+  finally { clearTimeout(t6); clearTimeout(limit); cam.onGrant = null; }
 }
 function buildInterior() { drawBack(); drawMid(); drawFront(); initFX(); }
 $('#street').addEventListener('click', enterShop);
