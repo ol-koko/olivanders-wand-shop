@@ -112,28 +112,13 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 .r-specs{font-size:18px;color:#ecdcb8;font-weight:600}
 .r-specs.unk{font-style:italic;font-weight:500;color:#c9b48c}
 .r-lore{font-style:italic;font-size:19px;line-height:1.35;color:#d6c3a0;margin-top:10px}
-.r-sec{margin-top:22px;text-align:left}
-.r-sec h2{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:#c79a55;font-weight:700;margin-bottom:10px;text-align:center}
-#rWhy{list-style:none;display:grid;gap:8px}
-#rWhy li{font-size:18px;line-height:1.3;color:#f1e3c4;padding-left:22px;position:relative}
-#rWhy li::before{content:'✦';position:absolute;left:0;top:1px;color:#e2b866;font-size:14px}
-.meter{display:grid;grid-template-columns:84px 1fr;align-items:center;gap:10px;margin:7px 0}
-.meter .ml{font-size:16px;font-weight:700;color:#e8d6b0}
-.meter .mt{position:relative;height:10px;border-radius:99px;background:rgba(255,230,180,.1);box-shadow:inset 0 0 0 1px rgba(217,180,106,.25)}
-.meter .mf{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,#8a5a24,#f0c878);width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
-.meter .mk{position:absolute;top:-5px;width:3px;height:20px;margin-left:-1.5px;background:#fff2cc;border-radius:2px;box-shadow:0 0 8px rgba(255,220,150,.9)}
-.meter .me{grid-column:2;display:flex;justify-content:space-between;font-size:12.5px;color:#a8916c;margin-top:-4px;font-style:italic}
-.legend{font-size:13.5px;color:#a8916c;text-align:center;margin-top:6px;font-style:italic}
-.sig{text-align:center}
-#rSig{width:100%;max-width:300px;aspect-ratio:1.25;display:block;margin:0 auto;border-radius:6px;background:radial-gradient(closest-side,#24140b,#120904);box-shadow:inset 0 0 0 1px rgba(217,180,106,.3)}
+.r-wave{font-size:18px;line-height:1.3;color:#f1e3c4;margin-top:12px}
 .cap{font-size:14px;color:#a8916c;font-style:italic;margin-top:8px}
-.r-almost{margin-top:20px;font-size:17px;color:#d8c6a2;line-height:1.4;padding:12px 14px;border-radius:6px;background:rgba(255,230,180,.05);box-shadow:inset 0 0 0 1px rgba(217,180,106,.2)}
-.r-almost p+p{margin-top:8px}
 .r-btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:22px}
 .r-btns button{font:inherit;font-weight:700;font-size:17px;padding:10px 18px;border-radius:999px;cursor:pointer;border:1px solid #8a6230;background:#2b1a0e;color:var(--gold2)}
 .r-btns button.pri{background:linear-gradient(180deg,#f2d38e,#c99a4e);color:#2a170b;border-color:#f2d38e}
-.r-msg{min-height:20px;margin-top:10px;font-size:15px;color:#c9b48c;font-style:italic}
-.r-fine{margin-top:6px;font-size:13.5px;color:#8f7b5c;font-style:italic}
+#rSaved{margin-top:12px}
+#rSaved img{width:100%;max-width:280px;border-radius:6px;display:block;margin:0 auto;-webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default}
 @media (prefers-reduced-motion:reduce){.curtain,#cta,.tw{animation:none}}
 </style>
 </head>
@@ -254,13 +239,13 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
     <div class="r-spin" id="rSpin" hidden></div>
     <div class="r-specs" id="rSpecs"></div>
     <p class="r-lore" id="rLore"></p>
-    <div class="r-sec"><h2 id="rWhyH"></h2><ul id="rWhy"></ul></div>
-    <div class="r-sec"><h2 id="rTraceH"></h2><div id="rMeters"></div><div class="legend" id="rLegend"></div></div>
-    <div class="r-sec sig"><h2 id="rSigH"></h2><canvas id="rSig"></canvas><div class="cap" id="rSigCap"></div></div>
-    <div class="r-almost" id="rAlmost"></div>
-    <div class="r-btns"><button class="pri" id="bSave" hidden></button><button id="bAgain"></button></div>
-    <div class="r-msg" id="rMsg"></div>
-    <div class="r-fine" id="rFine"></div>
+    <p class="r-wave" id="rWave"></p>
+    <div class="r-btns">
+      <button class="pri" id="bShare" hidden></button>
+      <button class="pri" id="bDown" hidden></button>
+      <button id="bAgain"></button>
+    </div>
+    <div id="rSaved" hidden><img id="rSavedImg" alt=""><p class="cap" id="rSavedCap"></p></div>
   </div></div>
 
   <div class="topbar"><div id="lang" role="group" aria-label="Language"><button data-l="ua">UA</button><button data-l="en">EN</button></div><button id="snd" aria-label="Sound"></button></div>
@@ -331,24 +316,15 @@ const S = {
   tooShort: ['Надто обережно. Сміливіше — змах хоча б через пів екрана.', 'Too timid. Be bolder — sweep at least halfway across the screen.'],
   rKicker: ['Паличка обрала тебе', 'The wand has chosen you'],
   rare: ['рідкісний вибір', 'a rare choice'],
-  whyH: ['Чому вона обрала тебе', 'Why it chose you'],
-  traceH: ['Твій почерк у змахах', 'Your wave signature'],
-  legend: ['смужка — ти · світла мітка — що любить твоя паличка', 'bar — you · light mark — what your wand loves'],
-  sigH: ['Твоя сигіла', 'Your sigil'],
-  sigCap: ['Змах, яким ти її розбудив(-ла). Такого немає ні в кого.', 'The wave that woke it. No one else has one like it.'],
-  almost: ['Майже відгукнулася:', 'Almost answered:'],
-  differ: ['Ви розійшлися в {t}.', 'You differed in {t}.'],
-  triedL: ['Перед нею не підійшли:', 'Before it, these didn’t fit:'],
-  first: ['Вона обрала тебе з першої ж спроби.', 'It chose you on the very first try.'],
-  save: ['Зберегти картку', 'Save card'],
-  again: ['Пройти ще раз', 'Try again'],
+  waveIs: ['Твій змах: {w}.', 'Your wave: {w}.'],
+  waveEven: ['врівноважений', 'balanced'],
   spin: ['Покрути паличку пальцем або мишкою', 'Turn the wand with your finger or mouse'],
-  saving: ['Олівандер готує картку…', 'Ollivander is preparing your card…'],
-  saved: ['Картку збережено.', 'Card saved.'],
-  declined: ['Добре, картка лишається тут.', 'All right, the card stays here.'],
-  saveFail: ['Не вдалося зберегти картку в цьому вікні.', 'Couldn’t save the card in this window.'],
-  fine: ['Це гра: палички відчувають рух руки, а не характер.', 'Just a game: wands sense how your hand moves, not who you are.'],
-  cardFoot: ['Крамниця Олівандера · зимовий ритуал', 'Ollivanders · a winter ritual'],
+  share: ['Поділитися', 'Share'],
+  download: ['Завантажити картинку', 'Download image'],
+  saveHold: ['Утримуй картинку, щоб зберегти її.', 'Press and hold the image to save it.'],
+  again: ['Спробувати ще раз', 'Try again'],
+  invite: ['Паличка обрала мене. А яка обере тебе?', 'The wand chose me — which one will choose you?'],
+  cardK: ['Паличка обрала мене', 'The wand chose me'],
   sndOn: ['Увімкнути звук', 'Turn sound on'], sndOff: ['Вимкнути звук', 'Turn sound off'],
   unkSpec: ['у каноні не названо', 'not named in canon'],
   fan: ['Неофіційний фан-проєкт. Не пов’язаний із Warner Bros. чи Дж. К. Ролінґ.', 'Unofficial fan project. Not affiliated with Warner Bros. or J.K. Rowling.']
@@ -385,20 +361,13 @@ const WIN = [
 ];
 
 /* ================= traits & wands ================= */
-const TR_UI = {
-  speed: [['Темп', 'повільно', 'швидко'], ['Tempo', 'slow', 'fast']],
-  amp: [['Розмах', 'стримано', 'широко'], ['Sweep', 'compact', 'wide']],
-  sharp: [['Лінія', 'плавна', 'гостра'], ['Line', 'soft', 'sharp']],
-  flow: [['Ритм', 'поривчасто', 'рівно'], ['Rhythm', 'gusty', 'even']],
-  curl: [['Завитки', 'прямо', 'по колу'], ['Curls', 'straight', 'loopy']]
-};
-const LOC = { speed: ['темпі', 'tempo'], amp: ['розмаху', 'sweep'], sharp: ['лінії', 'line'], flow: ['ритмі', 'rhythm'], curl: ['завитках', 'curls'] };
-const PHR = {
-  speed: { hi: ['Твій змах — блискавичний.', 'Your wave is lightning-fast.'], mid: ['Твій змах має впевнений, рівний темп.', 'Your wave has a confident, steady pace.'], lo: ['Твій змах повільний і уважний.', 'Your wave is slow and attentive.'] },
-  amp: { hi: ['Рух широкий — на весь простір довкола.', 'Your movement is wide — it fills the space.'], mid: ['Розмах зібраний, але вільний.', 'Your sweep is composed yet free.'], lo: ['Рух стриманий, майже потаємний.', 'Your movement is restrained, almost secret.'] },
-  sharp: { hi: ['Лінія з різкими поворотами й кутами.', 'Your line turns sharply — all angles.'], mid: ['Лінія то плавна, то з характером.', 'Your line is soft one moment, spirited the next.'], lo: ['Лінія плавна, як дим від свічки.', 'Your line is smooth as candle smoke.'] },
-  flow: { hi: ['Ритм рівний, мов дихання.', 'Your rhythm is even, like breathing.'], mid: ['Ритм живий: то пришвидшується, то стихає.', 'Your rhythm is alive: speeding up, settling down.'], lo: ['Ритм поривчастий — рух ривками, як вітер.', 'Your rhythm comes in gusts, like the wind.'] },
-  curl: { hi: ['Рука любить завитки й кола.', 'Your hand loves curls and circles.'], mid: ['Трохи завитків — рівно стільки, скільки треба.', 'A few curls — just enough.'], lo: ['Рух прямий, без зайвих петель.', 'Your movement is direct, no extra loops.'] }
+// How the wave line describes each trait, high and low.
+const WAVE_WORDS = {
+  speed: { hi: ['швидкий', 'fast'], lo: ['повільний', 'slow'] },
+  amp: { hi: ['широкий', 'wide'], lo: ['стриманий', 'compact'] },
+  sharp: { hi: ['з різкими кутами', 'with sharp corners'], lo: ['плавний', 'smooth'] },
+  flow: { hi: ['рівний', 'even'], lo: ['поривчастий', 'gusty'] },
+  curl: { hi: ['із завитками', 'full of curls'], lo: ['прямий', 'straight'] }
 };
 
 /* ================= state ================= */
@@ -1336,32 +1305,27 @@ async function success(w) {
 }
 
 /* ================= result ================= */
-function lvl(v) { return v > .62 ? 'hi' : v < .38 ? 'lo' : 'mid'; }
-function whyLines(w, tr) { return TR.map((k, i) => ({ k, s: (1 - Math.abs(tr[k] - w.t[i])) * (.35 + Math.abs(w.t[i] - .5)) })).sort((a, b) => b.s - a.s).slice(0, 3).map(o => PHR[o.k][lvl(tr[o.k])][LI(lang)]); }
+function waveLine(tr) {
+  const picks = TR.map(k => ({ k, d: tr[k] - .5 })).filter(o => Math.abs(o.d) >= .12).sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 3);
+  const words = picks.map(o => WAVE_WORDS[o.k][o.d > 0 ? 'hi' : 'lo'][LI(lang)]);
+  return T('waveIs', { w: words.length ? words.join(', ') : T('waveEven') });
+}
 function specText(w) { return w.spec ? [L(w.spec.wood), L(w.spec.core), L(w.spec.len), L(w.spec.flex)].filter(Boolean).join(' · ') : T('unkSpec'); }
-function lcFirst(s) { return lang === 'ua' ? s.charAt(0).toLowerCase() + s.slice(1) : s; }
 function fillResult() {
   const w = st.winner, tr = st.traits; if (!w) return;
   $('#rKicker').textContent = T('rKicker'); $('#rName').textContent = L(w.name); $('#rRare').hidden = !w.rare; $('#rRareT').textContent = T('rare');
   const spc = $('#rSpecs'); spc.textContent = specText(w); spc.classList.toggle('unk', !w.spec);
-  $('#rLore').textContent = L(w.lore); $('#rWhyH').textContent = T('whyH'); $('#rTraceH').textContent = T('traceH'); $('#rLegend').textContent = T('legend'); $('#rSigH').textContent = T('sigH'); $('#rSigCap').textContent = T('sigCap');
-  $('#rWhy').innerHTML = whyLines(w, tr).map(s => `<li>${s}</li>`).join('');
-  const old = [...document.querySelectorAll('.mf')].map(m => m.style.width);
-  $('#rMeters').innerHTML = TR.map((k, i) => { const u = TR_UI[k][LI(lang)]; return `<div class="meter"><div class="ml">${u[0]}</div><div class="mt"><div class="mf" data-v="${tr[k]}" style="width:${old[i] || 0}"></div><div class="mk" style="left:${(w.t[i] * 100).toFixed(1)}%"></div></div><div class="me"><span>${u[1]}</span><span>${u[2]}</span></div></div>`; }).join('');
-  const ru = WANDS.filter(x => x !== w).sort((a, b) => wandDist(a, tr) - wandDist(b, tr))[0];
-  const dk = TR.reduce((a, k) => Math.abs(tr[k] - ru.tc[TR.indexOf(k)]) > Math.abs(tr[a] - ru.tc[TR.indexOf(a)]) ? k : a, TR[0]);
-  const tried = st.tried.map(x => lcFirst(L(x.name)));
-  $('#rAlmost').innerHTML = `<p><b>${T('almost')}</b> ${L(ru.name)}. ${T('differ', { t: LOC[dk][LI(lang)] })}</p><p>${tried.length ? `<b>${T('triedL')}</b> ${tried.join(', ')}.` : T('first')}</p>`;
-  $('#rSpin').textContent = T('spin'); $('#bSave').textContent = T('save'); $('#bAgain').textContent = T('again'); $('#rFine').textContent = T('fine') + ' ' + T('fan');
+  $('#rLore').textContent = L(w.lore); $('#rWave').textContent = waveLine(tr);
+  $('#rSpin').textContent = T('spin'); $('#bShare').textContent = T('share'); $('#bDown').textContent = T('download'); $('#bAgain').textContent = T('again');
+  $('#rSavedCap').textContent = T('saveHold');
+  refreshCard();
 }
 function showResult() {
-  fillResult(); $('#rMsg').textContent = ''; stopCamera();
+  fillResult(); stopCamera(); setShareMode(canShareFiles());
   const res = $('#result'); res.hidden = false; res.scrollTop = 0; st.wand = null; note.classList.remove('show'); st.noteFn = null;
   requestAnimationFrame(() => {
     res.classList.add('show'); const w = st.winner;
     const rw = $('#rWand'), cw = rw.clientWidth, chh = rw.clientHeight, x = sizeCanvas(rw, cw, chh); drawWand(x, cw / 2, chh / 2, Math.min(cw * .92, 420) * (.8 + .2 * (w.lenN - 9.5) / 5.5), -.05, w, .5);
-    const sg = $('#rSig'), y = sizeCanvas(sg, sg.clientWidth, sg.clientHeight); drawSigil(y, st.stroke, 0, 0, sg.clientWidth, sg.clientHeight);
-    setTimeout(() => document.querySelectorAll('.mf').forEach(m => m.style.width = (+m.dataset.v * 100).toFixed(1) + '%'), 250);
     show3D(w);
   });
 }
@@ -1378,18 +1342,6 @@ function fitStroke(pts, cx, cy, mw, mh) {
   const k = Math.min(mw / Math.max(1, x1 - x0), mh / Math.max(1, y1 - y0)); const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
   return pts.map(p => ({ x: cx + (p.x - mx) * k, y: cy + (p.y - my) * k }));
 }
-function drawSigil(c, pts, X, Y, Wd, Hd) {
-  if (!pts || pts.length < 2) return;
-  const fp = fitStroke(pts, X + Wd / 2, Y + Hd / 2, Wd * .78, Hd * .74);
-  c.lineCap = 'round'; c.lineJoin = 'round'; c.globalCompositeOperation = 'lighter';
-  const sc = Math.max(Wd, Hd) / 300;
-  [[24, 'rgba(255,150,50,.10)'], [11, 'rgba(255,190,90,.3)'], [3.2, 'rgba(255,240,205,1)']].forEach(([lw, col]) => { c.strokeStyle = col; c.lineWidth = lw * sc; strokePath(c, fp, fp.length); c.stroke(); });
-  const R = rng(fp.length); c.fillStyle = 'rgba(255,220,160,.8)';
-  for (let i = 0; i < 26; i++) { const p = fp[Math.floor(R() * fp.length)]; c.beginPath(); c.arc(p.x + (R() - .5) * 30 * sc, p.y + (R() - .5) * 30 * sc, R() * 1.6 * sc + .4, 0, 6.283); c.fill(); }
-  const e = fp[fp.length - 1]; c.fillStyle = 'rgba(255,248,225,1)'; c.beginPath(); c.arc(e.x, e.y, 4 * sc, 0, 6.283); c.fill();
-  c.globalCompositeOperation = 'source-over';
-}
-
 /* ================= 3D view of the chosen wand ================= */
 // three.js loads only here, on the result screen. The 2D drawing stays underneath until the model is ready, and for good if WebGL or the CDN fails.
 const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
@@ -1430,7 +1382,7 @@ async function show3D(w) {
     const tex = new THREE.CanvasTexture(wandTexture(w)); tex.colorSpace = THREE.SRGBColorSpace; tex.wrapT = THREE.RepeatWrapping; tex.flipY = false; tex.anisotropy = 4;
     v3.mesh = new THREE.Mesh(wandGeometry(THREE, w), new THREE.MeshStandardMaterial({ map: tex, roughness: .62, metalness: .04 }));
     const k = .8 + .2 * (w.lenN - 9.5) / 5.5; v3.mesh.scale.setScalar(k); v3.rollG.add(v3.mesh);
-    const cw = cv.clientWidth, chh = cv.clientHeight; v3.gl.setSize(cw, chh, false); v3.cam.aspect = cw / chh; v3.cam.position.z = (.98 / v3.cam.aspect / 2) / Math.tan(9 * Math.PI / 180); v3.cam.updateProjectionMatrix();
+    const cw = cv.clientWidth, chh = cv.clientHeight; v3.gl.setSize(cw, chh, false); v3.cam.aspect = cw / chh; v3.cam.position.z = (1.08 / v3.cam.aspect / 2) / Math.tan(9 * Math.PI / 180); v3.cam.updateProjectionMatrix();
     v3.yaw = -.16; v3.roll = .2; v3.run = true; v3.gl.render(v3.scene, v3.cam); stage.classList.add('is3d'); $('#rSpin').hidden = false; wake3D();
   } catch (e) { v3.run = false; stage.classList.remove('is3d'); $('#rSpin').hidden = true; } // the 2D drawing stays
 }
@@ -1444,34 +1396,39 @@ function tick3D(t) {
   v3.raf = requestAnimationFrame(tick3D);
 }
 
-/* ================= save card ================= */
-let downloads = null;
-if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then(d => { downloads = d; if (d) $('#bSave').hidden = false; }).catch(() => { });
+/* ================= share card ================= */
+const siteUrl = () => location.origin + location.pathname;
 function wrapText(c, text, x, y, maxW, lh) { const words = text.split(' '); let line = '', yy = y; for (const w of words) { const t = line ? line + ' ' + w : w; if (c.measureText(t).width > maxW && line) { c.fillText(line, x, yy); line = w; yy += lh; } else line = t; } if (line) c.fillText(line, x, yy); return yy + lh; }
 async function makeCard() {
   try { await document.fonts.ready; } catch (_) { }
-  const w = st.winner, CW = 1080, CH = 1500, c = document.createElement('canvas'); c.width = CW; c.height = CH; const x = c.getContext('2d');
+  const w = st.winner, CW = 1080, CH = 1350, c = document.createElement('canvas'); c.width = CW; c.height = CH; const x = c.getContext('2d');
   let g = x.createRadialGradient(CW / 2, 300, 50, CW / 2, 600, 1100); g.addColorStop(0, '#2e1b10'); g.addColorStop(1, '#0b0604'); x.fillStyle = g; x.fillRect(0, 0, CW, CH);
   x.strokeStyle = 'rgba(217,180,106,.75)'; x.lineWidth = 3; x.strokeRect(40, 40, CW - 80, CH - 80); x.strokeStyle = 'rgba(217,180,106,.3)'; x.lineWidth = 1.5; x.strokeRect(56, 56, CW - 112, CH - 112);
   const serif = "'Cormorant Garamond', Georgia, serif";
-  x.textAlign = 'center'; x.fillStyle = '#c79a55'; x.font = `700 30px ${serif}`; x.fillText(T('rKicker').toUpperCase().split('').join(' '), CW / 2, 150);
-  const tg = x.createLinearGradient(0, 180, 0, 320); tg.addColorStop(0, '#fff2cc'); tg.addColorStop(1, '#c9944a'); x.fillStyle = tg; x.font = `700 70px ${serif}`;
-  let y = wrapText(x, L(w.name), CW / 2, 250, 920, 78);
-  drawWand(x, CW / 2, y + 60, 780 * (.8 + .2 * (w.lenN - 9.5) / 5.5), -.05, w, .6);
-  y += 170; x.fillStyle = '#ecdcb8'; x.font = `${w.spec ? '600' : 'italic 500'} 34px ${serif}`; y = wrapText(x, specText(w), CW / 2, y, 900, 42);
-  x.fillStyle = '#d6c3a0'; x.font = `italic 500 34px ${serif}`; y = wrapText(x, L(w.lore), CW / 2, y + 20, 860, 44);
-  const sgY = y + 10, sgH = 420; x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(200, sgY, 680, sgH); x.strokeStyle = 'rgba(217,180,106,.3)'; x.strokeRect(200, sgY, 680, sgH);
-  drawSigil(x, st.stroke, 200, sgY, 680, sgH);
-  x.fillStyle = '#a8916c'; x.font = `italic 500 26px ${serif}`; x.fillText(T('sigH'), CW / 2, sgY + sgH + 40);
-  y = sgY + sgH + 100; x.fillStyle = '#f1e3c4'; x.font = `500 31px ${serif}`;
-  for (const l of whyLines(w, st.traits)) y = wrapText(x, '✦ ' + l, CW / 2, y, 880, 40) + 4;
-  x.fillStyle = '#8f7b5c'; x.font = `italic 500 26px ${serif}`; x.fillText(T('cardFoot'), CW / 2, CH - 90);
+  x.textAlign = 'center'; x.fillStyle = '#c79a55'; x.font = `700 34px ${serif}`; x.fillText(T('cardK').toUpperCase().split('').join(' '), CW / 2, 170);
+  const tg = x.createLinearGradient(0, 190, 0, 420); tg.addColorStop(0, '#fff2cc'); tg.addColorStop(1, '#c9944a'); x.fillStyle = tg; x.font = `700 84px ${serif}`;
+  wrapText(x, L(w.name), CW / 2, 290, 900, 92);
+  drawWand(x, CW / 2, 650, 880 * (.8 + .2 * (w.lenN - 9.5) / 5.5), -.05, w, .6);
+  x.fillStyle = '#ecdcb8'; x.font = `italic 500 44px ${serif}`; wrapText(x, L(w.lore), CW / 2, 910, 860, 56);
+  x.fillStyle = '#e8c27a'; x.font = `600 38px ${serif}`; x.fillText(location.host, CW / 2, 1230);
   return new Promise(r => c.toBlob(r, 'image/png'));
 }
-$('#bSave').addEventListener('click', async () => {
-  const msg = $('#rMsg'); if (!downloads) return; msg.textContent = T('saving');
-  try { const blob = await makeCard(); await downloads.save({ filename: lang === 'en' ? 'my-wand.png' : 'moya-palychka.png', data: blob }); msg.textContent = T('saved'); }
-  catch (e) { msg.textContent = e && e.code === 'declined' ? T('declined') : T('saveFail'); }
+// Made ahead of the click: browsers only allow the share sheet right after a tap, with no long wait before it.
+let cardBlob = null;
+function refreshCard() { cardBlob = null; const job = makeCard().then(b => { if (refreshCard.job === job) cardBlob = b; return b; }); refreshCard.job = job; return job; }
+const cardFile = async () => new File([cardBlob || await refreshCard.job], lang === 'en' ? 'my-wand.png' : 'moya-palychka.png', { type: 'image/png' });
+function canShareFiles() {
+  try { return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [new File([new Blob(['x'], { type: 'image/png' })], 'x.png', { type: 'image/png' })] })); } catch (_) { return false; }
+}
+function setShareMode(sheet) { $('#bShare').hidden = !sheet; $('#bDown').hidden = sheet; }
+$('#bShare').addEventListener('click', async () => {
+  try { await navigator.share({ files: [await cardFile()], text: T('invite'), url: siteUrl() }); }
+  catch (e) { if (e && e.name !== 'AbortError') setShareMode(false); } // a cancelled sheet stays silent; anything else offers the download
+});
+$('#bDown').addEventListener('click', async () => {
+  const file = await cardFile(), url = URL.createObjectURL(file);
+  if (IN_APP) { $('#rSavedImg').src = url; $('#rSaved').hidden = false; return; } // these webviews usually block downloads, but pressing on an image works
+  const a = document.createElement('a'); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
 });
 
 /* ================= language ================= */
