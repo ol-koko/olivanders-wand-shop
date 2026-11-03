@@ -24,8 +24,8 @@ waves trial wands, and one of 16 character wands eventually chooses them.
   metrics, re-run `node tools/simulate.js --calibrate`.
 - `strokeMetrics` measures on a fixed 33 ms grid and on the min(w, h) scale, so input rate doesn't change traits. `SCALES` in `logic.js` holds separate ranges for pointer and camera, read from recorded waves, because a hand moves far slower than a finger. Check changes against real waves with `node tools/simulate.js --validate`.
 - Wand looks: `SHAPES` in `index.html` is the single shape spec. The box, hand, result card, saved card and 3D view all render from it. Matching doesn't use it.
-- Canon facts only: wands whose wood/core are not named in canon have `spec: null` and show
-  "not named in canon". Do not invent canon specs. A detail no source confirms stays out: Neville's wand shows no length.
+- Canon facts only: wands whose wood/core are not named in canon have `spec: null` and show no spec line, with no label about it.
+  Do not invent canon specs. A detail no source confirms stays out: Neville's wand shows no length.
 
 ## Camera mode
 - The video shows inside a vintage portrait frame (`#camBox`, SVG drawn in code), like the magical portraits at Hogwarts.
@@ -37,7 +37,7 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - Common in-app browsers default to the pointer with a one-line hint.
 
 ## Result card
-- Shows the wand's name, 3D view, spec, one plain lore sentence, one line about the wave, sharing and Try again. The fan notice appears only on the street screen.
+- Shows the wand's name, 3D view, spec, one plain lore sentence, one line about the wave, sharing and Try again. The fan notice appears only on the street screen. The creator credit links to oleksandra-kokozei.com and stays on the card, not on the share image.
 - The share image is a 1080×1350 PNG from `makeCard`, drawn from `SHAPES`, and made ahead of the click because browsers need the share sheet right after a tap.
 - With file sharing: Share. Without it, or when a share fails: Download. In-app browsers show the image to press and hold. A cancelled share stays silent.
 

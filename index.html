@@ -113,13 +113,13 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 #rWand3d:active{cursor:grabbing}
 .r-spin{font-size:14px;font-style:italic;color:#a8916c;margin:-4px 0 8px}
 .r-specs{font-size:18px;color:#ecdcb8;font-weight:600}
-.r-specs.unk{font-style:italic;font-weight:500;color:#c9b48c}
 .r-lore{font-style:italic;font-size:19px;line-height:1.35;color:#d6c3a0;margin-top:10px}
 .r-wave{font-size:18px;line-height:1.3;color:#f1e3c4;margin-top:12px}
 .cap{font-size:14px;color:#a8916c;font-style:italic;margin-top:8px}
 .r-btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:22px}
 .r-btns button{font:inherit;font-weight:700;font-size:17px;padding:10px 18px;border-radius:999px;cursor:pointer;border:1px solid #8a6230;background:#2b1a0e;color:var(--gold2)}
 .r-btns button.pri{background:linear-gradient(180deg,#f2d38e,#c99a4e);color:#2a170b;border-color:#f2d38e}
+.r-credit{display:inline-block;margin-top:16px;font-size:15px;font-style:italic;color:#c9b48c;text-underline-offset:3px}
 #rSaved{margin-top:12px}
 #rSaved img{width:100%;max-width:280px;border-radius:6px;display:block;margin:0 auto;-webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default}
 @media (prefers-reduced-motion:reduce){.curtain,#cta,.tw{animation:none}}
@@ -293,6 +293,7 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
       <button class="pri" id="bDown" hidden></button>
       <button id="bAgain"></button>
     </div>
+    <a class="r-credit" id="rCredit" href="https://oleksandra-kokozei.com" target="_blank" rel="noopener"></a>
     <div id="rSaved" hidden><img id="rSavedImg" alt=""><p class="cap" id="rSavedCap"></p></div>
   </div></div>
 
@@ -329,11 +330,11 @@ const S = {
   sign2: ['чарівні палички · з 382 р. до н. е.', 'makers of fine wands · since 382 B.C.'],
   shopK: ['Крамниця Олівандера', 'Ollivanders'],
   introH: ['Паличка обирає чарівника. Не навпаки.', 'The wand chooses the wizard. Not the other way round.'],
-  introI: ['Я подаватиму тобі палички, а ти — змахуватимеш ними. Деякі слухаються одразу, деякі — ні. Як будеш чаклувати?', 'I’ll hand you wands, and you’ll wave them. Some answer at once, some don’t. How would you like to cast?'],
-  bCam: ['Рукою перед камерою', 'My hand, with the camera'],
+  introI: ['Я даватиму палички, а ти змахуй. Як чаклуватимеш?', 'I’ll hand you wands, you wave them. How would you like to cast?'],
+  bCam: ['Рукою, через камеру', 'With my hand, on camera'],
   bDraw: ['Пальцем або мишкою', 'Finger or mouse'],
-  camLoadH: ['Олівандер протирає дзеркало…', 'Ollivander is polishing the mirror…'],
-  camLoadI: ['Дозволь доступ до камери. Камера стежить лише за кінчиком пальця; відео не записується й не залишає твій пристрій.', 'Please allow camera access. It only follows your fingertip; video is never recorded and never leaves your device.'],
+  camLoadH: ['Вмикаю камеру…', 'Starting the camera…'],
+  camLoadI: ['Дозволь доступ до камери. Відео не записується й лишається на твоєму пристрої.', 'Please allow camera access. Video isn’t recorded and stays on your device.'],
   camFailH: ['Дзеркало сьогодні вередує.', 'The mirror is being stubborn today.'],
   camDenied: ['Доступ до камери заборонено. Нічого страшного — чаклуймо пальцем або мишкою.', 'Camera access was denied. No problem — let’s cast with a finger or mouse.'],
   camNone: ['Камери не знайдено — чаклуймо пальцем або мишкою.', 'No camera found — let’s cast with a finger or mouse.'],
@@ -343,25 +344,24 @@ const S = {
   camTimeout: ['Камера запускається надто довго — чаклуймо пальцем або мишкою.', 'The camera is taking too long to start — let’s cast with a finger or mouse.'],
   camAuto: ['Не вдалося побачити змах. Чаклуй далі пальцем або мишкою.', 'I couldn’t catch a wave. Carry on with a finger or mouse.'],
   hintHand: ['Не бачу руки. Підніми її вище й додай світла.', 'I can’t see your hand. Raise it higher and add some light.'],
-  hintWave: ['Руку бачу, а змаху немає. Махни ширше й швидше.', 'I see your hand but no wave. Move it wider and faster.'],
+  hintWave: ['Махни ширше й швидше.', 'Wave wider and faster.'],
   inAppHint: ['Камера працює у звичайному браузері: відкрий посилання там, якщо хочеш чаклувати рукою.', 'The camera works in a regular browser: open the link there to cast with your hand.'],
   camLoadFail: ['Не вдалося завантажити розпізнавання руки — чаклуймо пальцем або мишкою.', 'Hand tracking couldn’t load — let’s cast with a finger or mouse.'],
   camSlow: ['Інтернет повільний, ще завантажую. Можна не чекати.', 'Slow connection, still loading. You don’t have to wait.'],
   camLost: ['Камера вимкнулась. Чаклуй далі пальцем або мишкою.', 'The camera stopped. Carry on with a finger or mouse.'],
   bInstead: ['Краще пальцем або мишкою', 'Use finger or mouse instead'],
   bGo: ['Продовжити', 'Continue'],
-  noHand: ['Підніми руку так, щоб дзеркальце її бачило.', 'Raise your hand so the little mirror can see it.'],
-  handSeen: ['Бачу руку. Тепер — змах!', 'I can see your hand. Now — wave!'],
-  warmK: ['Знайомство', 'First impressions'],
-  warmH: ['Спершу покажи, як рухається твоя рука.', 'First, show me how your hand moves.'],
-  warmIdraw: ['Змахни, ніби вже тримаєш паличку: один вільний рух пальцем або мишкою.', 'Wave as if you already hold a wand: one free stroke with your finger or mouse.'],
-  warmIcam: ['Змахни рукою перед камерою, ніби вже тримаєш паличку.', 'Wave your hand in front of the camera as if you already hold a wand.'],
-  warmDone: ['Так-так… Цікава рука. Зараз щось знайдемо.', 'I see, I see… An interesting hand. Let’s find something.'],
+  noHand: ['Покажи руку в рамці.', 'Show your hand in the frame.'],
+  handSeen: ['Бачу руку. Змахни!', 'I see your hand. Wave!'],
+  warmK: ['Перший змах', 'First wave'],
+  warmH: ['Спершу просто змахни.', 'First, just wave.'],
+  warmIdraw: ['Проведи пальцем або мишкою по екрану.', 'Draw across the screen with your finger or mouse.'],
+  warmIcam: ['Помахай рукою перед камерою.', 'Wave your hand in front of the camera.'],
+  warmDone: ['Цікава рука. Зараз щось підберемо.', 'An interesting hand. Let’s find you something.'],
   ollK: ['Олівандер', 'Ollivander'],
-  unknownMake: ['Склад цієї палички в каноні не названо.', 'This wand’s make isn’t named in canon.'],
-  spellDraw: ['Промов уголос або подумки <b>«{s}!»</b> — і змахни паличкою пальцем чи мишкою.', 'Say it aloud or in your head: <b>“{s}!”</b> — and wave the wand with your finger or mouse.'],
-  spellCam: ['Промов уголос або подумки <b>«{s}!»</b> — і змахни рукою перед камерою.', 'Say it aloud or in your head: <b>“{s}!”</b> — and wave your hand in front of the camera.'],
-  tooShort: ['Надто обережно. Сміливіше — змах хоча б через пів екрана.', 'Too timid. Be bolder — sweep at least halfway across the screen.'],
+  spellDraw: ['Закляття: <b>«{s}!»</b> Проведи по екрану.', 'The spell: <b>“{s}!”</b> Draw across the screen.'],
+  spellCam: ['Закляття: <b>«{s}!»</b> Змахни рукою.', 'The spell: <b>“{s}!”</b> Wave your hand.'],
+  tooShort: ['Надто коротко. Змахни ширше.', 'Too short. Wave wider.'],
   rKicker: ['Паличка обрала тебе', 'The wand has chosen you'],
   rare: ['рідкісний вибір', 'a rare choice'],
   waveIs: ['Твій змах: {w}.', 'Your wave: {w}.'],
@@ -372,9 +372,9 @@ const S = {
   saveHold: ['Утримуй картинку, щоб зберегти її.', 'Press and hold the image to save it.'],
   again: ['Спробувати ще раз', 'Try again'],
   invite: ['Паличка обрала мене. А яка обере тебе?', 'The wand chose me — which one will choose you?'],
+  credit: ['Створила Олександра Кокозей', 'Created by Oleksandra Kokozei'],
   cardK: ['Паличка обрала мене', 'The wand chose me'],
   sndOn: ['Увімкнути звук', 'Turn sound on'], sndOff: ['Вимкнути звук', 'Turn sound off'],
-  unkSpec: ['у каноні не названо', 'not named in canon'],
   fan: ['Неофіційний фан-проєкт. Не пов’язаний із Warner Bros. чи Дж. К. Ролінґ.', 'Unofficial fan project. Not affiliated with Warner Bros. or J.K. Rowling.']
 };
 const LI = lang => lang === 'en' ? 1 : 0;
@@ -1298,9 +1298,9 @@ async function ritual() {
     st.attempt++;
     const cand = chooseCandidate(st.traits, st.tried, st.attempt);
     const oi = pickNo(OFFER, st.usedOffers, 4), si = pickNo(SPELLS, st.usedSpells, 4);
-    setNote(() => ({ kicker: T('ollK'), hand: L(OFFER[oi]), instr: cand.spec ? [L(cand.spec.wood), L(cand.spec.core), L(cand.spec.len), L(cand.spec.flex)].filter(Boolean).join(', ') + '.' : T('unknownMake') }));
+    setNote(() => ({ kicker: T('ollK'), hand: L(OFFER[oi]), instr: cand.spec ? [L(cand.spec.wood), L(cand.spec.core), L(cand.spec.len), L(cand.spec.flex)].filter(Boolean).join(', ') + '.' : '' }));
     const el = pullShelfBox(cand); await wait(650); await flyOut(el, cand);
-    setNote(() => ({ kicker: T('ollK'), hand: L(OFFER[oi]), instr: '<span style="font-style:italic;font-weight:500">' + (cand.spec ? specText(cand) : T('unknownMake')) + '</span><br>' + T(st.input === 'cam' ? 'spellCam' : 'spellDraw', { s: L(SPELLS[si]) }) }), true);
+    setNote(() => ({ kicker: T('ollK'), hand: L(OFFER[oi]), instr: (cand.spec ? '<span style="font-style:italic;font-weight:500">' + specText(cand) + '</span><br>' : '') + T(st.input === 'cam' ? 'spellCam' : 'spellDraw', { s: L(SPELLS[si]) }) }), true);
     r = await captureWave(cand);
     st.obs.push(r.m); st.traits = mergeTraits();
     const best = bestWand(st.traits);
@@ -1358,14 +1358,14 @@ function waveLine(tr) {
   const words = picks.map(o => WAVE_WORDS[o.k][o.d > 0 ? 'hi' : 'lo'][LI(lang)]);
   return T('waveIs', { w: words.length ? words.join(', ') : T('waveEven') });
 }
-function specText(w) { return w.spec ? [L(w.spec.wood), L(w.spec.core), L(w.spec.len), L(w.spec.flex)].filter(Boolean).join(' · ') : T('unkSpec'); }
+function specText(w) { return w.spec ? [L(w.spec.wood), L(w.spec.core), L(w.spec.len), L(w.spec.flex)].filter(Boolean).join(' · ') : ''; }
 function fillResult() {
   const w = st.winner, tr = st.traits; if (!w) return;
   $('#rKicker').textContent = T('rKicker'); $('#rName').textContent = L(w.name); $('#rRare').hidden = !w.rare; $('#rRareT').textContent = T('rare');
-  const spc = $('#rSpecs'); spc.textContent = specText(w); spc.classList.toggle('unk', !w.spec);
+  const spc = $('#rSpecs'); spc.textContent = specText(w); spc.hidden = !w.spec;
   $('#rLore').textContent = L(w.lore); $('#rWave').textContent = waveLine(tr);
   $('#rSpin').textContent = T('spin'); $('#bShare').textContent = T('share'); $('#bDown').textContent = T('download'); $('#bAgain').textContent = T('again');
-  $('#rSavedCap').textContent = T('saveHold');
+  $('#rSavedCap').textContent = T('saveHold'); $('#rCredit').textContent = T('credit');
   refreshCard();
 }
 function showResult() {
