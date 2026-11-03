@@ -119,6 +119,7 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 .r-btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:22px}
 .r-btns button{font:inherit;font-weight:700;font-size:17px;padding:10px 18px;border-radius:999px;cursor:pointer;border:1px solid #8a6230;background:#2b1a0e;color:var(--gold2)}
 .r-btns button.pri{background:linear-gradient(180deg,#f2d38e,#c99a4e);color:#2a170b;border-color:#f2d38e}
+.r-credit{display:inline-block;margin-top:16px;font-size:15px;font-style:italic;color:#c9b48c;text-underline-offset:3px}
 #rSaved{margin-top:12px}
 #rSaved img{width:100%;max-width:280px;border-radius:6px;display:block;margin:0 auto;-webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default}
 @media (prefers-reduced-motion:reduce){.curtain,#cta,.tw{animation:none}}
@@ -292,6 +293,7 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
       <button class="pri" id="bDown" hidden></button>
       <button id="bAgain"></button>
     </div>
+    <a class="r-credit" id="rCredit" href="https://oleksandra-kokozei.com" target="_blank" rel="noopener"></a>
     <div id="rSaved" hidden><img id="rSavedImg" alt=""><p class="cap" id="rSavedCap"></p></div>
   </div></div>
 
@@ -370,6 +372,7 @@ const S = {
   saveHold: ['Утримуй картинку, щоб зберегти її.', 'Press and hold the image to save it.'],
   again: ['Спробувати ще раз', 'Try again'],
   invite: ['Паличка обрала мене. А яка обере тебе?', 'The wand chose me — which one will choose you?'],
+  credit: ['Створила Олександра Кокозей', 'Created by Oleksandra Kokozei'],
   cardK: ['Паличка обрала мене', 'The wand chose me'],
   sndOn: ['Увімкнути звук', 'Turn sound on'], sndOff: ['Вимкнути звук', 'Turn sound off'],
   fan: ['Неофіційний фан-проєкт. Не пов’язаний із Warner Bros. чи Дж. К. Ролінґ.', 'Unofficial fan project. Not affiliated with Warner Bros. or J.K. Rowling.']
@@ -1362,7 +1365,7 @@ function fillResult() {
   const spc = $('#rSpecs'); spc.textContent = specText(w); spc.hidden = !w.spec;
   $('#rLore').textContent = L(w.lore); $('#rWave').textContent = waveLine(tr);
   $('#rSpin').textContent = T('spin'); $('#bShare').textContent = T('share'); $('#bDown').textContent = T('download'); $('#bAgain').textContent = T('again');
-  $('#rSavedCap').textContent = T('saveHold');
+  $('#rSavedCap').textContent = T('saveHold'); $('#rCredit').textContent = T('credit');
   refreshCard();
 }
 function showResult() {
