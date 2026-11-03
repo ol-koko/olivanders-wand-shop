@@ -28,7 +28,7 @@ const WANDS = [
   { id: 'bellatrix', name: { ua: 'Паличка Белатриси Лестранж', en: 'Bellatrix Lestrange’s wand' }, spec: sp('Горіх', 'Walnut', ...DRG, '12¾ дюйма', '12¾ inches', 12.75, 'непіддатлива', 'unyielding'), box: '#2a1626', t: [.92, .7, .9, .15, .65], lore: { ua: 'Горіх слухається лише дуже сильної волі.', en: 'Walnut obeys only a very strong will.' } },
   { id: 'voldemort', name: { ua: 'Паличка Лорда Волдеморта', en: 'Lord Voldemort’s wand' }, spec: sp('Тис', 'Yew', ...PHX, '13½ дюйма', '13½ inches', 13.5), box: '#1d1d24', t: [.75, .6, .88, .78, .3], lore: { ua: 'Тис не терпить вагань.', en: 'Yew tolerates no hesitation.' } }
 ];
-const BIAS = { harry: -0.009, hermione: 0.018, ron: -0.001, dumbledore: 0.058, mcgonagall: 0.001, sirius: -0.002, fred: -0.015, george: -0.041, ginny: -0.026, neville: 0.071, luna: 0.004, draco: -0.003, snape: 0.020, lupin: 0.014, bellatrix: -0.066, voldemort: -0.023 };
+const BIAS = { harry: -0.017, hermione: 0.025, ron: -0.013, dumbledore: 0.076, mcgonagall: -0.027, sirius: -0.021, fred: 0.007, george: -0.025, ginny: 0.005, neville: 0.057, luna: 0.038, draco: -0.027, snape: -0.010, lupin: 0.014, bellatrix: -0.041, voldemort: -0.042 };
 WANDS.forEach(w => { w.tc = w.t.map(v => .5 + (v - .5) * .55); w.b = BIAS[w.id] || 0; w.lenN = w.spec ? w.spec.lenN : w.lenN; });
 function wandDist(w, tr) { let s = 0, n = 0; TR.forEach((k, i) => { if (tr && tr[k] != null) { s += (tr[k] - w.tc[i]) ** 2; n++; } }); return n ? Math.sqrt(s / n) + w.b : 0; }
 
@@ -55,8 +55,8 @@ function resampleTime(pts, step) {
   const z = pts[pts.length - 1]; out.push({ x: z.x, y: z.y, t: z.t });
   return out;
 }
-// Value ranges read from real recorded waves. A hand in front of a camera moves far slower than a finger or mouse, so each input has its own scale.
-const SCALES = { pointer: { speed: [1, 6], amp: [.3, 1.2], loops: 5 }, camera: { speed: [.4, 1.9], amp: [.35, .85], loops: 3.5 } };
+// Value ranges read from real recorded waves. A hand in front of a camera moves about half as fast as a finger or mouse and shakes more, so each input has its own scale.
+const SCALES = { pointer: { speed: [1, 6], amp: [.3, 1.2], loops: 5, corners: 2.5, turn: .5 }, camera: { speed: [.8, 2.8], amp: [.3, .8], loops: 4.5, corners: 3.5, turn: .8 } };
 const unit = (v, [lo, hi]) => clamp((v - lo) / (hi - lo));
 function strokeMetrics(raw, MIN, mode = 'pointer') {
   const sc = SCALES[mode];
@@ -70,7 +70,7 @@ function strokeMetrics(raw, MIN, mode = 'pointer') {
     const d = Math.abs(wrapA(a2 - a1)); turn += d; n++; if (d > 1.05 && i - last > 3) { corners++; last = i; }
   }
   for (let i = 1; i < rs.length - 1; i++) { const a1 = Math.atan2(rs[i].y - rs[i - 1].y, rs[i].x - rs[i - 1].x), a2 = Math.atan2(rs[i + 1].y - rs[i].y, rs[i + 1].x - rs[i].x); signed += wrapA(a2 - a1); }
-  const sharp = clamp(.65 * clamp(corners / Math.max(len / MIN, .5) / 2.5) + .35 * clamp((n ? turn / n : 0) / .5)); // corners per length, so a longer wave isn't sharper by itself
+  const sharp = clamp(.65 * clamp(corners / Math.max(len / MIN, .5) / sc.corners) + .35 * clamp((n ? turn / n : 0) / sc.turn)); // corners per length, so a longer wave isn't sharper by itself
   const curl = clamp(Math.abs(signed) / (Math.PI * 2) / sc.loops);
   // rhythm: variation of speed across ~60ms windows
   const sp = []; let j = 0;

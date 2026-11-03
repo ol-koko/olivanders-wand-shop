@@ -1234,11 +1234,11 @@ function camTick(t) {
   $('#camBox').classList.toggle('seen', !!lm);
   if (lm) {
     const { x, y } = camMap(lm[8], v.videoWidth || 4, v.videoHeight || 3, W, H, MIN);
-    if (!cam.sm || t - cam.seen > 400) { cam.sm = { x, y }; cam.hist = []; cam.firstSeen = t; }
+    if (!cam.sm || t - cam.seen > 500) { cam.sm = { x, y }; cam.hist = []; cam.firstSeen = t; }
     else camSmooth(cam.sm, x, y, t - cam.seen);
     cam.seen = t; cam.hist.push({ x: cam.sm.x, y: cam.sm.y, t }); while (cam.hist.length > 10) cam.hist.shift();
     camWave(t);
-  } else if (st.cap && st.cap.active && t - cam.seen > 350) finishCapture();
+  } else if (st.cap && st.cap.active && t - cam.seen > 450) finishCapture(); // recordings show tracking gaps of up to 300 ms during a fast wave
 }
 function camWave(t) {
   const c = st.cap; if (!c || c.done || st.input !== 'cam') return;
