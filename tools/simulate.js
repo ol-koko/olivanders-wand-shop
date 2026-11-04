@@ -6,7 +6,7 @@
 //   node tools/simulate.js --validate f.json real waves saved by tools/record.html
 // The players are a model, not recorded people. Treat the numbers as a balance check, not a forecast.
 const fs = require('fs'), path = require('path');
-const { TR, WANDS, wandDist, strokeMetrics, averageTraits, bestMatch, chooseCandidate, isChosen, MAX_ATTEMPTS, CAM, camSmooth, camSpeed, camStep } = require('../logic.js');
+const { setRecentWins, TR, WANDS, wandDist, strokeMetrics, averageTraits, bestMatch, chooseCandidate, isChosen, MAX_ATTEMPTS, CAM, camSmooth, camSpeed, camStep } = require('../logic.js');
 
 const MIN = 900, MIN_LEN = MIN * .35, MIN_DUR = .2; // the game asks for a bolder wave below these
 const RARE = 'dumbledore', RARE_TARGET = .02, TARGET = (1 - RARE_TARGET) / (WANDS.length - 1), FLOOR = .03;
@@ -167,6 +167,18 @@ if (arg === '--parity') {
     const players = Array.from({ length: 4000 }, () => ({ waves: Array.from({ length: MAX_ATTEMPTS + 1 }, () => waves[Math.floor(Math.random() * waves.length)]) }));
     report(`  games replayed from ${g} waves`, tally(players, 1));
   }
+} else if (arg === '--repeat') {
+  // One person playing 20 games in a row from their own recorded waves, without and with the memory of recent wins.
+  const groups = { pointer: [], camera: [] };
+  for (const f of process.argv.slice(3)) for (const w of JSON.parse(fs.readFileSync(path.resolve(f), 'utf8')).waves) groups[w.mode === 'camera' ? 'camera' : 'pointer'].push(strokeMetrics(w.pts.map(p => ({ x: p[0], y: p[1], t: p[2] })), Math.min(...w.viewport), w.mode));
+  const any = a => a[Math.floor(Math.random() * a.length)], game = ws => { const p = { waves: Array.from({ length: MAX_ATTEMPTS + 1 }, () => any(ws)) }, stats = { wins: Object.fromEntries(WANDS.map(w => [w.id, 0])), att: new Array(MAX_ATTEMPTS + 1).fill(0) }; play(p, stats); return WANDS.find(w => stats.wins[w.id]).id; };
+  for (const g in groups) if (groups[g].length) for (const memory of [false, true]) {
+    const N = 20, P = 800, wins = {}; let same = 0, top = 0;
+    for (let i = 0; i < P; i++) { const rec = [], c = {}; for (let n = 0; n < N; n++) { setRecentWins(memory ? rec : []); const id = game(groups[g]); if (id === rec[0]) same++; rec.unshift(id); c[id] = (c[id] || 0) + 1; wins[id] = (wins[id] || 0) + 1; } top += Math.max(...Object.values(c)) / N; }
+    const lead = Object.entries(wins).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id, n]) => `${id} ${(n / (N * P) * 100).toFixed(0)}%`).join(', ');
+    console.log(`${g} ${memory ? 'with memory' : 'no memory  '}: same wand twice in a row ${(same / (N * P) * 100).toFixed(1)}%, a person's most frequent wand ${(top / P * 100).toFixed(0)}%, ${lead}`);
+  }
+  setRecentWins([]);
 } else {
   const strokes = makePool(8000, strokePlayer), abstract = makePool(30000, abstractPlayer);
   report('STROKE MODEL (all players)', tally(strokes, 4));

@@ -30,7 +30,10 @@ const WANDS = [
 ];
 const BIAS = { harry: -0.017, hermione: 0.025, ron: -0.013, dumbledore: 0.076, mcgonagall: -0.027, sirius: -0.021, fred: 0.007, george: -0.025, ginny: 0.005, neville: 0.057, luna: 0.038, draco: -0.027, snape: -0.010, lupin: 0.014, bellatrix: -0.041, voldemort: -0.042 };
 WANDS.forEach(w => { w.tc = w.t.map(v => .5 + (v - .5) * .55); w.b = BIAS[w.id] || 0; w.lenN = w.spec ? w.spec.lenN : w.lenN; });
-function wandDist(w, tr) { let s = 0, n = 0; TR.forEach((k, i) => { if (tr && tr[k] != null) { s += (tr[k] - w.tc[i]) ** 2; n++; } }); return n ? Math.sqrt(s / n) + w.b : 0; }
+// A person's waves stay alike, so the same wands would keep choosing them. Wands that chose them lately read as a little further away, the latest the most.
+const RECENT = [.08, .07, .06, .05, .04, .03, .02];
+function setRecentWins(ids) { WANDS.forEach(w => { w.recent = 0; }); ids.slice(0, RECENT.length).forEach((id, i) => { const w = WANDS.find(x => x.id === id); if (w && !w.recent) w.recent = RECENT[i]; }); }
+function wandDist(w, tr) { let s = 0, n = 0; TR.forEach((k, i) => { if (tr && tr[k] != null) { s += (tr[k] - w.tc[i]) ** 2; n++; } }); return n ? Math.sqrt(s / n) + w.b + (w.recent || 0) : 0; }
 
 /* ================= metrics ================= */
 function resample(pts, step) {
@@ -111,6 +114,6 @@ function camStep(c, s, t, firstSeen) {
   return 'move';
 }
 
-return { clamp, lerp, wrapA, TR, WANDS, BIAS, wandDist, resample, strokeMetrics, averageTraits, bestMatch, chooseCandidate, isChosen, isNearMiss, MAX_ATTEMPTS, CAM, camMap, camSmooth, camSpeed, camStep };
+return { clamp, lerp, wrapA, TR, WANDS, BIAS, RECENT, setRecentWins, wandDist, resample, strokeMetrics, averageTraits, bestMatch, chooseCandidate, isChosen, isNearMiss, MAX_ATTEMPTS, CAM, camMap, camSmooth, camSpeed, camStep };
 })();
 if (typeof module !== 'undefined') module.exports = WandLogic;

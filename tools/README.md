@@ -13,6 +13,7 @@ Then:
     node tools/e2e/camera.mjs          # camera flow, real MediaPipe model, fake camera device
     node tools/e2e/reactions.mjs       # forces all 10 reactions, plays at 390×844, screenshots in tools/e2e/shots
     node tools/e2e/wand3d.mjs          # 3D view: lazy load, drag, offscreen pause, 2D fallback
+    node tools/e2e/recent.mjs          # a win is remembered and counts against that wand next game
     node tools/e2e/card.mjs            # result card and every sharing path, both languages
     node tools/e2e/ui.mjs              # first screens across phone and desktop sizes
     node tools/e2e/sound.mjs           # sound starts on the entry tap, the choice is remembered
@@ -40,6 +41,7 @@ The simulator runs the game's own `logic.js`. Re-run it after any change to wand
 Open `http://localhost:8000/tools/record.html` (from `python3 -m http.server 8000` in the repo root), wave about 30 times, press "Зберегти JSON", then:
 
     node tools/simulate.js --validate waves.json phone.json
+    node tools/simulate.js --repeat waves.json phone.json   # one person playing 20 games in a row
 
 The page saves in the browser as you go, and it isn't linked from the game.
 

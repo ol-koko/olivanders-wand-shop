@@ -329,7 +329,7 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 <script>
 (() => {
 'use strict';
-const { clamp, lerp, wrapA, WANDS, wandDist, resample, strokeMetrics, averageTraits, bestMatch, chooseCandidate, isChosen, isNearMiss, CAM, camMap, camSmooth, camSpeed, camStep } = WandLogic;
+const { clamp, lerp, wrapA, WANDS, RECENT, setRecentWins, wandDist, resample, strokeMetrics, averageTraits, bestMatch, chooseCandidate, isChosen, isNearMiss, CAM, camMap, camSmooth, camSpeed, camStep } = WandLogic;
 const $ = s => document.querySelector(s);
 const easeIO = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const easeOut = t => 1 - Math.pow(1 - t, 3);
@@ -1379,6 +1379,7 @@ async function flyOut(el, w) {
 /* ================= ritual ================= */
 function pickNo(arr, used, keep) { const pool = arr.map((_, i) => i).filter(i => !used.includes(i)); const i = pick(pool.length ? pool : arr.map((_, i) => i)); used.push(i); while (used.length > keep) used.shift(); return i; }
 async function ritual() {
+  setRecentWins(recentWins());
   st.obs = []; st.traits = null; st.tried = []; st.attempt = 0; st.history = []; st.stroke = null; st.winner = null; st.camHelp = false;
   setNote(() => ({ kicker: T('warmK'), hand: T('warmH'), instr: T(st.input === 'cam' ? 'warmIcam' : 'warmIdraw') }));
   await wait(450);
@@ -1395,12 +1396,14 @@ async function ritual() {
     r = await captureWave(cand);
     st.obs.push(r.m); st.traits = mergeTraits();
     const best = bestWand(st.traits);
-    if (isChosen(cand, best, st.attempt)) { stopCamera(); st.stroke = r.pts; await success(cand); return; }
+    if (isChosen(cand, best, st.attempt)) { rememberWin(cand.id); stopCamera(); st.stroke = r.pts; await success(cand); return; }
     st.tried.push(cand);
     await REACT[pickReact(isNearMiss(cand, best, st.traits))](cand);
     await wait(500);
   }
 }
+function recentWins() { try { const a = JSON.parse(localStorage.getItem('wand-recent')); return Array.isArray(a) ? a : []; } catch (_) { return []; } }
+function rememberWin(id) { try { localStorage.setItem('wand-recent', JSON.stringify([id, ...recentWins()].slice(0, RECENT.length))); } catch (_) { } }
 // No reaction repeats within the last 4, the near-miss fizzle included.
 function pickReact(near) {
   const recent = st.lastReacts;
