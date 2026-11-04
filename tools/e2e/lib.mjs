@@ -30,13 +30,13 @@ export function serve() {
 const live = new Set();
 export const closeAll = () => Promise.all([...live].map(b => b.close().catch(() => { })));
 // A separate headless Chrome per scenario, so the owner's browser tabs stay untouched.
-export async function open(url, { video, fakeCam = !!video, grant = fakeCam, viewport = { width: 1440, height: 900 }, mobile = false, userAgent, locale = 'uk-UA', init, route } = {}) {
+export async function open(url, { video, fakeCam = !!video, grant = fakeCam, viewport = { width: 1440, height: 900 }, mobile = false, scale, userAgent, locale = 'uk-UA', init, route } = {}) {
   const args = ['--autoplay-policy=no-user-gesture-required', '--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--use-angle=metal', '--ignore-gpu-blocklist', '--enable-gpu'];
   if (fakeCam) args.push('--use-fake-device-for-media-stream');
   if (video) args.push('--use-file-for-fake-video-capture=' + path.join(HERE, 'fixtures', video));
   const browser = await chromium.launch({ channel: 'chrome', headless: true, args });
   live.add(browser);
-  const ctx = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: mobile ? 2 : 1, userAgent, locale, permissions: grant ? ['camera'] : [] });
+  const ctx = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: scale || (mobile ? 2 : 1), userAgent, locale, permissions: grant ? ['camera'] : [] });
   const page = await ctx.newPage(), errors = [];
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_ABORTED|favicon/.test(m.text() + m.location().url)) errors.push('console: ' + m.text()); });

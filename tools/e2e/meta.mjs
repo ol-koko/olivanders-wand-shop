@@ -18,17 +18,18 @@ console.log('== what a crawler reads, with no scripts');
   check(/^<!DOCTYPE html>\s*<html lang="en">/i.test(html), 'html lang is en');
   for (const [a, n] of [['name', 'description'], ['property', 'og:title'], ['property', 'og:description'], ['property', 'og:image:alt'], ['name', 'twitter:title'], ['name', 'twitter:description']]) { const v = meta(a, n); check(!!v && !/[а-яєіїґ]/i.test(v) && v.length < 200, `${n}: ${v}`); }
   check(meta('property', 'og:url') === HOST, 'og:url is the site');
-  check(meta('property', 'og:image') === HOST + 'og.png' && meta('name', 'twitter:image') === HOST + 'og.png', 'absolute image address');
+  check(meta('property', 'og:image') === HOST + 'og.jpg' && meta('name', 'twitter:image') === HOST + 'og.jpg', 'absolute image address');
   check(meta('name', 'twitter:card') === 'summary_large_image', 'large Twitter card');
-  check(head.includes('og:image:width" content="1200"') && head.includes('og:image:height" content="630"'), 'image size declared');
+  check(head.includes('og:image:width" content="2400"') && head.includes('og:image:height" content="1260"'), 'image size declared');
 }
 console.log('== files');
 {
-  const b = fs.readFileSync(path.join(ROOT, 'og.png')); const dim = [b.readUInt32BE(16), b.readUInt32BE(20)];
-  check(dim[0] === 1200 && dim[1] === 630, `og.png is ${dim.join('×')}`);
-  check(b.length < 1024 * 1024, `og.png is ${Math.round(b.length / 1024)} KB`);
+  const b = fs.readFileSync(path.join(ROOT, 'og.jpg')); let off = 2, dim = null; // the size sits in the JPEG's start-of-frame block
+  while (off < b.length) { const m = b[off + 1], len = b.readUInt16BE(off + 2); if (m >= 0xC0 && m <= 0xC3) { dim = [b.readUInt16BE(off + 7), b.readUInt16BE(off + 5)]; break; } off += 2 + len; }
+  check(dim && dim[0] === 2400 && dim[1] === 1260, `og.jpg is ${dim && dim.join('×')}`);
+  check(b.length < 2 * 1024 * 1024, `og.jpg is ${Math.round(b.length / 1024)} KB`);
   const a = fs.readFileSync(path.join(ROOT, 'apple-touch-icon.png')); check(a.readUInt32BE(16) === 180, 'apple-touch-icon.png is 180 wide');
-  for (const f of ['og.png', 'favicon.svg', 'apple-touch-icon.png']) check((await fetch(url + f)).status === 200, f + ' is served');
+  for (const f of ['og.jpg', 'favicon.svg', 'apple-touch-icon.png']) check((await fetch(url + f)).status === 200, f + ' is served');
 }
 console.log('== first language');
 for (const [locale, want] of [['uk-UA', 'ua'], ['uk', 'ua'], ['en-US', 'en'], ['de-DE', 'en'], ['ru-RU', 'en'], ['pl-PL', 'en']]) {

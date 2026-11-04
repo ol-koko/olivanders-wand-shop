@@ -20,13 +20,13 @@ fs.writeFileSync(path.join(ROOT, 'favicon.svg'), ICON);
 
 const { srv, url } = await serve();
 {
-  const { browser, page } = await open(url, { viewport: { width: 1200, height: 630 }, locale: 'en-US' });
+  const { browser, page } = await open(url, { viewport: { width: 1200, height: 630 }, scale: 2, locale: 'en-US' }); // twice the size, so sites that re-compress it keep the detail
   await page.evaluate(() => document.fonts.ready); await sleep(700);
   await page.addStyleTag({ content: '#cta,.topbar,#stFan{display:none!important}' });
   await page.evaluate(() => {
     document.querySelector('#stS').textContent = 'Which Harry Potter wand are you?';
-    const c = document.createElement('canvas'); c.width = 1200; c.height = 630; c.style.cssText = 'position:absolute;inset:0;z-index:9'; document.querySelector('#street').appendChild(c);
-    const x = c.getContext('2d'), w = __wand.WANDS.find(v => v.id === 'harry'), cx = 600, cy = 390, L = 430, ang = -Math.PI / 2 - .24, tx = cx + Math.cos(ang) * L / 2, ty = cy + Math.sin(ang) * L / 2, ux = -Math.cos(ang), uy = -Math.sin(ang); // leans left, tip up
+    const c = document.createElement('canvas'); c.width = 2400; c.height = 1260; c.style.cssText = 'position:absolute;left:0;top:0;width:1200px;height:630px;z-index:9'; document.querySelector('#street').appendChild(c);
+    const x = c.getContext('2d'); x.scale(2, 2); const w = __wand.WANDS.find(v => v.id === 'harry'), cx = 600, cy = 390, L = 430, ang = -Math.PI / 2 - .24, tx = cx + Math.cos(ang) * L / 2, ty = cy + Math.sin(ang) * L / 2, ux = -Math.cos(ang), uy = -Math.sin(ang); // leans left, tip up
     let seed = 7; const R = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
     // a soft pool of dark and candlelight, so the wand reads over the shop
     let g = x.createRadialGradient(cx, cy, 10, cx, cy, 190); g.addColorStop(0, 'rgba(8,4,2,.5)'); g.addColorStop(.6, 'rgba(8,4,2,.22)'); g.addColorStop(1, 'rgba(8,4,2,0)'); x.fillStyle = g; x.fillRect(0, 0, 1200, 630);
@@ -52,7 +52,7 @@ const { srv, url } = await serve();
     }
   });
   await sleep(300);
-  await page.screenshot({ path: path.join(ROOT, 'og.png') });
+  await page.screenshot({ path: path.join(ROOT, 'og.jpg'), type: 'jpeg', quality: 90 });
   await browser.close();
 }
 {
@@ -61,5 +61,5 @@ const { srv, url } = await serve();
   await page.screenshot({ path: path.join(ROOT, 'apple-touch-icon.png') });
 }
 await closeAll(); srv.close();
-for (const f of ['og.png', 'favicon.svg', 'apple-touch-icon.png']) console.log(f, Math.round(fs.statSync(path.join(ROOT, f)).size / 1024) + ' KB');
+for (const f of ['og.jpg', 'favicon.svg', 'apple-touch-icon.png']) console.log(f, Math.round(fs.statSync(path.join(ROOT, f)).size / 1024) + ' KB');
 process.exit(0);
