@@ -24,7 +24,7 @@ They start their own headless Chrome and test server, so open browser tabs stay 
 
     node tools/make-og.mjs
 
-Regenerates `og.png`, `favicon.svg` and `apple-touch-icon.png` in the repo root from the game's own drawing.
+Regenerates `og.jpg`, `favicon.svg` and `apple-touch-icon.png` in the repo root from the game's own drawing.
 
 ## Wand balance
 No dependencies:
