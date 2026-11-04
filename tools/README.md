@@ -15,6 +15,7 @@ Then:
     node tools/e2e/wand3d.mjs          # 3D view: lazy load, drag, offscreen pause, 2D fallback
     node tools/e2e/card.mjs            # result card and every sharing path, both languages
     node tools/e2e/ui.mjs              # first screens across phone and desktop sizes
+    node tools/e2e/sound.mjs           # sound starts on the entry tap, the choice is remembered
     node tools/e2e/meta.mjs            # meta tags, icons, preview image, first language
     node tools/e2e/motion.mjs          # how the wand moves in a wave, depth from a finger or tilt
 
