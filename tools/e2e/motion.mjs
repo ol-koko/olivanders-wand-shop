@@ -2,6 +2,7 @@
 //   node tools/e2e/motion.mjs        run everything
 //   node tools/e2e/motion.mjs tilt   depth only
 //   node tools/e2e/motion.mjs wand   wand motion only
+//   node tools/e2e/motion.mjs trail  the drawn line only
 import path from 'node:path';
 import { closeAll, serve, open, enter, choosePointer, ensureShots, sleep } from './lib.mjs';
 const SHOTS = ensureShots(), { srv, url } = await serve(), fails = [];
@@ -120,6 +121,31 @@ async function depthRun() {
     check(Math.abs(a[0] - b[0]) > 2, 'still follows the mouse'); check(!errors.length, 'no page errors ' + errors.join(' | '));
   }
 }
+async function trailRun() {
+  console.log('== the drawn line has softer corners');
+  const { browser, page, errors } = await open(url, { viewport: PHONE, mobile: true });
+  await enter(page); await choosePointer(page); await page.waitForFunction(() => __wand.st.cap, null, { timeout: 30000 });
+  const m = await page.evaluate(() => {
+    // a jagged zigzag with hand tremor, at 120 Hz
+    const raw = []; let seed = 3; const R = () => { seed = seed * 16807 % 2147483647; return seed / 2147483647 - .5; };
+    for (let i = 0; i <= 240; i++) { const u = i / 240, q = u * 6, f = q - Math.floor(q), z = Math.floor(q) % 2 ? 1 - f : f; raw.push({ x: 40 + u * 310 + R() * 2.4, y: 300 + z * 160 + R() * 2.4, t: i * 8 }); }
+    const { smoothPath } = __wand, line = smoothPath(raw);
+    // the sharpest turn over about 10px of line
+    const worst = p => { const a = []; let d = 0; for (let i = 1; i < p.length; i++) { d += Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y); a.push([p[i].x, p[i].y, d]); } let w = 0; for (let i = 0, j = 0, k = 0; i < a.length; i++) { while (j < a.length - 1 && a[j][2] < a[i][2] + 10) j++; while (k < a.length - 1 && a[k][2] < a[j][2] + 10) k++; if (k >= a.length - 1) break; let t = Math.abs(Math.atan2(a[k][1] - a[j][1], a[k][0] - a[j][0]) - Math.atan2(a[j][1] - a[i][1], a[j][0] - a[i][0])); if (t > Math.PI) t = 2 * Math.PI - t; w = Math.max(w, t); } return w * 180 / Math.PI; };
+    const off = Math.max(...raw.map(q => Math.min(...line.map(l => Math.hypot(l.x - q.x, l.y - q.y)))));
+    const e = line[line.length - 1], r = raw[raw.length - 1];
+    return { before: Math.round(worst(raw)), after: Math.round(worst(line)), off: +off.toFixed(1), kept: Math.hypot(e.x - r.x, e.y - r.y), n: line.length };
+  });
+  console.log('    sharpest turn', m.before + '°', '→', m.after + '°', ', drawn line strays', m.off + 'px', 'at most');
+  check(m.after < m.before * .85, 'corners are softer');
+  check(m.after > 30, 'not over-smoothed: corners are still corners');
+  check(m.off < 14, 'the line stays close to what was drawn');
+  check(m.kept === 0, 'the end of the line stays at the finger');
+  const shot = async () => { const cx = 195, cy = 300; await page.mouse.move(40, cy); await page.mouse.down(); for (let i = 1; i <= 54; i++) { const u = i / 54, q = u * 5, f = q - Math.floor(q), z = Math.floor(q) % 2 ? 1 - f : f; await page.mouse.move(40 + u * 310, cy - 90 + z * 180); await sleep(16); } await page.screenshot({ path: path.join(SHOTS, 'trail-smooth.png') }); await page.mouse.up(); };
+  await shot();
+  check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close();
+}
+if (only === 'trail') { await trailRun(); await closeAll(); srv.close(); console.log(fails.length ? `\n${fails.length} FAILED:\n- ${fails.join('\n- ')}` : '\nall passed'); process.exit(fails.length ? 1 : 0); }
 if (only !== 'tilt') await wandRun();
 if (only !== 'wand') await depthRun();
 await closeAll(); srv.close();

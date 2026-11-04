@@ -327,7 +327,7 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 <script>
 (() => {
 'use strict';
-const { clamp, lerp, wrapA, TR, WANDS, wandDist, strokeMetrics, averageTraits, bestMatch, chooseCandidate, isChosen, isNearMiss, CAM, camMap, camSmooth, camSpeed, camStep } = WandLogic;
+const { clamp, lerp, wrapA, TR, WANDS, wandDist, resample, strokeMetrics, averageTraits, bestMatch, chooseCandidate, isChosen, isNearMiss, CAM, camMap, camSmooth, camSpeed, camStep } = WandLogic;
 const $ = s => document.querySelector(s);
 const easeIO = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const easeOut = t => 1 - Math.pow(1 - t, 3);
@@ -955,6 +955,17 @@ function spark(x, y, n, spd = 2.2, r = 1.8, hue = 'gold') {
   for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, v = Math.random() * spd; st.sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - .4, life: 500 + Math.random() * 600, max: 1100, r: r * (.5 + Math.random()), hue }); }
   if (st.sparks.length > 700) st.sparks.splice(0, st.sparks.length - 700);
 }
+// Softens the corners of a drawn line a little. For the picture only: traits are measured on the raw wave. The ends stay put, so the line still reaches the finger.
+function smoothPath(pts) {
+  if (pts.length < 3) return pts;
+  let a = resample(pts, MIN * .014); const end = pts[pts.length - 1]; a.push({ x: end.x, y: end.y });
+  for (let pass = 0; pass < 4; pass++) {
+    const b = a.slice();
+    for (let i = 1; i < a.length - 1; i++) b[i] = { x: (a[i - 1].x + 2 * a[i].x + a[i + 1].x) / 4, y: (a[i - 1].y + 2 * a[i].y + a[i + 1].y) / 4 };
+    a = b;
+  }
+  return a;
+}
 function strokePath(c, pts, n) { c.beginPath(); c.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < n - 1; i++) { const mx = (pts[i].x + pts[i + 1].x) / 2, my = (pts[i].y + pts[i + 1].y) / 2; c.quadraticCurveTo(pts[i].x, pts[i].y, mx, my); } if (n > 1) c.lineTo(pts[n - 1].x, pts[n - 1].y); }
 function drawTrail(c, pts, alpha, n = pts.length) {
   if (n < 2 || alpha <= 0) return;
@@ -1095,7 +1106,8 @@ function drawFX(t, dt) {
   // trails
   for (let i = st.trails.length - 1; i >= 0; i--) {
     const tr = st.trails[i]; let a = 1; if (tr.fade) { a = 1 - (t - tr.fade) / 1300; if (a <= 0) { st.trails.splice(i, 1); continue; } }
-    drawTrail(c, tr.pts, a);
+    if (tr.drawn !== tr.pts.length) { tr.line = smoothPath(tr.pts); tr.drawn = tr.pts.length; } // recomputed only when the line grows
+    drawTrail(c, tr.line, a);
   }
   // halo (success)
   if (st.halo) {
@@ -1392,7 +1404,7 @@ async function success(w) {
   if (vi === 0) { st.wind = [cx, cy]; st.windUntil = performance.now() + 2800; $('#shop').classList.add('wind'); }
   else if (vi === 1) { for (let i = 0; i < 26; i++) setTimeout(() => { for (let j = 0; j < 6; j++) st.sparks.push({ x: Math.random() * W, y: -10, vx: (Math.random() - .5) * .6, vy: 1 + Math.random() * 2, life: 2600, max: 2600, r: 1.2 + Math.random() * 1.6, hue: 'rain' }); }, i * 70); }
   else { st.halo = { x: cx, y: cy, t0: performance.now() }; }
-  if (st.stroke && st.stroke.length > 2) st.replay = { pts: fitStroke(st.stroke, cx, cy, Math.min(W * .9, MIN * .8), Math.min(H * .5, MIN * .62)), t0: performance.now() + 300 };
+  if (st.stroke && st.stroke.length > 2) st.replay = { pts: smoothPath(fitStroke(st.stroke, cx, cy, Math.min(W * .9, MIN * .8), Math.min(H * .5, MIN * .62))), t0: performance.now() + 300 };
   await wait(3600); $('#shop').classList.remove('wind');
   showResult();
 }

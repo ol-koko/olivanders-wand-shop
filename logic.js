@@ -111,6 +111,6 @@ function camStep(c, s, t, firstSeen) {
   return 'move';
 }
 
-return { clamp, lerp, wrapA, TR, WANDS, BIAS, wandDist, strokeMetrics, averageTraits, bestMatch, chooseCandidate, isChosen, isNearMiss, MAX_ATTEMPTS, CAM, camMap, camSmooth, camSpeed, camStep };
+return { clamp, lerp, wrapA, TR, WANDS, BIAS, wandDist, resample, strokeMetrics, averageTraits, bestMatch, chooseCandidate, isChosen, isNearMiss, MAX_ATTEMPTS, CAM, camMap, camSmooth, camSpeed, camStep };
 })();
 if (typeof module !== 'undefined') module.exports = WandLogic;
