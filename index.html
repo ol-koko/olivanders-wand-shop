@@ -22,7 +22,7 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 .full{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:block}
 
 /* street */
-#street{cursor:pointer}
+#street{cursor:pointer;touch-action:none}
 .st-title{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + min(7vh, 56px));text-align:center;pointer-events:none;transition:opacity .6s,transform .8s;padding:0 18px}
 .st-title h1{font-weight:600;font-size:clamp(30px,min(8.6vw,11vh),72px);line-height:1;letter-spacing:.01em;background:linear-gradient(180deg,#fff4d2 10%,#e8c27a 55%,#b4823e);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(255,200,120,.35)) drop-shadow(0 2px 2px rgba(0,0,0,.6))}
 .st-title p{margin:min(12px,1.6vh) auto 0;max-width:560px;font-style:italic;font-size:clamp(14px,min(4vw,3.4vh),23px);line-height:1.3;color:#e2d6bd;text-shadow:0 1px 8px rgba(0,0,0,.9)}
@@ -430,38 +430,28 @@ const st = {
 /* ================= layers & parallax ================= */
 const layers = {};
 document.querySelectorAll('.pl').forEach(el => { layers[el.id] = { el, d: +el.dataset.d, ox: 0, oy: 0, s: 1, blur: 0 }; });
-const par = { tx: 0, ty: 0, x: 0, y: 0, k: 1 };
+const par = { tx: 0, ty: 0, x: 0, y: 0, k: 1, d: .022 };
 addEventListener('pointermove', e => { if (e.pointerType === 'mouse') { par.tx = (e.clientX / W - .5) * 2; par.ty = (e.clientY / H - .5) * 2; } }, { passive: true });
 function applyLayer(Ly) { Ly.el.style.transform = `translate3d(${Ly.ox.toFixed(2)}px,${Ly.oy.toFixed(2)}px,0) scale(${Ly.s.toFixed(4)})`; Ly.el.style.filter = Ly.blur > .05 ? `blur(${Ly.blur.toFixed(2)}px)` : ''; }
-// On phones, tilting moves the scene the way the mouse does on desktop. Slowly re-centres on however the phone is being held.
-const tilt = { on: false, asked: false, seen: -1e9, x0: null, y0: null };
+// On touch screens depth comes from tilt where the browser gives orientation events with no prompt, and from dragging a finger over the street.
+const tilt = { seen: -1e9, x0: null, y0: null }, touch = { on: false, moved: false, x: 0, y: 0 };
 function onTilt(e) {
-  if (e.gamma == null || e.beta == null) return;
+  if (e.gamma == null || e.beta == null || touch.on) return;
   const wide = W > H, flip = wide && screen.orientation && screen.orientation.angle === 270 ? -1 : 1; // in landscape the axes swap
   const gx = wide ? e.beta * flip : e.gamma, gy = wide ? -e.gamma * flip : e.beta;
   if (tilt.x0 == null) { tilt.x0 = gx; tilt.y0 = gy; }
-  tilt.x0 += (gx - tilt.x0) * .004; tilt.y0 += (gy - tilt.y0) * .004;
+  tilt.x0 += (gx - tilt.x0) * .004; tilt.y0 += (gy - tilt.y0) * .004; // slowly re-centres on however the phone is being held
   par.tx = clamp((gx - tilt.x0) / 16, -1, 1); par.ty = clamp((gy - tilt.y0) / 16, -1, 1);
   tilt.seen = performance.now();
 }
-// iPhone gives motion access only from a tap, and remembers the answer for a while. Other browsers need no asking.
-const askMotion = window.DeviceOrientationEvent && !hasHover ? DeviceOrientationEvent.requestPermission : null;
-function listenTilt() { if (!tilt.on) { tilt.on = true; addEventListener('deviceorientation', onTilt); } }
-function askTilt() {
-  if (!askMotion || tilt.on) return Promise.resolve();
-  tilt.asked = true;
-  return withTimeout(askMotion.call(DeviceOrientationEvent), 15000).then(r => { if (r === 'granted') listenTilt(); }).catch(() => { });
-}
-if (window.DeviceOrientationEvent && !hasHover) {
-  if (typeof askMotion !== 'function') listenTilt();
-  else askMotion.call(DeviceOrientationEvent).then(r => { if (r === 'granted') listenTilt(); }).catch(() => { }); // no prompt: this only succeeds if already allowed
-}
+if (!hasHover && !reduceMotion) addEventListener('deviceorientation', onTilt);
 function updatePar(t) {
-  const tilting = t - tilt.seen < 1000;
-  if (!hasHover && !tilting) { par.tx = Math.sin(t * .00021) * .7; par.ty = Math.sin(t * .00016 + 1) * .45; }
+  const felt = touch.on || t - tilt.seen < 1000;
+  if (!hasHover && !felt) { par.tx = Math.sin(t * .00021) * .7; par.ty = Math.sin(t * .00016 + 1) * .45; }
   const k = st.cap && st.cap.active ? .3 : 1;
   par.x += (par.tx * k - par.x) * .06; par.y += (par.ty * k - par.y) * .06;
-  const sh = MIN * (tilting ? .034 : .022);
+  par.d += ((felt ? .034 : .022) - par.d) * .06; // eased, so letting go doesn't make the layers jump
+  const sh = MIN * par.d;
   for (const id in layers) { const Ly = layers[id]; Ly.ox = -par.x * Ly.d * sh; Ly.oy = -par.y * Ly.d * sh * .7; applyLayer(Ly); }
 }
 function L2S(Ly, x, y) { return [x - W * .04 + Ly.ox, y - H * .04 + Ly.oy]; }
@@ -1531,7 +1521,6 @@ document.querySelectorAll('#lang button').forEach(b => b.addEventListener('click
 /* ================= enter ================= */
 async function enterShop() {
   if (st.phase !== 'street') return; st.phase = 'entering';
-  await askTilt(); // the door opens after the answer, so it isn't hidden behind the system prompt
   if (A.on) SFX.bell();
   $('#cta').style.opacity = 0; $('#stFan').style.opacity = 0; $('#stTitle').style.opacity = 0; $('#stTitle').style.transform = 'translateY(-20px)';
   const dr = $('#doorHit').getBoundingClientRect(), cx = dr.left + dr.width / 2, cy = dr.top + dr.height * .55;
@@ -1584,11 +1573,16 @@ async function chooseCam() {
   finally { clearTimeout(t6); clearTimeout(limit); cam.onGrant = null; }
 }
 function buildInterior() { drawBack(); drawMid(); drawFront(); initFX(); }
-// While motion access is still unasked, a tap on the street outside the button and the door asks for it and stays here, so the street gets depth too.
-$('#street').addEventListener('click', e => {
-  if (typeof askMotion === 'function' && !tilt.on && !tilt.asked && !e.target.closest('#cta, #doorHit')) { askTilt(); return; }
-  enterShop();
+// A tap enters the shop. A drag moves the scene instead, like the mouse on desktop, and eases back to the drift on release.
+const street = $('#street');
+street.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') Object.assign(touch, { on: true, moved: false, x: e.clientX, y: e.clientY }); });
+street.addEventListener('pointermove', e => {
+  if (!touch.on) return;
+  if (Math.hypot(e.clientX - touch.x, e.clientY - touch.y) > 10) touch.moved = true;
+  if (!reduceMotion) { par.tx = clamp(e.clientX / W * 2 - 1, -1, 1); par.ty = clamp(e.clientY / H * 2 - 1, -1, 1); }
 });
+const endTouch = () => { touch.on = false; }; street.addEventListener('pointerup', endTouch); street.addEventListener('pointercancel', endTouch);
+street.addEventListener('click', () => { if (touch.moved) { touch.moved = false; return; } enterShop(); });
 addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && st.phase === 'street') enterShop(); });
 
 /* ================= boot ================= */

@@ -1,5 +1,6 @@
-// How the wand moves during a wave, and the depth effect from tilting a phone.
+// How the wand moves during a wave, and the depth effect from a finger or from tilting a phone.
 //   node tools/e2e/motion.mjs        run everything
+//   node tools/e2e/motion.mjs tilt   depth only
 //   node tools/e2e/motion.mjs wand   wand motion only
 import path from 'node:path';
 import { closeAll, serve, open, enter, choosePointer, ensureShots, sleep } from './lib.mjs';
@@ -31,56 +32,88 @@ async function wandRun() {
   check(ratio < .55, 'the handle moves much less than the tip');
   check(!errors.length, 'no page errors ' + errors.join(' | '));
 }
-async function tiltRun() {
-  console.log('== tilting the phone moves the layers');
+async function depthRun() {
   const tilt = (page, gamma, beta) => page.evaluate(([g, b]) => dispatchEvent(new DeviceOrientationEvent('deviceorientation', { gamma: g, beta: b })), [gamma, beta]);
-  const shift = page => page.evaluate(() => [__wand.layers.shFront.ox, __wand.layers.shFront.oy]);
-  // behaves like iPhone Safari: rejected without a real tap, answers with a real one
-  const iphone = answer => `window.__asked = 0; DeviceOrientationEvent.requestPermission = () => { if (!navigator.userActivation.isActive) return Promise.reject(new DOMException('needs a tap', 'NotAllowedError')); window.__asked++; return '${answer}' === 'throw' ? Promise.reject(new Error('no')) : Promise.resolve('${answer}'); };`;
-  const tapAt = async (page, sel) => { const r = await page.evaluate(s => { const b = document.querySelector(s).getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; }, sel); await page.touchscreen.tap(r[0], r[1]); };
-  const tapSky = page => page.touchscreen.tap(195, 330);
-  const inStreet = page => page.evaluate(() => __wand.st.phase === 'street');
   const sway = async (page, g, b) => { for (let i = 0; i < 30; i++) { await tilt(page, g, b); await sleep(30); } };
-  const readLayers = page => page.evaluate(k => [__wand.layers[k].ox, __wand.layers[k].oy], 'stShop');
+  const read = (page, k) => page.evaluate(n => [__wand.layers[n].ox, __wand.layers[n].oy], k);
+  const inStreet = page => page.evaluate(() => __wand.st.phase === 'street');
+  const noOverscan = page => page.evaluate(() => Math.max(...Object.values(__wand.layers).map(l => Math.abs(l.ox))) <= innerWidth * .04 + .5);
+  // a real finger, so the browser produces real pointer events and decides about the click itself
+  const sessions = new Map(), cdp = async page => { if (!sessions.has(page)) sessions.set(page, await page.context().newCDPSession(page)); return sessions.get(page); };
+  const drag = async (page, from, to, { lift = true } = {}) => {
+    const c = await cdp(page), pt = (x, y) => [{ x, y }];
+    await c.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt(...from) });
+    for (let i = 1; i <= 12; i++) { await c.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pt(from[0] + (to[0] - from[0]) * i / 12, from[1] + (to[1] - from[1]) * i / 12) }); await sleep(40); }
+    await sleep(400);
+    if (lift) await c.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  };
+  const cta = page => page.evaluate(() => { const b = document.querySelector('#cta').getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; });
+  // what iPhone Safari does: orientation events stay silent, and the permission function exists but must never be called
+  const iphone = `window.__asked = 0; DeviceOrientationEvent.requestPermission = () => { window.__asked++; return Promise.resolve('granted'); };`;
+
+  console.log('== iPhone: depth from a finger, no prompts');
   {
-    const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: iphone('granted') });
-    await sleep(400); check((await page.evaluate(() => __asked)) === 0, 'iPhone: no prompt on load');
-    await tapSky(page); await sleep(500);
-    check((await page.evaluate(() => __asked)) === 1 && await inStreet(page), 'iPhone: a tap on the street asks and stays on the street');
-    await tilt(page, 0, 40); await sway(page, 15, 40); const right = await readLayers(page); await sway(page, -15, 40); const left = await readLayers(page);
-    console.log('    street layer right', right.map(v => +v.toFixed(1)), 'left', left.map(v => +v.toFixed(1)));
-    check(right[0] < -2 && left[0] > 2, 'iPhone: the street moves with tilt');
+    const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: iphone });
+    await sleep(500);
+    await drag(page, [60, 400], [40, 300], { lift: false }); const left = await read(page, 'stShop');
+    const c = await cdp(page); await c.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await sleep(300); check(await inStreet(page), 'a drag does not enter the shop');
+    await drag(page, [330, 300], [350, 500], { lift: false }); const right = await read(page, 'stShop');
+    console.log('    street layer, finger left', left.map(v => +v.toFixed(1)), 'finger right', right.map(v => +v.toFixed(1)));
+    check(left[0] > 3 && right[0] < -3 && right[1] < left[1], 'dragging moves the layers both ways, as the mouse does');
+    check(await noOverscan(page), 'the scene never slides past its overscan');
+    await c.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(2500);
+    const after = await read(page, 'stShop'); console.log('    after release', after.map(v => +v.toFixed(1)));
+    check(Math.abs(after[0]) < Math.abs(right[0]) * .6, 'it eases back to the drift on release');
+    check(await inStreet(page), 'still on the street');
+    await drag(page, await cta(page), [195, 500]); await sleep(300); check(await inStreet(page), 'a drag that starts on the button does not enter either');
     await page.screenshot({ path: path.join(SHOTS, 'motion-street.png') });
-    await tapSky(page); await sleep(500); check(!(await inStreet(page)), 'a second tap on the street enters, as before');
-    await page.waitForFunction(() => __wand.st.phase === 'shop', null, { timeout: 30000 }); await sway(page, 15, 40); const r2 = await shift(page); await sway(page, -15, 40); const l2 = await shift(page); await sway(page, 0, 55); const f2 = await shift(page);
-    console.log('    shop layer right', r2.map(v => +v.toFixed(1)), 'left', l2.map(v => +v.toFixed(1)), 'forward', f2.map(v => +v.toFixed(1)));
-    check(r2[0] < -2 && l2[0] > 2 && Math.abs(f2[1]) > 1.5, 'the shop moves with tilt, both ways and forward');
-    check(await page.evaluate(() => Math.max(...Object.values(__wand.layers).map(l => Math.abs(l.ox))) <= innerWidth * .04 + .5), 'the scene never slides past its overscan');
-    check(!errors.length, 'no page errors ' + errors.join(' | '));
-  }
-  for (const answer of ['granted', 'denied', 'throw']) {
-    const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: iphone(answer) });
-    await sleep(400); await tapAt(page, '#cta');
+    const t = await cta(page); const t0 = Date.now(); await page.touchscreen.tap(t[0], t[1]);
+    const opened = await page.evaluate(() => new Promise(r => { const a = performance.now(); (function f() { if (__wand.st.phase !== 'street') r(Math.round(performance.now() - a)); else if (performance.now() - a > 3000) r(-1); else requestAnimationFrame(f); })(); }));
+    check(opened >= 0 && opened < 300, `a tap on the button opens the door at once (${opened} ms)`);
     await page.waitForFunction(() => document.querySelectorAll('#nBtns button').length === 2, null, { timeout: 30000 });
-    check((await page.evaluate(() => __asked)) === 1, `iPhone ${answer}: the button asks once and enters`);
+    check((await page.evaluate(() => __asked)) === 0, 'no motion permission was ever asked');
     check(!errors.length, 'no page errors ' + errors.join(' | '));
   }
   {
-    // already allowed earlier: works from the start with no prompt or extra tap
-    const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: `DeviceOrientationEvent.requestPermission = () => Promise.resolve('granted');` });
-    await sleep(400); await tilt(page, 0, 40); await sway(page, 15, 40); const r = await readLayers(page);
-    check(r[0] < -2, 'allowed earlier: the street moves right away');
-    await tapSky(page); await sleep(500); check(!(await inStreet(page)), 'allowed earlier: one tap enters');
+    const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: iphone });
+    await sleep(400); await page.touchscreen.tap(195, 330); await sleep(400);
+    check(!(await inStreet(page)), 'a tap on the street enters, as before'); check((await page.evaluate(() => __asked)) === 0, 'still no prompt'); check(!errors.length, 'no page errors ' + errors.join(' | '));
+  }
+  console.log('== Android: tilt works by itself');
+  {
+    const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: `delete DeviceOrientationEvent.requestPermission;` });
+    await sleep(400); await tilt(page, 0, 40); await sway(page, 15, 40); const r = await read(page, 'stShop'); await sway(page, -15, 40); const l = await read(page, 'stShop');
+    console.log('    street layer right', r.map(v => +v.toFixed(1)), 'left', l.map(v => +v.toFixed(1)));
+    check(r[0] < -2 && l[0] > 2, 'the street moves with tilt, with no tap and no UI');
+    await page.evaluate(() => document.querySelector('#cta').click()); await page.waitForFunction(() => __wand.st.phase === 'shop', null, { timeout: 30000 });
+    await sway(page, 15, 40); const r2 = await read(page, 'shFront'); await sway(page, -15, 40); const l2 = await read(page, 'shFront'); await sway(page, 0, 55); const f2 = await read(page, 'shFront');
+    console.log('    shop layer right', r2.map(v => +v.toFixed(1)), 'left', l2.map(v => +v.toFixed(1)), 'forward', f2.map(v => +v.toFixed(1)));
+    check(r2[0] < -2 && l2[0] > 2 && Math.abs(f2[1]) > 1.5, 'the shop moves with tilt too');
+    check(await noOverscan(page), 'the scene never slides past its overscan');
     check(!errors.length, 'no page errors ' + errors.join(' | '));
   }
+  console.log('== reduced motion: no tilt, no drag');
+  {
+    const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: `delete DeviceOrientationEvent.requestPermission;` });
+    await page.emulateMedia({ reducedMotion: 'reduce' }); await page.reload({ waitUntil: 'load' }); await sleep(400);
+    await tilt(page, 0, 40); await sway(page, 15, 40); const felt = await page.evaluate(() => __wand.par.tx);
+    await drag(page, [60, 400], [40, 300], { lift: false }); const dragged = await page.evaluate(() => __wand.par.tx);
+    const c = await cdp(page); await c.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(300);
+    console.log('    target after tilt', felt.toFixed(2), 'after drag to the left', dragged.toFixed(2));
+    check(felt < .75 && dragged > -.5, 'neither tilt nor drag drives the layers');
+    check(await inStreet(page), 'a drag still does not enter');
+    check(!errors.length, 'no page errors ' + errors.join(' | '));
+  }
+  console.log('== desktop');
   {
     const { page, errors } = await open(url, { viewport: { width: 1440, height: 900 } });
-    await page.mouse.move(100, 100); await sleep(700); const a = await shift(page); await page.mouse.move(1300, 700); await sleep(900); const b = await shift(page);
-    check(Math.abs(a[0] - b[0]) > 2, 'desktop still follows the mouse'); check(!errors.length, 'no page errors ' + errors.join(' | '));
+    await page.mouse.move(100, 100); await sleep(700); const a = await read(page, 'stShop'); await page.mouse.move(1300, 700); await sleep(900); const b = await read(page, 'stShop');
+    check(Math.abs(a[0] - b[0]) > 2, 'still follows the mouse'); check(!errors.length, 'no page errors ' + errors.join(' | '));
   }
 }
 if (only !== 'tilt') await wandRun();
-if (only !== 'wand') await tiltRun();
+if (only !== 'wand') await depthRun();
 await closeAll(); srv.close();
 console.log(fails.length ? `\n${fails.length} FAILED:\n- ${fails.join('\n- ')}` : '\nall passed');
 process.exit(fails.length ? 1 : 0);

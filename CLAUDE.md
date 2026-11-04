@@ -8,7 +8,7 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - Visuals are drawn in code: SVG street scene, canvas shop interior, canvas FX layer. No image assets.
 - `tools/` is local only and never ships: balance simulator, wave recorder, Playwright tests. See `tools/README.md`.
 - Sound is generated with WebAudio (off by default, toggle top-right).
-- Depth effect: layers follow the mouse on desktop and the phone's tilt on touch devices (iPhone needs a tap to ask: tapping the street asks and stays there, tapping the button asks and then enters), with a slow drift if tilt isn't available.
+- Depth effect: layers follow the mouse on desktop. On touch screens they follow a finger dragged over the street, and the tilt where the browser gives orientation events with no prompt, easing back to a slow drift. Reduced motion turns off tilt and drag. Never ask for motion permission: the camera is the only permission in the app.
 - UA / EN toggle; all strings live in the `S`, `OFFER`, `SPELLS`, `FAIL`, `WIN`, `PHR` objects and in `WANDS`.
 
 ## Key logic (keep it this way unless asked)
