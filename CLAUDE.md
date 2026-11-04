@@ -5,11 +5,11 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 
 ## Current state
 - Static site, no build step. `index.html` holds the page, styles, drawing, FX and flow. `logic.js` holds the game logic with no DOM (wands, metrics, choosing, camera motion), shared with `tools/`.
-- Visuals are drawn in code: SVG street scene, canvas shop interior, canvas FX layer. No image assets.
+- Visuals are drawn in code: SVG street scene, canvas shop interior, canvas FX layer. The only image files are `og.png`, `favicon.svg` and `apple-touch-icon.png`, for link previews and icons; `tools/make-og.mjs` generates them from the game's own drawing.
 - `tools/` is local only and never ships: balance simulator, wave recorder, Playwright tests. See `tools/README.md`.
 - Sound is generated with WebAudio (off by default, toggle top-right).
 - Depth effect: layers follow the mouse on desktop. On touch screens they follow a finger dragged over the street, and the tilt where the browser gives orientation events with no prompt, easing back to a slow drift. Reduced motion keeps the layers still: no drift, tilt, drag or mouse. Never ask for motion permission: the camera is the only permission in the app.
-- UA / EN toggle; all strings live in the `S`, `OFFER`, `SPELLS`, `FAIL`, `WIN`, `PHR` objects and in `WANDS`.
+- UA / EN toggle; all strings live in the `S`, `OFFER`, `SPELLS`, `FAIL`, `WIN`, `WAVE_WORDS` objects and in `WANDS`. The first language comes from the browser: Ukrainian for `uk`, English for the rest, and the person's choice is remembered. The meta tags are in English.
 
 ## Key logic (keep it this way unless asked)
 - Flow: street → door transition → input choice (camera / finger-mouse) → warm-up wave → wand attempts → result card.
