@@ -13,7 +13,7 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
 
 // Test seam: the page keeps its internals private, so the test server adds an inspection hook to its own copy of index.html.
 const HOOK_AT = 'requestAnimationFrame(frame);\n})();';
-const HOOK = 'requestAnimationFrame(frame);\nwindow.__wand = { st, WANDS, wandDist, REACT, cam, pickReact, showResult, v3, makeCard };\n})();';
+const HOOK = 'requestAnimationFrame(frame);\nwindow.__wand = { st, WANDS, wandDist, REACT, cam, pickReact, showResult, v3, makeCard, wandLen, par, layers };\n})();';
 
 export function serve() {
   return new Promise(resolve => {
