@@ -23,12 +23,12 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 
 /* street */
 #street{cursor:pointer}
-.st-title{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 7vh);text-align:center;pointer-events:none;transition:opacity .6s,transform .8s;padding:0 18px}
-.st-title h1{font-weight:600;font-size:clamp(38px,8.6vw,72px);line-height:1;letter-spacing:.01em;background:linear-gradient(180deg,#fff4d2 10%,#e8c27a 55%,#b4823e);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(255,200,120,.35)) drop-shadow(0 2px 2px rgba(0,0,0,.6))}
-.st-title p{margin:12px auto 0;max-width:560px;font-style:italic;font-size:clamp(17px,4vw,23px);line-height:1.3;color:#e2d6bd;text-shadow:0 1px 8px rgba(0,0,0,.9)}
-#cta{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + max(5.5vh, 34px));transform:translateX(-50%);padding:13px 30px;border-radius:999px;background:linear-gradient(180deg,#f4d895,#c99a4e);border:1px solid #fff0c4;color:#2a170b;font:inherit;font-size:clamp(19px,4.6vw,22px);font-weight:700;letter-spacing:.01em;white-space:nowrap;cursor:pointer;box-shadow:0 8px 30px rgba(0,0,0,.55),0 0 26px rgba(255,200,110,.35);animation:ctap 2.6s ease-in-out infinite;transition:opacity .5s}
+.st-title{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + min(7vh, 56px));text-align:center;pointer-events:none;transition:opacity .6s,transform .8s;padding:0 18px}
+.st-title h1{font-weight:600;font-size:clamp(30px,min(8.6vw,11vh),72px);line-height:1;letter-spacing:.01em;background:linear-gradient(180deg,#fff4d2 10%,#e8c27a 55%,#b4823e);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(255,200,120,.35)) drop-shadow(0 2px 2px rgba(0,0,0,.6))}
+.st-title p{margin:min(12px,1.6vh) auto 0;max-width:560px;font-style:italic;font-size:clamp(14px,min(4vw,3.4vh),23px);line-height:1.3;color:#e2d6bd;text-shadow:0 1px 8px rgba(0,0,0,.9)}
+#cta{position:absolute;left:0;right:0;margin:0 auto;width:fit-content;bottom:calc(env(safe-area-inset-bottom) + max(5.5vh, 34px));padding:13px 30px;border-radius:999px;background:linear-gradient(180deg,#f4d895,#c99a4e);border:1px solid #fff0c4;color:#2a170b;font:inherit;font-size:clamp(19px,4.6vw,22px);font-weight:700;letter-spacing:.01em;white-space:nowrap;cursor:pointer;box-shadow:0 8px 30px rgba(0,0,0,.55),0 0 26px rgba(255,200,110,.35);animation:ctap 2.6s ease-in-out infinite;transition:opacity .5s}
 .st-fan{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 7px);text-align:center;font-style:italic;font-size:12.5px;line-height:1.2;padding:0 12px;font-weight:600;color:#232b45;pointer-events:none;transition:opacity .5s}
-@keyframes ctap{50%{box-shadow:0 8px 30px rgba(0,0,0,.55),0 0 44px rgba(255,200,110,.65);transform:translateX(-50%) translateY(-3px)}}
+@keyframes ctap{50%{box-shadow:0 8px 30px rgba(0,0,0,.55),0 0 44px rgba(255,200,110,.65);transform:translateY(-3px)}}
 .tw{animation:tw 2.2s ease-in-out infinite}
 @keyframes tw{50%{opacity:.25}}
 .leak{animation:leak 3s ease-in-out infinite}
@@ -78,6 +78,7 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 .status:empty{display:none}
 .nbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .nbtns:empty{display:none}
+.nbtns.eq{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))}
 .btn{font:inherit;font-weight:700;font-size:17px;background:#2b1a0e;color:var(--gold2);border:1px solid #7a5428;padding:10px 20px;border-radius:999px;cursor:pointer;transition:transform .15s,box-shadow .2s}
 .btn.ghost{background:transparent;color:#3a2516;border-color:#8a6a3a}
 .btn:hover{box-shadow:0 0 18px rgba(255,190,100,.35)}
@@ -375,7 +376,7 @@ const S = {
   credit: ['Створила Олександра Кокозей', 'Created by Oleksandra Kokozei'],
   cardK: ['Паличка обрала мене', 'The wand chose me'],
   sndOn: ['Увімкнути звук', 'Turn sound on'], sndOff: ['Вимкнути звук', 'Turn sound off'],
-  fan: ['Неофіційний фан-проєкт. Не пов’язаний із Warner Bros. чи Дж. К. Ролінґ.', 'Unofficial fan project. Not affiliated with Warner Bros. or J.K. Rowling.']
+  fan: ['Неофіційний фан-проєкт. Не пов’язаний із Warner Bros. чи Дж. К. Роулінг.', 'Unofficial fan project. Not affiliated with Warner Bros. or J.K. Rowling.']
 };
 const LI = lang => lang === 'en' ? 1 : 0;
 function T(k, v) { let s = S[k][LI(lang)]; if (v) for (const x in v) s = s.split('{' + x + '}').join(v[x]); return s; }
@@ -498,8 +499,9 @@ function buildSky() {
   <rect x="-900" y="-400" width="2800" height="1600" fill="url(#gSky)"/>`;
   const g = svgEl('g', {}, s);
   for (let i = 0; i < 170; i++) { const c = svgEl('circle', { cx: -800 + R() * 2600, cy: -300 + R() * 760, r: (.5 + R() * 1.4).toFixed(2), fill: R() < .2 ? '#ffe9c0' : '#dfe6ff', opacity: (.35 + R() * .6).toFixed(2) }, g); if (R() < .35) { c.setAttribute('class', 'tw'); c.style.animationDelay = (R() * 3).toFixed(2) + 's'; } }
-  svgEl('circle', { cx: 300, cy: 330, r: 120, fill: 'url(#gMoon)' }, s);
-  svgEl('circle', { cx: 300, cy: 330, r: 33, fill: '#f8efd6', mask: 'url(#mMoon)' }, s);
+  const moon = svgEl('g', { id: 'moonG' }, s);
+  svgEl('circle', { cx: 300, cy: 330, r: 120, fill: 'url(#gMoon)' }, moon);
+  svgEl('circle', { cx: 300, cy: 330, r: 33, fill: '#f8efd6', mask: 'url(#mMoon)' }, moon);
   const cl = svgEl('g', { filter: 'url(#fCloud)', opacity: .5 }, s);
   [[120, 380, 160, 22], [520, 300, 220, 18], [860, 360, 200, 24], [-200, 330, 240, 22], [1200, 300, 260, 20]].forEach(([x, y, rx, ry]) => svgEl('ellipse', { cx: x, cy: y, rx, ry, fill: '#5a6894', opacity: .5 }, cl));
   // distant castle on a snowy hill
@@ -547,7 +549,7 @@ function building(g, R, x, w, top, kind, color) {
 function buildTown() {
   const s = $('#svgTown'); s.innerHTML = ''; const R = rng(11); const g = svgEl('g', {}, s);
   [[-420, 270, 520, 'flat', '#1b1e2a'], [-160, 190, 470, 'gable', '#251e22'], [24, 152, 505, 'flat', '#1e2230'], [172, 122, 520, 'gable', '#241d27'],
-   [706, 128, 515, 'gable', '#231c26'], [830, 158, 500, 'flat', '#1d2130'], [984, 180, 470, 'gable', '#261f22'], [1160, 300, 510, 'flat', '#1b1e2a']]
+   [706, 128, 515, 'gable', '#231c26'], [830, 158, 500, 'flat', '#1d2130'], [984, 180, 470, 'gable', '#261f22'], [1160, 300, 510, 'flat', '#1b1e2a'], [-640, 220, 480, 'gable', '#231c26'], [-900, 260, 520, 'flat', '#1e2230'], [1460, 210, 490, 'gable', '#251e22'], [1670, 230, 520, 'flat', '#1d2130']]
     .forEach(([x, w, top, k, c]) => building(g, R, x, w, top, k, c));
 }
 function buildFg() {
@@ -586,9 +588,13 @@ function buildGarland() {
 }
 function setViewBoxes() {
   if (!W || !H) return;
-  const a = W / H, vbH = a > .9 ? 760 : 1080, vbW = vbH * a, vbY = 1018 - vbH, vbX = 500 - vbW / 2;
+  // on short screens show more sky, so the shop roof (its peak is at y=380) and the sign stay below the title
+  const a = W / H, base = a > .9 ? 760 : 1080, title = $('#stTitle').getBoundingClientRect().bottom + 12;
+  const vbH = st.phase === 'street' && title < H * .8 ? Math.max(base, Math.min(638 / (1 - title / H), 2800 / a)) : base;
+  const vbW = vbH * a, vbY = 1018 - vbH, vbX = 500 - vbW / 2;
   const vb = `${vbX.toFixed(1)} ${vbY.toFixed(1)} ${vbW.toFixed(1)} ${vbH.toFixed(1)}`;
   ['#svgSky', '#svgTown', '#svgShop', '#svgFg'].forEach(s => $(s).setAttribute('viewBox', vb));
+  $('#moonG').setAttribute('transform', a > .9 ? `translate(${Math.min(-210, 200 - 400 * vbH / H).toFixed(1)} 0)` : ''); // on wide screens keep the moon clear of the title
 }
 // snow
 const snow = { back: [], front: [], cb: $('#snowBack'), cf: $('#snowFront'), xb: null, xf: null };
@@ -1093,6 +1099,7 @@ function renderNote() {
   $('#nKicker').textContent = n.kicker || ''; $('#nHand').textContent = n.hand || ''; $('#nInstr').innerHTML = n.instr || '';
   const bx = $('#nBtns'); bx.innerHTML = '';
   const btns = (n.btns || []).slice(); if (st.camHelp && st.input === 'cam') btns.push({ label: T('bInstead'), ghost: true, fn: () => toPointer() });
+  bx.classList.toggle('eq', btns.length > 1);
   btns.forEach(b => { const e = document.createElement('button'); e.className = 'btn' + (b.ghost ? ' ghost' : ''); e.textContent = b.label; e.onclick = ev => { ev.stopPropagation(); b.fn(); }; bx.appendChild(e); });
 }
 function setNote(fn, instant = false) {
@@ -1487,6 +1494,7 @@ function applyLang() {
   $('#sign1').textContent = T('sign1'); $('#sign2').textContent = T('sign2');
   document.querySelectorAll('#lang button').forEach(b => b.classList.toggle('on', b.dataset.l === lang));
   sndBtn.setAttribute('aria-label', T(A.on ? 'sndOff' : 'sndOn'));
+  setViewBoxes(); // the title's height depends on the language
   if (st.noteFn) renderNote();
   if (!$('#result').hidden) fillResult();
 }
@@ -1528,7 +1536,7 @@ async function enterShop() {
   st.phase = 'shop';
   setNote(() => (IN_APP
     ? { kicker: T('shopK'), hand: T('introH'), instr: T('introI') + ' ' + T('inAppHint'), btns: [{ label: T('bDraw'), fn: choosePointer }] }
-    : { kicker: T('shopK'), hand: T('introH'), instr: T('introI'), btns: [{ label: T('bCam'), fn: chooseCam, ghost: !hasHover }, { label: T('bDraw'), fn: choosePointer, ghost: hasHover }] }));
+    : { kicker: T('shopK'), hand: T('introH'), instr: T('introI'), btns: [{ label: T('bCam'), fn: chooseCam }, { label: T('bDraw'), fn: choosePointer, ghost: true }] }));
 }
 function choosePointer() { st.input = 'pointer'; stopCamera(); ritual(); }
 function camFallback(key) {
