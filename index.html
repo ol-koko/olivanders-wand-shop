@@ -85,12 +85,9 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 /* note */
 #note{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 12px);transform:translateX(-50%) translateY(30px);width:min(93vw,560px);padding-top:13px;z-index:20;opacity:0;transition:opacity .6s ease,transform .7s cubic-bezier(.2,.8,.2,1);pointer-events:none}
 #note.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
-.note-in{position:relative;background:radial-gradient(130% 150% at 40% 0%,#f7eed6 0%,#ead9b2 55%,#d7bf8c 100%);color:var(--ink);border-radius:0 0 5px 5px;padding:25px 20px 16px;box-shadow:0 14px 44px rgba(0,0,0,.65),inset 0 0 34px rgba(130,85,30,.28),inset 0 0 0 1px rgba(120,80,30,.25);transition:opacity .35s}
+.note-in{position:relative;isolation:isolate;color:var(--ink);padding:25px 20px 18px;transition:opacity .35s}
 .note-in.fade{opacity:0}
-.note-roll{position:absolute;left:-7px;right:-7px;top:-13px;height:26px;border-radius:13px;background:linear-gradient(180deg,#a98651 0%,#f7eed6 26%,#ecdcb6 55%,#c6a46b 84%,#8f6c3a 100%);box-shadow:0 5px 7px -1px rgba(70,40,10,.45)}
-.note-roll::before,.note-roll::after{content:"";position:absolute;top:0;width:26px;height:26px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26'%3E%3Ccircle cx='13' cy='13' r='12.2' fill='%23efe0bb' stroke='%238a6432' stroke-width='1.2'/%3E%3Cpath d='M13 13.6c1.4.5 2.3-1.2 1.2-2.3-1.6-1.5-4.4-.4-4.7 1.8-.4 3 2.7 5 5.4 3.9 3.5-1.4 4.2-6 1.6-8.5-3.1-3-8.6-2-10.2 2' fill='none' stroke='%238a6432' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E")}
-.note-roll::before{left:0}
-.note-roll::after{right:0;transform:scaleX(-1)}
+#noteBg{position:absolute;left:-24px;top:-28px;width:calc(100% + 48px);height:calc(100% + 56px);z-index:-1;pointer-events:none}
 .note-in.nudge{animation:nudge .45s}
 @keyframes nudge{25%{transform:translateX(-6px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
 .kicker{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#8a5a2a;font-weight:700;min-height:14px}
@@ -300,7 +297,7 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
   </div>
 
   <div id="note" role="status" aria-live="polite"><div class="note-in" id="noteIn">
-    <div class="note-roll" aria-hidden="true"></div>
+    <canvas id="noteBg" aria-hidden="true"></canvas>
     <div class="kicker" id="nKicker"></div>
     <div class="nspec" id="nSpec"></div>
     <div class="hand" id="nHand"></div>
@@ -1151,6 +1148,45 @@ function drawFX(t, dt) {
 
 /* ================= note ================= */
 const note = $('#note'), noteIn = $('#noteIn');
+// The parchment behind the note: torn edges, mottled paper and a roll on top. Seeded, so the tears stay put when the text changes the height.
+function drawNoteBg() {
+  const c = $('#noteBg'), MX = 24, MT = 28, MB = 28, w = noteIn.offsetWidth + MX * 2, h = noteIn.offsetHeight + MT + MB, d = Math.min(2, devicePixelRatio || 1);
+  if (!noteIn.offsetWidth) return;
+  c.width = w * d; c.height = h * d; const x = c.getContext('2d'); x.scale(d, d);
+  const torn = (len, seed) => { const r = rng(seed), o = []; let s = 0; while (s < len) { s = Math.min(len, s + 5 + r() * 13); o.push([s, r() * 3]); if (r() < .1 && s < len - 6) { o.push([s + 1.5, 5 + r() * 4]); s += 3; o.push([s, r() * 2]); } } return o; };
+  const L = MX, R = w - MX, T = MT, B = h - MB, rT = T - 13, rB = T + 13, rL = L - 7, rR = R + 7;
+  const mottle = (a, n, seed) => { const r = rng(seed); for (let i = 0; i < n; i++) { const px = L - 8 + r() * (R - L + 16), py = a + r() * (B - a), rad = 18 + r() * 60, dark = r() < .65, al = .03 + r() * .06, g = x.createRadialGradient(px, py, 0, px, py, rad); g.addColorStop(0, dark ? `rgba(135,88,36,${al})` : `rgba(255,246,220,${al * 1.4})`); g.addColorStop(1, 'rgba(135,88,36,0)'); x.fillStyle = g; x.fillRect(px - rad, py - rad, rad * 2, rad * 2); } };
+  // paper
+  const paper = new Path2D(); paper.moveTo(L, T); paper.lineTo(R, T);
+  for (const [s, o] of torn(B - T, 11)) paper.lineTo(R - o, T + s);
+  for (const [s, o] of torn(R - L, 23)) paper.lineTo(R - s, B - o);
+  for (const [s, o] of torn(B - T, 37)) paper.lineTo(L + o, B - s);
+  paper.closePath();
+  x.save(); x.shadowColor = 'rgba(0,0,0,.62)'; x.shadowBlur = 20 * d; x.shadowOffsetY = 9 * d; x.fillStyle = '#e6d2a4'; x.fill(paper); x.restore();
+  x.save(); x.clip(paper);
+  const base = x.createRadialGradient((L + R) * .45, T + 20, 10, (L + R) * .5, (T + B) * .5, Math.max(R - L, B - T) * .75); base.addColorStop(0, '#f4e7c6'); base.addColorStop(.6, '#e8d5a8'); base.addColorStop(1, '#d6bb85'); x.fillStyle = base; x.fillRect(L - 4, T, R - L + 8, B - T + 4);
+  mottle(T, Math.round((R - L) * (B - T) / 2600) + 12, 53);
+  const fr = rng(71); x.lineWidth = .7; for (let i = 0, n = (R - L) * (B - T) / 90; i < n; i++) { const px = L + fr() * (R - L), py = T + fr() * (B - T), an = fr() * 6.28, ln = 2 + fr() * 6; x.strokeStyle = fr() < .6 ? 'rgba(120,78,30,.07)' : 'rgba(255,248,226,.09)'; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(an) * ln, py + Math.sin(an) * ln); x.stroke(); }
+  for (const [lw, al] of [[22, .07], [12, .1], [5, .16], [1.6, .32]]) { x.lineWidth = lw; x.strokeStyle = `rgba(112,68,22,${al})`; x.stroke(paper); }
+  const under = x.createLinearGradient(0, rB - 1, 0, rB + 15); under.addColorStop(0, 'rgba(70,40,12,.42)'); under.addColorStop(1, 'rgba(70,40,12,0)'); x.fillStyle = under; x.fillRect(L - 4, rB - 1, R - L + 8, 16);
+  x.restore();
+  // roll
+  const roll = new Path2D(), er = rng(89); roll.moveTo(rL + 2, rT);
+  roll.quadraticCurveTo((rL + rR) / 2, rT - .8, rR - 2, rT);
+  for (let y = rT + 2; y < rB; y += 3 + er() * 3) roll.lineTo(rR - er() * 2.6, y);
+  roll.lineTo(rR - 2, rB); roll.quadraticCurveTo((rL + rR) / 2, rB + .8, rL + 2, rB);
+  for (let y = rB - 2; y > rT; y -= 3 + er() * 3) roll.lineTo(rL + er() * 2.6, y);
+  roll.closePath();
+  x.save(); x.shadowColor = 'rgba(40,20,5,.5)'; x.shadowBlur = 7 * d; x.shadowOffsetY = 4 * d; x.fillStyle = '#c7a56c'; x.fill(roll); x.restore();
+  x.save(); x.clip(roll);
+  const cyl = x.createLinearGradient(0, rT, 0, rB); cyl.addColorStop(0, '#a98450'); cyl.addColorStop(.14, '#d9bf8d'); cyl.addColorStop(.34, '#f7ebcb'); cyl.addColorStop(.58, '#e3cc9b'); cyl.addColorStop(.84, '#b08c55'); cyl.addColorStop(1, '#7f5e30'); x.fillStyle = cyl; x.fillRect(rL, rT - 1, rR - rL, rB - rT + 2);
+  const sr = rng(97); for (let i = 0, n = (rR - rL) / 3; i < n; i++) { const px = rL + sr() * (rR - rL), py = rT + sr() * (rB - rT), ln = 6 + sr() * 26; x.lineWidth = .6 + sr() * .7; x.strokeStyle = sr() < .6 ? 'rgba(105,68,26,.1)' : 'rgba(255,250,230,.14)'; x.beginPath(); x.moveTo(px, py); x.lineTo(px + ln, py + (sr() - .5) * 1.2); x.stroke(); }
+  for (const [a, b] of [[rL, rL + 17], [rR, rR - 17]]) { const g = x.createLinearGradient(a, 0, b, 0); g.addColorStop(0, 'rgba(92,58,20,.5)'); g.addColorStop(1, 'rgba(92,58,20,0)'); x.fillStyle = g; x.fillRect(Math.min(a, b), rT - 1, 17, rB - rT + 2); }
+  x.restore();
+  for (const [ex, dir] of [[rL + 7, 1], [rR - 7, -1]]) { x.strokeStyle = 'rgba(88,54,18,.42)'; x.lineWidth = 1; x.beginPath(); x.moveTo(ex, rT + 1.5); x.quadraticCurveTo(ex + dir * 2.6, T, ex, rB - 1.5); x.stroke(); }
+}
+if (window.ResizeObserver) new ResizeObserver(drawNoteBg).observe(noteIn); else addEventListener('resize', drawNoteBg);
+drawNoteBg();
 let noteTimer = null;
 function renderNote() {
   const f = st.noteFn; if (!f) return; const n = f();
