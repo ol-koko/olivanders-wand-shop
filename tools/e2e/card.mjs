@@ -21,12 +21,12 @@ console.log('== content');
   const text = await page.evaluate(() => document.querySelector('.rcard').innerText);
   console.log('    ' + text.replace(/\n+/g, ' | '));
   for (const gone of ['Твій почерк', 'сигіл', 'Майже', 'Чому вона', 'Це гра']) check(!text.includes(gone), 'removed: ' + gone);
-  check(/Ця паличка обрала тебе, тому що ти чаклуєш: швидко, широко, різко/.test(text), 'why it chose you');
+  check(!/чаклуєш/.test(text), 'no general line about the wave');
   check(!/Покрути/.test(text), 'no rotate hint');
   check(!/Неофіційний фан-проєкт/.test(text), 'fan notice only on the street, not on the card');
   check(!/Копіювати|LinkedIn|Telegram/.test(text), 'no copy link, no social links');
   check(/made by Oleksandra Kokozei/.test(text) && (await page.getAttribute('#rCredit', 'href')) === 'https://oleksandra-kokozei.com', 'creator credit links to the site');
-  const lore = await page.evaluate(() => __wand.st.winner.lore.ua); check(!text.includes(lore), 'no lore sentence on the card');
+  const lore = await page.evaluate(() => __wand.st.winner.lore.ua); check(text.includes(lore), 'the wand\'s own sentence: ' + lore);
   for (const [w, h] of [[320, 568], [360, 740], [390, 844], [430, 932]]) {
     await page.setViewportSize({ width: w, height: h }); await sleep(250);
     for (const l of ['ua', 'en']) {
@@ -41,7 +41,7 @@ console.log('== content');
   check(gaps.glow[0] === gaps.glow[2] && gaps.glow[1] === gaps.glow[3], `the light is centred on the wand: ${gaps.glow.join(' ')}`);
   check(h < 790, `card fits a phone screen (${h}px)`);
   await show(page, 'dumbledore', 'en'); await sleep(1200); await page.screenshot({ path: path.join(SHOTS, 'card-en-rare.png') });
-  const en = await page.evaluate(() => document.querySelector('.rcard').innerText); check(/This wand chose you because you cast quickly, widely, sharply/.test(en) && /A RARE CHOICE/i.test(en) && /made by Oleksandra Kokozei/.test(en), 'English, rare badge, credit');
+  const en = await page.evaluate(() => document.querySelector('.rcard').innerText); check(en.includes(await page.evaluate(() => __wand.st.winner.lore.en)) && /A RARE CHOICE/i.test(en) && /made by Oleksandra Kokozei/.test(en), 'English, rare badge, credit');
   await show(page, 'luna'); await sleep(300); const luna = await page.evaluate(() => document.querySelector('.rcard').innerText); check(!/канон|canon|книж|книз|book/i.test(luna) && !(await visible(page, '#rSpecs')), 'a wand with no canon spec shows no spec line and no label');
   await show(page, 'neville'); await sleep(200); const nev = await page.evaluate(() => document.querySelector('#rSpecs').textContent); check(!/дюйм/.test(nev), 'Neville has no length: ' + nev);
   check(!errors.length, 'no page errors ' + errors.join(' | '));
