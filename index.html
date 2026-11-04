@@ -139,7 +139,7 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 #rStage.is3d #rWand3d{opacity:1;pointer-events:auto}
 #rWand3d:active{cursor:grabbing}
 .r-specs{margin-top:16px;font-size:14px;font-weight:300;line-height:1.2;color:#ecdcb8;text-transform:lowercase}
-.r-wave{max-width:348px;margin:60px auto 0;font-style:italic;font-weight:400;font-size:19px;line-height:1.35;color:#d6c3a0}
+.r-lore{max-width:348px;margin:60px auto 0;font-style:italic;font-weight:400;font-size:19px;line-height:1.35;color:#d6c3a0}
 .cap{font-size:14px;color:#a8916c;font-style:italic;margin-top:8px}
 .r-btns{display:grid;grid-template-columns:repeat(2,minmax(0,173px));gap:10px;justify-content:center;margin-top:48px}
 .r-btns button{font:inherit;font-weight:700;font-size:clamp(14px,4.2vw,17px);line-height:21px;padding:10px 6px;border-radius:999px;cursor:pointer;border:1px solid #8a6230;background:#2b1a0e;color:var(--gold2)}
@@ -312,7 +312,7 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
     <div id="rRare" hidden><span class="rare" id="rRareT"></span></div>
     <div class="r-specs" id="rSpecs"></div>
     <div id="rStage"><canvas id="rWand"></canvas><canvas id="rWand3d"></canvas></div>
-    <p class="r-wave" id="rWave"></p>
+    <p class="r-lore" id="rLore"></p>
     <div class="r-btns">
       <button class="pri" id="bShare" hidden></button>
       <button class="pri" id="bDown" hidden></button>
@@ -329,7 +329,7 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 <script>
 (() => {
 'use strict';
-const { clamp, lerp, wrapA, TR, WANDS, wandDist, resample, strokeMetrics, averageTraits, bestMatch, chooseCandidate, isChosen, isNearMiss, CAM, camMap, camSmooth, camSpeed, camStep } = WandLogic;
+const { clamp, lerp, wrapA, WANDS, wandDist, resample, strokeMetrics, averageTraits, bestMatch, chooseCandidate, isChosen, isNearMiss, CAM, camMap, camSmooth, camSpeed, camStep } = WandLogic;
 const $ = s => document.querySelector(s);
 const easeIO = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const easeOut = t => 1 - Math.pow(1 - t, 3);
@@ -390,8 +390,6 @@ const S = {
   tooShort: ['Надто коротко. Змахни ширше.', 'Too short. Wave wider.'],
   rKicker: ['Паличка обрала тебе', 'The wand has chosen you'],
   rare: ['рідкісний вибір', 'a rare choice'],
-  waveIs: ['Ця паличка обрала тебе, тому що ти чаклуєш: {w}', 'This wand chose you because you cast {w}'],
-  waveEven: ['врівноважено', 'with balance'],
   share: ['Поділитися', 'Share'],
   download: ['Завантажити картинку', 'Download image'],
   saveHold: ['Утримуй картинку, щоб зберегти її.', 'Press and hold the image to save it.'],
@@ -433,13 +431,6 @@ const WIN = [
 
 /* ================= traits & wands ================= */
 // How the wave line describes each trait, high and low.
-const WAVE_WORDS = {
-  speed: { hi: ['швидко', 'quickly'], lo: ['повільно', 'slowly'] },
-  amp: { hi: ['широко', 'widely'], lo: ['стримано', 'with restraint'] },
-  sharp: { hi: ['різко', 'sharply'], lo: ['плавно', 'smoothly'] },
-  flow: { hi: ['рівно', 'evenly'], lo: ['поривчасто', 'in gusts'] },
-  curl: { hi: ['із завитками', 'with curls'], lo: ['прямо', 'in straight lines'] }
-};
 
 /* ================= state ================= */
 const st = {
@@ -1453,17 +1444,12 @@ async function success(w) {
 }
 
 /* ================= result ================= */
-function waveLine(tr) {
-  const picks = TR.map(k => ({ k, d: tr[k] - .5 })).filter(o => Math.abs(o.d) >= .12).sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 3);
-  const words = picks.map(o => WAVE_WORDS[o.k][o.d > 0 ? 'hi' : 'lo'][LI(lang)]);
-  return T('waveIs', { w: words.length ? words.join(', ') : T('waveEven') });
-}
 function specText(w) { return w.spec ? [L(w.spec.wood), L(w.spec.core), L(w.spec.len), L(w.spec.flex)].filter(Boolean).join(' · ') : ''; }
 function fillResult() {
-  const w = st.winner, tr = st.traits; if (!w) return;
+  const w = st.winner; if (!w) return;
   $('#rKicker').textContent = T('rKicker'); $('#rName').textContent = L(w.name); $('#rRare').hidden = !w.rare; $('#rRareT').textContent = T('rare');
   const spc = $('#rSpecs'); spc.textContent = specText(w); spc.hidden = !w.spec;
-  $('#rWave').textContent = waveLine(tr);
+  $('#rLore').textContent = L(w.lore);
   $('#bShare').textContent = T('share'); $('#bDown').textContent = T('download'); $('#bAgain').textContent = T('again');
   $('#rSavedCap').textContent = T('saveHold');
   refreshCard();
