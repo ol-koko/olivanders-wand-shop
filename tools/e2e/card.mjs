@@ -32,6 +32,7 @@ console.log('== content');
   await show(page, 'neville'); await sleep(200); const nev = await page.evaluate(() => document.querySelector('#rSpecs').textContent); check(!/дюйм/.test(nev), 'Neville has no length: ' + nev);
   check(!errors.length, 'no page errors ' + errors.join(' | '));
 }
+await closeAll();
 console.log('== share image');
 for (const [id, lang] of [['voldemort', 'ua'], ['hermione', 'en']]) {
   const { page } = await open(url, { viewport: DESK });
@@ -40,6 +41,7 @@ for (const [id, lang] of [['voldemort', 'ua'], ['hermione', 'en']]) {
   const buf = Buffer.from(data, 'base64'), [w, h] = pngSize(buf); fs.writeFileSync(path.join(SHOTS, `share-${id}.png`), buf);
   check(w === 1080 && h === 1350, `${id} PNG ${w}×${h}`);
 }
+await closeAll();
 console.log('== desktop: no file sharing');
 {
   const { page, errors } = await open(url, { viewport: DESK, init: `delete Navigator.prototype.share; delete Navigator.prototype.canShare;` });
@@ -50,6 +52,7 @@ console.log('== desktop: no file sharing');
   await page.screenshot({ path: path.join(SHOTS, 'card-desktop.png') });
   check(!errors.length, 'no page errors ' + errors.join(' | '));
 }
+await closeAll();
 console.log('== phone: share sheet');
 {
   const mock = kind => `window.__shared = []; navigator.canShare = () => true; navigator.share = async d => { window.__shared.push({ names: d.files.map(f => f.name + ':' + f.type), text: d.text, url: d.url }); ${kind} };`;
@@ -63,6 +66,7 @@ console.log('== phone: share sheet');
     await show(page, 'harry'); await sleep(800); await page.tap('#bShare'); await sleep(300);
     check(await visible(page, '#bDown'), 'a failed share offers the download'); check(!errors.length, 'no page errors ' + errors.join(' | ')); }
 }
+await closeAll();
 console.log('== in-app browser');
 {
   const { page, errors } = await open(url, { viewport: PHONE, mobile: true, userAgent: 'Mozilla/5.0 (iPhone) AppleWebKit/605.1.15 Mobile/15E148 Instagram 300.0', init: `delete Navigator.prototype.share; delete Navigator.prototype.canShare;` });

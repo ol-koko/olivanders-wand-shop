@@ -15,9 +15,16 @@ Then:
     node tools/e2e/wand3d.mjs          # 3D view: lazy load, drag, offscreen pause, 2D fallback
     node tools/e2e/card.mjs            # result card and every sharing path, both languages
     node tools/e2e/ui.mjs              # first screens across phone and desktop sizes
+    node tools/e2e/meta.mjs            # meta tags, icons, preview image, first language
     node tools/e2e/motion.mjs          # how the wand moves in a wave, depth from a finger or tilt
 
 They start their own headless Chrome and test server, so open browser tabs stay untouched. To reach the game's internals, the test server adds an inspection hook to its own copy of `index.html`; the real file has none.
+
+## Link preview image and icons
+
+    node tools/make-og.mjs
+
+Regenerates `og.png`, `favicon.svg` and `apple-touch-icon.png` in the repo root from the game's own drawing.
 
 ## Wand balance
 No dependencies:

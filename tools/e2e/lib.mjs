@@ -13,7 +13,7 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
 
 // Test seam: the page keeps its internals private, so the test server adds an inspection hook to its own copy of index.html.
 const HOOK_AT = 'requestAnimationFrame(frame);\n})();';
-const HOOK = 'requestAnimationFrame(frame);\nwindow.__wand = { st, WANDS, wandDist, REACT, cam, pickReact, showResult, v3, makeCard, wandLen, par, layers };\n})();';
+const HOOK = 'requestAnimationFrame(frame);\nwindow.__wand = { st, WANDS, wandDist, REACT, cam, pickReact, showResult, v3, makeCard, wandLen, par, layers, drawWand };\n})();';
 
 export function serve() {
   return new Promise(resolve => {
@@ -30,13 +30,13 @@ export function serve() {
 const live = new Set();
 export const closeAll = () => Promise.all([...live].map(b => b.close().catch(() => { })));
 // A separate headless Chrome per scenario, so the owner's browser tabs stay untouched.
-export async function open(url, { video, fakeCam = !!video, grant = fakeCam, viewport = { width: 1440, height: 900 }, mobile = false, userAgent, init, route } = {}) {
+export async function open(url, { video, fakeCam = !!video, grant = fakeCam, viewport = { width: 1440, height: 900 }, mobile = false, userAgent, locale = 'uk-UA', init, route } = {}) {
   const args = ['--autoplay-policy=no-user-gesture-required', '--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--use-angle=metal', '--ignore-gpu-blocklist', '--enable-gpu'];
   if (fakeCam) args.push('--use-fake-device-for-media-stream');
   if (video) args.push('--use-file-for-fake-video-capture=' + path.join(HERE, 'fixtures', video));
   const browser = await chromium.launch({ channel: 'chrome', headless: true, args });
   live.add(browser);
-  const ctx = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: mobile ? 2 : 1, userAgent, permissions: grant ? ['camera'] : [] });
+  const ctx = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: mobile ? 2 : 1, userAgent, locale, permissions: grant ? ['camera'] : [] });
   const page = await ctx.newPage(), errors = [];
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_ABORTED|favicon/.test(m.text() + m.location().url)) errors.push('console: ' + m.text()); });

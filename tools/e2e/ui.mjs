@@ -6,7 +6,7 @@ const SHOTS = ensureShots(), { srv, url } = await serve(), fails = [];
 const check = (ok, what) => { console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) fails.push(what); };
 for (const [w, h] of [[320, 568], [360, 740], [390, 844], [430, 932], [768, 1024], [1440, 900], [844, 390]]) {
   const mobile = w < 1000;
-  const { page, errors } = await open(url, { viewport: { width: w, height: h }, mobile });
+  const { browser, page, errors } = await open(url, { viewport: { width: w, height: h }, mobile });
   await sleep(400);
   const samples = [];
   for (let i = 0; i < 6; i++) { samples.push(await page.evaluate(() => { const r = document.querySelector('#cta').getBoundingClientRect(); return (r.left + r.right) / 2 - innerWidth / 2; })); await sleep(350); }
@@ -20,7 +20,7 @@ for (const [w, h] of [[320, 568], [360, 740], [390, 844], [430, 932], [768, 1024
   const fit = await page.$$eval('#nBtns button', e => e.every(x => x.scrollWidth <= x.clientWidth + 1 && x.getBoundingClientRect().right <= innerWidth));
   check(fit, `${w}: labels fit`);
   if (w === 390 || w === 1440) await page.screenshot({ path: path.join(SHOTS, `ui-intro-${w}.png`) });
-  check(!errors.length, 'no page errors ' + errors.join(' | '));
+  check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close();
 }
 console.log('== title stays clear of the shop sign on short screens');
 for (const [w, h] of [[1440, 600], [1280, 640], [1024, 600], [1920, 600], [1100, 700], [844, 390], [390, 844]]) {
