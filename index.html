@@ -434,7 +434,7 @@ const par = { tx: 0, ty: 0, x: 0, y: 0, k: 1 };
 addEventListener('pointermove', e => { if (e.pointerType === 'mouse') { par.tx = (e.clientX / W - .5) * 2; par.ty = (e.clientY / H - .5) * 2; } }, { passive: true });
 function applyLayer(Ly) { Ly.el.style.transform = `translate3d(${Ly.ox.toFixed(2)}px,${Ly.oy.toFixed(2)}px,0) scale(${Ly.s.toFixed(4)})`; Ly.el.style.filter = Ly.blur > .05 ? `blur(${Ly.blur.toFixed(2)}px)` : ''; }
 // On phones, tilting moves the scene the way the mouse does on desktop. Slowly re-centres on however the phone is being held.
-const tilt = { seen: -1e9, x0: null, y0: null };
+const tilt = { on: false, asked: false, seen: -1e9, x0: null, y0: null };
 function onTilt(e) {
   if (e.gamma == null || e.beta == null) return;
   const wide = W > H, flip = wide && screen.orientation && screen.orientation.angle === 270 ? -1 : 1; // in landscape the axes swap
@@ -444,12 +444,18 @@ function onTilt(e) {
   par.tx = clamp((gx - tilt.x0) / 16, -1, 1); par.ty = clamp((gy - tilt.y0) / 16, -1, 1);
   tilt.seen = performance.now();
 }
+// iPhone gives motion access only from a tap, and remembers the answer for a while. Other browsers need no asking.
+const askMotion = window.DeviceOrientationEvent && !hasHover ? DeviceOrientationEvent.requestPermission : null;
+function listenTilt() { if (!tilt.on) { tilt.on = true; addEventListener('deviceorientation', onTilt); } }
 function askTilt() {
-  if (hasHover || !window.DeviceOrientationEvent) return;
-  const ask = DeviceOrientationEvent.requestPermission; // iPhone only, and only from a tap
-  if (typeof ask === 'function') ask.call(DeviceOrientationEvent).then(r => { if (r === 'granted') addEventListener('deviceorientation', onTilt); }).catch(() => { });
+  if (!askMotion || tilt.on) return Promise.resolve();
+  tilt.asked = true;
+  return withTimeout(askMotion.call(DeviceOrientationEvent), 15000).then(r => { if (r === 'granted') listenTilt(); }).catch(() => { });
 }
-if (!hasHover && window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission !== 'function') addEventListener('deviceorientation', onTilt);
+if (window.DeviceOrientationEvent && !hasHover) {
+  if (typeof askMotion !== 'function') listenTilt();
+  else askMotion.call(DeviceOrientationEvent).then(r => { if (r === 'granted') listenTilt(); }).catch(() => { }); // no prompt: this only succeeds if already allowed
+}
 function updatePar(t) {
   const tilting = t - tilt.seen < 1000;
   if (!hasHover && !tilting) { par.tx = Math.sin(t * .00021) * .7; par.ty = Math.sin(t * .00016 + 1) * .45; }
@@ -1525,7 +1531,7 @@ document.querySelectorAll('#lang button').forEach(b => b.addEventListener('click
 /* ================= enter ================= */
 async function enterShop() {
   if (st.phase !== 'street') return; st.phase = 'entering';
-  askTilt();
+  await askTilt(); // the door opens after the answer, so it isn't hidden behind the system prompt
   if (A.on) SFX.bell();
   $('#cta').style.opacity = 0; $('#stFan').style.opacity = 0; $('#stTitle').style.opacity = 0; $('#stTitle').style.transform = 'translateY(-20px)';
   const dr = $('#doorHit').getBoundingClientRect(), cx = dr.left + dr.width / 2, cy = dr.top + dr.height * .55;
@@ -1578,7 +1584,11 @@ async function chooseCam() {
   finally { clearTimeout(t6); clearTimeout(limit); cam.onGrant = null; }
 }
 function buildInterior() { drawBack(); drawMid(); drawFront(); initFX(); }
-$('#street').addEventListener('click', enterShop);
+// While motion access is still unasked, a tap on the street outside the button and the door asks for it and stays here, so the street gets depth too.
+$('#street').addEventListener('click', e => {
+  if (typeof askMotion === 'function' && !tilt.on && !tilt.asked && !e.target.closest('#cta, #doorHit')) { askTilt(); return; }
+  enterShop();
+});
 addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && st.phase === 'street') enterShop(); });
 
 /* ================= boot ================= */

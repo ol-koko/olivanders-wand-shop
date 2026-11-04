@@ -35,30 +35,43 @@ async function tiltRun() {
   console.log('== tilting the phone moves the layers');
   const tilt = (page, gamma, beta) => page.evaluate(([g, b]) => dispatchEvent(new DeviceOrientationEvent('deviceorientation', { gamma: g, beta: b })), [gamma, beta]);
   const shift = page => page.evaluate(() => [__wand.layers.shFront.ox, __wand.layers.shFront.oy]);
+  // behaves like iPhone Safari: rejected without a real tap, answers with a real one
+  const iphone = answer => `window.__asked = 0; DeviceOrientationEvent.requestPermission = () => { if (!navigator.userActivation.isActive) return Promise.reject(new DOMException('needs a tap', 'NotAllowedError')); window.__asked++; return '${answer}' === 'throw' ? Promise.reject(new Error('no')) : Promise.resolve('${answer}'); };`;
+  const tapAt = async (page, sel) => { const r = await page.evaluate(s => { const b = document.querySelector(s).getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; }, sel); await page.touchscreen.tap(r[0], r[1]); };
+  const tapSky = page => page.touchscreen.tap(195, 330);
+  const inStreet = page => page.evaluate(() => __wand.st.phase === 'street');
+  const sway = async (page, g, b) => { for (let i = 0; i < 30; i++) { await tilt(page, g, b); await sleep(30); } };
+  const readLayers = page => page.evaluate(k => [__wand.layers[k].ox, __wand.layers[k].oy], 'stShop');
   {
-    // a test can't make the real tap that grants motion access, so the answer is mocked as on an iPhone that allows it
-    const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: `DeviceOrientationEvent.requestPermission = () => Promise.resolve('granted');` });
-    await enter(page); await sleep(300);
-    await tilt(page, 0, 40); await sleep(100);
-    for (let i = 0; i < 30; i++) { await tilt(page, 15, 40); await sleep(30); } const right = await shift(page);
-    for (let i = 0; i < 30; i++) { await tilt(page, -15, 40); await sleep(30); } const left = await shift(page);
-    for (let i = 0; i < 30; i++) { await tilt(page, 0, 55); await sleep(30); } const fwd = await shift(page);
-    console.log('    layer offset right', right.map(v => +v.toFixed(1)), 'left', left.map(v => +v.toFixed(1)), 'forward', fwd.map(v => +v.toFixed(1)));
-    check(right[0] < -2 && left[0] > 2, 'side tilt shifts the scene both ways');
-    check(Math.abs(fwd[1]) > 1.5, 'forward tilt shifts it vertically');
-    const over = await page.evaluate(() => Math.max(...Object.values(__wand.layers).map(l => Math.abs(l.ox))) <= innerWidth * .04 + .5); check(over, 'the scene never slides past its overscan');
+    const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: iphone('granted') });
+    await sleep(400); check((await page.evaluate(() => __asked)) === 0, 'iPhone: no prompt on load');
+    await tapSky(page); await sleep(500);
+    check((await page.evaluate(() => __asked)) === 1 && await inStreet(page), 'iPhone: a tap on the street asks and stays on the street');
+    await tilt(page, 0, 40); await sway(page, 15, 40); const right = await readLayers(page); await sway(page, -15, 40); const left = await readLayers(page);
+    console.log('    street layer right', right.map(v => +v.toFixed(1)), 'left', left.map(v => +v.toFixed(1)));
+    check(right[0] < -2 && left[0] > 2, 'iPhone: the street moves with tilt');
+    await page.screenshot({ path: path.join(SHOTS, 'motion-street.png') });
+    await tapSky(page); await sleep(500); check(!(await inStreet(page)), 'a second tap on the street enters, as before');
+    await page.waitForFunction(() => __wand.st.phase === 'shop', null, { timeout: 30000 }); await sway(page, 15, 40); const r2 = await shift(page); await sway(page, -15, 40); const l2 = await shift(page); await sway(page, 0, 55); const f2 = await shift(page);
+    console.log('    shop layer right', r2.map(v => +v.toFixed(1)), 'left', l2.map(v => +v.toFixed(1)), 'forward', f2.map(v => +v.toFixed(1)));
+    check(r2[0] < -2 && l2[0] > 2 && Math.abs(f2[1]) > 1.5, 'the shop moves with tilt, both ways and forward');
+    check(await page.evaluate(() => Math.max(...Object.values(__wand.layers).map(l => Math.abs(l.ox))) <= innerWidth * .04 + .5), 'the scene never slides past its overscan');
+    check(!errors.length, 'no page errors ' + errors.join(' | '));
+  }
+  for (const answer of ['granted', 'denied', 'throw']) {
+    const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: iphone(answer) });
+    await sleep(400); await tapAt(page, '#cta');
+    await page.waitForFunction(() => document.querySelectorAll('#nBtns button').length === 2, null, { timeout: 30000 });
+    check((await page.evaluate(() => __asked)) === 1, `iPhone ${answer}: the button asks once and enters`);
     check(!errors.length, 'no page errors ' + errors.join(' | '));
   }
   {
-    // iPhone flow: a permission request that only works from the tap on the button
-    for (const answer of ['granted', 'denied', 'throw']) {
-      const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: `window.__asked = 0; DeviceOrientationEvent.requestPermission = () => { window.__asked++; return '${answer}' === 'throw' ? Promise.reject(new Error('no')) : Promise.resolve('${answer}'); };` });
-      await sleep(300); const before = await page.evaluate(() => __asked);
-      await enter(page); const asked = await page.evaluate(() => __asked);
-      check(before === 0 && asked === 1, `iPhone ${answer}: asks once, on the tap`);
-      const n = await page.$$eval('#nBtns button', e => e.length); check(n === 2, `iPhone ${answer}: the game goes on`);
-      check(!errors.length, 'no page errors ' + errors.join(' | '));
-    }
+    // already allowed earlier: works from the start with no prompt or extra tap
+    const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: `DeviceOrientationEvent.requestPermission = () => Promise.resolve('granted');` });
+    await sleep(400); await tilt(page, 0, 40); await sway(page, 15, 40); const r = await readLayers(page);
+    check(r[0] < -2, 'allowed earlier: the street moves right away');
+    await tapSky(page); await sleep(500); check(!(await inStreet(page)), 'allowed earlier: one tap enters');
+    check(!errors.length, 'no page errors ' + errors.join(' | '));
   }
   {
     const { page, errors } = await open(url, { viewport: { width: 1440, height: 900 } });
