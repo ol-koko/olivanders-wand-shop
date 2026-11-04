@@ -12,7 +12,7 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - UA / EN toggle; all strings live in the `S`, `OFFER`, `FAIL`, `WIN` objects and in `WANDS`. The first language comes from the browser: Ukrainian for `uk`, English for the rest, and the person's choice is remembered. The meta tags are in English.
 
 ## Key logic (keep it this way unless asked)
-- Flow: street → door transition → input choice (camera / finger-mouse) → warm-up wave → wand attempts → result card.
+- Flow: street → door transition → input choice (camera / finger-mouse) → warm-up wave → wand attempts → result card. Try again skips the warm-up: the last wave of the game before stands in for it.
 - Notes during attempts show only the wand's spec and Ollivander's line, with no spell.
 - Every trial is a wave. Each wave produces 5 traits: speed, amp, sharp, flow, curl (`strokeMetrics`).
 - Attempts are NOT a fixed count. Before each attempt `chooseCandidate()` offers the current best match
