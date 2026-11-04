@@ -9,10 +9,11 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - `tools/` is local only and never ships: balance simulator, wave recorder, Playwright tests. See `tools/README.md`.
 - Sound is generated with WebAudio (off by default, toggle top-right).
 - Depth effect: layers follow the mouse on desktop. On touch screens they follow a finger dragged over the street, and the tilt where the browser gives orientation events with no prompt, easing back to a slow drift. Reduced motion keeps the layers still: no drift, tilt, drag or mouse. Never ask for motion permission: the camera is the only permission in the app.
-- UA / EN toggle; all strings live in the `S`, `OFFER`, `SPELLS`, `FAIL`, `WIN`, `WAVE_WORDS` objects and in `WANDS`. The first language comes from the browser: Ukrainian for `uk`, English for the rest, and the person's choice is remembered. The meta tags are in English.
+- UA / EN toggle; all strings live in the `S`, `OFFER`, `FAIL`, `WIN`, `WAVE_WORDS` objects and in `WANDS`. The first language comes from the browser: Ukrainian for `uk`, English for the rest, and the person's choice is remembered. The meta tags are in English.
 
 ## Key logic (keep it this way unless asked)
 - Flow: street → door transition → input choice (camera / finger-mouse) → warm-up wave → wand attempts → result card.
+- Notes during attempts show only the wand's spec and Ollivander's line, with no spell.
 - Every trial is a wave. Each wave produces 5 traits: speed, amp, sharp, flow, curl (`strokeMetrics`).
 - Attempts are NOT a fixed count. Before each attempt `chooseCandidate()` offers the current best match
   with probability q = [.3, .42, .58, .75, .9, 1] by attempt, otherwise another close wand.
@@ -39,12 +40,12 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - Common in-app browsers default to the pointer with a one-line hint.
 
 ## Result card
-- Shows the wand's name, 3D view, spec, one plain lore sentence, one line about the wave, sharing and Try again. The fan notice appears only on the street screen. The creator credit links to oleksandra-kokozei.com and stays on the card, not on the share image.
+- A see-through dark overlay over the shop with the card centred in it, and the card's light centred on the wand: name, spec, 3D view with plenty of space, one line about why the wand chose you, sharing and Try again. The fan notice appears only on the street screen. "made by Oleksandra Kokozei 🪄" is in English in both languages, links to oleksandra-kokozei.com and stays on the card, not on the share image. The design source is the owner's Figma file.
 - The share image is a 1080×1350 PNG from `makeCard`, drawn from `SHAPES`, and made ahead of the click because browsers need the share sheet right after a tap.
 - With file sharing: Share. Without it, or when a share fails: Download. In-app browsers show the image to press and hold. A cancelled share stays silent.
 
 ## 3D view
-- three.js r160 from jsDelivr, loaded only on the result screen. Geometry and texture come from `SHAPES`, with custom drag-to-rotate.
+- three.js r160 from jsDelivr, loaded only on the result screen. Geometry and texture come from `SHAPES`. The wand makes one full turn when the card appears, then can be rotated freely by drag.
 - The 2D drawing stays underneath as the fallback if WebGL or the CDN fails. Rendering stops when offscreen or hidden.
 - Run locally with: `npx serve .` or `python3 -m http.server 8000`, then open http://localhost:8000
 
