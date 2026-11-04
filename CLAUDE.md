@@ -40,7 +40,7 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - Common in-app browsers default to the pointer with a one-line hint.
 
 ## Result card
-- A full-page dark overlay with the card centred in it: name, spec, 3D view with plenty of space, one line about why the wand chose you, sharing and Try again. The fan notice appears only on the street screen. "made by Oleksandra Kokozei 🪄" is in English in both languages, links to oleksandra-kokozei.com and stays on the card, not on the share image. The design source is the owner's Figma file.
+- A see-through dark overlay over the shop with the card centred in it, and the card's light centred on the wand: name, spec, 3D view with plenty of space, one line about why the wand chose you, sharing and Try again. The fan notice appears only on the street screen. "made by Oleksandra Kokozei 🪄" is in English in both languages, links to oleksandra-kokozei.com and stays on the card, not on the share image. The design source is the owner's Figma file.
 - The share image is a 1080×1350 PNG from `makeCard`, drawn from `SHAPES`, and made ahead of the click because browsers need the share sheet right after a tap.
 - With file sharing: Share. Without it, or when a share fails: Download. In-app browsers show the image to press and hold. A cancelled share stays silent.
 
