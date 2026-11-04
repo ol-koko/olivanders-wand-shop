@@ -8,6 +8,7 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - Visuals are drawn in code: SVG street scene, canvas shop interior, canvas FX layer. No image assets.
 - `tools/` is local only and never ships: balance simulator, wave recorder, Playwright tests. See `tools/README.md`.
 - Sound is generated with WebAudio (off by default, toggle top-right).
+- Depth effect: layers follow the mouse on desktop. On touch screens they follow a finger dragged over the street, and the tilt where the browser gives orientation events with no prompt, easing back to a slow drift. Reduced motion keeps the layers still: no drift, tilt, drag or mouse. Never ask for motion permission: the camera is the only permission in the app.
 - UA / EN toggle; all strings live in the `S`, `OFFER`, `SPELLS`, `FAIL`, `WIN`, `PHR` objects and in `WANDS`.
 
 ## Key logic (keep it this way unless asked)
@@ -23,6 +24,7 @@ waves trial wands, and one of 16 character wands eventually chooses them.
   offset tuned so each wand wins ~6–7% (Elder Wand ~2%, every wand at least 3%). After any change to profiles or
   metrics, re-run `node tools/simulate.js --calibrate`.
 - `strokeMetrics` measures on a fixed 33 ms grid and on the min(w, h) scale, so input rate doesn't change traits. `SCALES` in `logic.js` holds separate ranges for pointer and camera, read from recorded waves, because a hand moves about half as fast as a finger. Check changes against real waves with `node tools/simulate.js --validate`.
+- During a wave the tip follows the hand and the handle moves only as a rigid wand requires, so the wand pivots from the grip.
 - Wand looks: `SHAPES` in `index.html` is the single shape spec. The box, hand, result card, saved card and 3D view all render from it. Matching doesn't use it.
 - Canon facts only: wands whose wood/core are not named in canon have `spec: null` and show no spec line, with no label about it.
   Do not invent canon specs. A detail no source confirms stays out: Neville's wand shows no length.
