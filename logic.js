@@ -28,7 +28,7 @@ const WANDS = [
   { id: 'bellatrix', name: { ua: 'Паличка Белатриси Лестранж', en: 'Bellatrix Lestrange’s wand' }, spec: sp('Горіх', 'Walnut', ...DRG, '12¾ дюйма', '12¾ inches', 12.75, 'непіддатлива', 'unyielding'), box: '#2a1626', t: [.92, .7, .9, .15, .65], lore: { ua: 'Горіх слухається лише дуже сильної волі.', en: 'Walnut obeys only a very strong will.' } },
   { id: 'voldemort', name: { ua: 'Паличка Лорда Волдеморта', en: 'Lord Voldemort’s wand' }, spec: sp('Тис', 'Yew', ...PHX, '13½ дюйма', '13½ inches', 13.5), box: '#1d1d24', t: [.75, .6, .88, .78, .3], lore: { ua: 'Тис не терпить вагань.', en: 'Yew tolerates no hesitation.' } }
 ];
-const BIAS = { harry: -0.017, hermione: 0.025, ron: -0.013, dumbledore: 0.076, mcgonagall: -0.027, sirius: -0.021, fred: 0.007, george: -0.025, ginny: 0.005, neville: 0.057, luna: 0.038, draco: -0.027, snape: -0.010, lupin: 0.014, bellatrix: -0.041, voldemort: -0.042 };
+const BIAS = { harry: -0.017, hermione: 0.025, ron: -0.013, dumbledore: 0.076, mcgonagall: -0.027, sirius: -0.021, fred: 0.007, george: -0.025, ginny: 0.005, neville: 0.057, luna: 0.038, draco: -0.021, snape: -0.010, lupin: 0.014, bellatrix: -0.041, voldemort: -0.042 };
 WANDS.forEach(w => { w.tc = w.t.map(v => .5 + (v - .5) * .55); w.b = BIAS[w.id] || 0; w.lenN = w.spec ? w.spec.lenN : w.lenN; });
 // A person's waves stay alike, so the same wands would keep choosing them. Wands that chose them lately read as a little further away, the latest the most.
 const RECENT = [.08, .07, .06, .05, .04, .03, .02];

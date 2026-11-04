@@ -25,6 +25,7 @@ waves trial wands, and one of 16 character wands eventually chooses them.
   offset tuned so each wand wins ~6–7% (Elder Wand ~2%, every wand at least 3%). After any change to profiles or
   metrics, re-run `node tools/simulate.js --calibrate`.
 - A person's waves stay alike, so the wands that chose them last count as a little further away (`RECENT` in `logic.js`, kept in `wand-recent`). Check with `node tools/simulate.js --repeat`. The simulator's other modes run without this memory, so `BIAS` stays the balance for a first game.
+- Draco's `BIAS` is set by hand below its calibrated value, about 4% in the stroke model, because real waves read sharper than the model and he won far more often for real players. Keep this value after `--calibrate`, or set it again from recorded waves.
 - `strokeMetrics` measures on a fixed 33 ms grid and on the min(w, h) scale, so input rate doesn't change traits. `SCALES` in `logic.js` holds separate ranges for pointer and camera, read from recorded waves, because a hand moves about half as fast as a finger. Check changes against real waves with `node tools/simulate.js --validate`.
 - The line a wave draws is softened a little by `smoothPath`, for the picture only. Traits are measured on the raw points.
 - During a wave the tip follows the hand and the handle moves only as a rigid wand requires, so the wand pivots from the grip.
