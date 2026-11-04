@@ -1378,14 +1378,19 @@ async function flyOut(el, w) {
 
 /* ================= ritual ================= */
 function pickNo(arr, used, keep) { const pool = arr.map((_, i) => i).filter(i => !used.includes(i)); const i = pick(pool.length ? pool : arr.map((_, i) => i)); used.push(i); while (used.length > keep) used.shift(); return i; }
-async function ritual() {
+// lastWave comes from the game before, after Try again: it stands in for the warm-up, so a known hand goes straight to the wands.
+async function ritual(lastWave) {
   st.obs = []; st.traits = null; st.tried = []; st.attempt = 0; st.history = []; st.stroke = null; st.winner = null; st.camHelp = false;
-  setNote(() => ({ kicker: T('warmK'), hand: T('warmH'), instr: T(st.input === 'cam' ? 'warmIcam' : 'warmIdraw') }));
-  await wait(450);
-  let r = await captureWave(null); st.obs.push(r.m); st.traits = mergeTraits(); st.stroke = r.pts;
-  SFX.chime(); spark(r.pts[r.pts.length - 1].x, r.pts[r.pts.length - 1].y, 24, 3);
-  setNote(() => ({ kicker: T('warmK'), hand: T('warmDone') }));
-  await wait(1700);
+  let r;
+  if (lastWave) { st.obs.push(lastWave); st.traits = mergeTraits(); }
+  else {
+    setNote(() => ({ kicker: T('warmK'), hand: T('warmH'), instr: T(st.input === 'cam' ? 'warmIcam' : 'warmIdraw') }));
+    await wait(450);
+    r = await captureWave(null); st.obs.push(r.m); st.traits = mergeTraits(); st.stroke = r.pts;
+    SFX.chime(); spark(r.pts[r.pts.length - 1].x, r.pts[r.pts.length - 1].y, 24, 3);
+    setNote(() => ({ kicker: T('warmK'), hand: T('warmDone') }));
+    await wait(1700);
+  }
   while (true) {
     st.attempt++;
     const cand = chooseCandidate(st.traits, st.tried, st.attempt);
@@ -1466,9 +1471,10 @@ function showResult() {
 $('#bAgain').addEventListener('click', () => {
   const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700); hide3D();
   st.replay = null; st.trails = []; st.halo = null; st.winner = null;
+  const lastWave = st.obs[st.obs.length - 1];
   setTimeout(async () => {
     if (st.input === 'cam') { try { await withTimeout(startCamera(), 8000); } catch (e) { st.input = 'pointer'; stopCamera(); } }
-    ritual();
+    ritual(lastWave);
   }, 650);
 });
 function fitStroke(pts, cx, cy, mw, mh) {

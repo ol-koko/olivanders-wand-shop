@@ -13,6 +13,7 @@ Then:
     node tools/e2e/camera.mjs          # camera flow, real MediaPipe model, fake camera device
     node tools/e2e/reactions.mjs       # forces all 10 reactions, plays at 390×844, screenshots in tools/e2e/shots
     node tools/e2e/wand3d.mjs          # 3D view: lazy load, drag, offscreen pause, 2D fallback
+    node tools/e2e/retry.mjs           # Try again goes straight to the wands, no warm-up wave
     node tools/e2e/card.mjs            # result card and every sharing path, both languages
     node tools/e2e/ui.mjs              # first screens across phone and desktop sizes
     node tools/e2e/sound.mjs           # sound starts on the entry tap, the choice is remembered
