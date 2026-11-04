@@ -480,8 +480,9 @@ const sx = f => W * .04 + f * W, sy = f => H * .04 + f * H;
 function sizeCanvas(c, w, h, dpr = DPR) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); return x; }
 
 /* ================= audio ================= */
-const A = { ctx: null, on: false, master: null, nextCrackle: 0 };
-function audioInit() { if (A.ctx) return; try { A.ctx = new (window.AudioContext || window.webkitAudioContext)(); A.master = A.ctx.createGain(); A.master.gain.value = .55; A.master.connect(A.ctx.destination); } catch (e) { A.ctx = null; } }
+const A = { ctx: null, on: true, master: null, nextCrackle: 0 };
+try { A.on = localStorage.getItem('wand-sound') !== '0'; } catch (_) { }
+function audioInit() { if (A.ctx) return; try { A.ctx = new (window.AudioContext || window.webkitAudioContext)(); A.master = A.ctx.createGain(); A.master.gain.value = .4; A.master.connect(A.ctx.destination); } catch (e) { A.ctx = null; } }
 function tone(f, dur, { type = 'sine', vol = .15, when = 0, att = .006, glide = 0 } = {}) {
   if (!A.on || !A.ctx) return; const c = A.ctx, t0 = c.currentTime + when;
   const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.setValueAtTime(f, t0);
@@ -515,10 +516,11 @@ const SFX = {
 };
 const ICON_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m22 9-6 6M16 9l6 6"/></svg>';
 const ICON_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
-const sndBtn = $('#snd'); sndBtn.innerHTML = ICON_OFF;
+const sndBtn = $('#snd'); sndBtn.innerHTML = A.on ? ICON_ON : ICON_OFF;
 sndBtn.addEventListener('click', e => {
   e.stopPropagation(); audioInit(); if (!A.ctx) return;
   A.on = !A.on; if (A.on && A.ctx.state === 'suspended') A.ctx.resume();
+  try { localStorage.setItem('wand-sound', A.on ? '1' : '0'); } catch (_) { }
   sndBtn.innerHTML = A.on ? ICON_ON : ICON_OFF; sndBtn.setAttribute('aria-label', T(A.on ? 'sndOff' : 'sndOn'));
   if (A.on) SFX.chime();
 });
@@ -1554,7 +1556,8 @@ document.querySelectorAll('#lang button').forEach(b => b.addEventListener('click
 /* ================= enter ================= */
 async function enterShop() {
   if (st.phase !== 'street') return; st.phase = 'entering';
-  if (A.on) SFX.bell();
+  // Browsers allow sound only after a tap, so the entry tap is what starts it.
+  if (A.on) { audioInit(); if (A.ctx && A.ctx.state === 'suspended') A.ctx.resume(); SFX.bell(); }
   $('#cta').style.opacity = 0; $('#stFan').style.opacity = 0; $('#stTitle').style.opacity = 0; $('#stTitle').style.transform = 'translateY(-20px)';
   const dr = $('#doorHit').getBoundingClientRect(), cx = dr.left + dr.width / 2, cy = dr.top + dr.height * .55;
   ['stSky', 'stTown', 'stShop', 'stFg'].map(id => layers[id]).forEach(Ly => { const r = Ly.el.getBoundingClientRect(); Ly.el.style.transformOrigin = `${(cx - r.left) / Ly.s}px ${(cy - r.top) / Ly.s}px`; });
