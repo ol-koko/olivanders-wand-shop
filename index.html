@@ -447,7 +447,8 @@ function onTilt(e) {
 if (!hasHover && !reduceMotion) addEventListener('deviceorientation', onTilt);
 function updatePar(t) {
   const felt = touch.on || t - tilt.seen < 1000;
-  if (!hasHover && !felt) { par.tx = Math.sin(t * .00021) * .7; par.ty = Math.sin(t * .00016 + 1) * .45; }
+  if (reduceMotion) par.tx = par.ty = 0; // the scene stays still: no drift, tilt, drag or mouse
+  else if (!hasHover && !felt) { par.tx = Math.sin(t * .00021) * .7; par.ty = Math.sin(t * .00016 + 1) * .45; }
   const k = st.cap && st.cap.active ? .3 : 1;
   par.x += (par.tx * k - par.x) * .06; par.y += (par.ty * k - par.y) * .06;
   par.d += ((felt ? .034 : .022) - par.d) * .06; // eased, so letting go doesn't make the layers jump

@@ -93,16 +93,24 @@ async function depthRun() {
     check(await noOverscan(page), 'the scene never slides past its overscan');
     check(!errors.length, 'no page errors ' + errors.join(' | '));
   }
-  console.log('== reduced motion: no tilt, no drag');
+  console.log('== reduced motion: the layers stay still');
   {
     const { page, errors } = await open(url, { viewport: PHONE, mobile: true, init: `delete DeviceOrientationEvent.requestPermission;` });
-    await page.emulateMedia({ reducedMotion: 'reduce' }); await page.reload({ waitUntil: 'load' }); await sleep(400);
-    await tilt(page, 0, 40); await sway(page, 15, 40); const felt = await page.evaluate(() => __wand.par.tx);
-    await drag(page, [60, 400], [40, 300], { lift: false }); const dragged = await page.evaluate(() => __wand.par.tx);
+    await page.emulateMedia({ reducedMotion: 'reduce' }); await page.reload({ waitUntil: 'load' });
+    const moved = () => page.evaluate(() => Math.max(...Object.values(__wand.layers).flatMap(l => [Math.abs(l.ox), Math.abs(l.oy)])));
+    await sleep(1500); check((await moved()) < .01, 'no drift on a phone');
+    await tilt(page, 0, 40); await sway(page, 15, 40); check((await moved()) < .01, 'no tilt');
+    await drag(page, [60, 400], [40, 300], { lift: false }); check((await moved()) < .01, 'no drag');
     const c = await cdp(page); await c.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(300);
-    console.log('    target after tilt', felt.toFixed(2), 'after drag to the left', dragged.toFixed(2));
-    check(felt < .75 && dragged > -.5, 'neither tilt nor drag drives the layers');
     check(await inStreet(page), 'a drag still does not enter');
+    await page.touchscreen.tap(195, 330); await sleep(400); check(!(await inStreet(page)), 'a tap still enters');
+    check(!errors.length, 'no page errors ' + errors.join(' | '));
+  }
+  {
+    const { page, errors } = await open(url, { viewport: { width: 1440, height: 900 } });
+    await page.emulateMedia({ reducedMotion: 'reduce' }); await page.reload({ waitUntil: 'load' });
+    await page.mouse.move(100, 100); await sleep(500); await page.mouse.move(1300, 700); await sleep(700);
+    check(await page.evaluate(() => Math.max(...Object.values(__wand.layers).map(l => Math.abs(l.ox))) < .01), 'no mouse movement on desktop');
     check(!errors.length, 'no page errors ' + errors.join(' | '));
   }
   console.log('== desktop');
