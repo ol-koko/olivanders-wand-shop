@@ -140,8 +140,8 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 .r-specs{margin-top:16px;font-size:14px;font-weight:300;line-height:1.2;color:#ecdcb8;text-transform:lowercase}
 .r-wave{max-width:348px;margin:60px auto 0;font-style:italic;font-weight:400;font-size:19px;line-height:1.35;color:#d6c3a0}
 .cap{font-size:14px;color:#a8916c;font-style:italic;margin-top:8px}
-.r-btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:48px}
-.r-btns button{width:173px;font:inherit;font-weight:700;font-size:17px;line-height:21px;padding:10px 6px;border-radius:999px;cursor:pointer;border:1px solid #8a6230;background:#2b1a0e;color:var(--gold2)}
+.r-btns{display:grid;grid-template-columns:repeat(2,minmax(0,173px));gap:10px;justify-content:center;margin-top:48px}
+.r-btns button{font:inherit;font-weight:700;font-size:clamp(14px,4.2vw,17px);line-height:21px;padding:10px 6px;border-radius:999px;cursor:pointer;border:1px solid #8a6230;background:#2b1a0e;color:var(--gold2)}
 .r-btns button.pri{background:linear-gradient(180deg,#f2d38e,#c99a4e);color:#2a170b;border-color:#f2d38e}
 .r-credit{display:inline-block;margin-top:48px;font-size:12px;font-style:italic;color:#c9b48c}
 #rSaved{margin-top:12px}

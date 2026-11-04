@@ -27,8 +27,15 @@ console.log('== content');
   check(!/Копіювати|LinkedIn|Telegram/.test(text), 'no copy link, no social links');
   check(/made by Oleksandra Kokozei/.test(text) && (await page.getAttribute('#rCredit', 'href')) === 'https://oleksandra-kokozei.com', 'creator credit links to the site');
   const lore = await page.evaluate(() => __wand.st.winner.lore.ua); check(!text.includes(lore), 'no lore sentence on the card');
-  const fitBtns = await page.$$eval('.r-btns button:not([hidden])', e => e.map(x => [x.textContent, Math.round(x.getBoundingClientRect().width), x.scrollWidth <= x.clientWidth + 1]));
-  check(fitBtns.every(b => b[1] === 173 && b[2]), 'buttons are 173px and their labels fit: ' + JSON.stringify(fitBtns));
+  for (const [w, h] of [[320, 568], [360, 740], [390, 844], [430, 932]]) {
+    await page.setViewportSize({ width: w, height: h }); await sleep(250);
+    for (const l of ['ua', 'en']) {
+      await page.evaluate(x => document.querySelector(`#lang button[data-l="${x}"]`).click(), l); await sleep(80);
+      const b = await page.$$eval('.r-btns button:not([hidden])', e => e.map(x => { const r = x.getBoundingClientRect(); return { t: x.textContent, w: Math.round(r.width), top: Math.round(r.top), h: Math.round(r.height), fit: x.scrollWidth <= x.clientWidth + 1 }; }));
+      check(b.length === 2 && b[0].top === b[1].top && b[0].w === b[1].w && b[0].h === b[1].h && b.every(x => x.fit), `${w} ${l}: buttons in one row, ${b[0].w}×${b[0].h}: ${b.map(x => x.t).join(' | ')}`);
+    }
+  }
+  await page.evaluate(() => document.querySelector('#lang button[data-l="ua"]').click()); await page.setViewportSize({ width: 390, height: 844 }); await sleep(250);
   const h = await page.evaluate(() => document.querySelector('.rcard').offsetHeight); const gaps = await page.evaluate(() => { const r = document.querySelector('.rcard').getBoundingClientRect(), o = document.querySelector('#result').getBoundingClientRect(); return { l: Math.round(r.left), r: Math.round(o.right - r.right), scroll: document.querySelector('#result').scrollHeight <= document.querySelector('#result').clientHeight + 1, bg: getComputedStyle(document.querySelector('#result')).backgroundImage, glow: (() => { const t = document.querySelector('#rStage').getBoundingClientRect(), g = getComputedStyle(document.querySelector('#rStage'), '::before'); return [g.left, g.top, t.width / 2 + 'px', t.height / 2 + 'px']; })() }; });
   check(gaps.l === 16 && gaps.r === 16 && /rgba\(5, 3, 2, 0\.88\)/.test(gaps.bg), `see-through overlay, margins around the card: ${gaps.l}/${gaps.r}`);
   check(gaps.glow[0] === gaps.glow[2] && gaps.glow[1] === gaps.glow[3], `the light is centred on the wand: ${gaps.glow.join(' ')}`);
