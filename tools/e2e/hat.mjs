@@ -12,7 +12,7 @@ async function game(page, onQ) { const asked = []; await page.waitForFunction(()
 console.log('== a full game');
 for (const [w, h] of [[390, 844], [1440, 900]]) {
   const reqs = [], { browser, page, errors } = await open(url + 'sorting', { viewport: { width: w, height: h }, mobile: w < 768, route: async p => p.on('request', r => reqs.push(r.url())) });
-  await enterHall(page); check((await buttons(page))[0] === 'Надіти Капелюх', `${w}: the Hat opens with one button`); await press(page);
+  await enterHall(page); check((await buttons(page))[0] === 'Вдягти', `${w}: the Hat opens with one button`); await press(page);
   const a = await game(page);
   check(a.map(q => q.cat).join() === '1,2,3', `${w}: one question per category, then the result: ${a.map(q => q.id).join(' ')}`);
   check(a.every(q => q.btns.join() === q.order.join() && q.btns.length >= 2 && q.btns.length <= 4), `${w}: the buttons are the shuffled options`);

@@ -23,7 +23,7 @@ for (const [w, h] of [[320, 568], [360, 662], [390, 844], [430, 932], [844, 390]
   await page.evaluate(() => document.querySelector('#lang button[data-l="ua"]').click());
   await page.evaluate(() => document.querySelector('#cta').click()); await inHall(page); await page.waitForFunction(() => document.querySelector('#nBtns button'), null, { timeout: 5000 });
   const n = await page.evaluate(() => ({ castle: document.querySelector('#castle').hidden, hall: !document.querySelector('#hall').hidden, btn: document.querySelector('#nBtns button')?.textContent, shown: document.querySelector('#note').classList.contains('show'), over: document.documentElement.scrollWidth <= innerWidth }));
-  check(n.castle && n.hall && n.shown && n.btn === 'Надіти Капелюх' && n.over, `${w}×${h}: the flight ends in the hall with a note`);
+  check(n.castle && n.hall && n.shown && n.btn === 'Вдягти' && n.over, `${w}×${h}: the flight ends in the hall with a note`);
   check(!reqs.some(u => /supabase/.test(u)), `${w}×${h}: nothing is logged`);
   check(!errors.length, 'no page errors ' + errors.join(' | '));
   await browser.close();
