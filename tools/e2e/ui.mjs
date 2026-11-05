@@ -34,6 +34,35 @@ for (const [w, h] of [[1440, 600], [1280, 640], [1024, 600], [1920, 600], [1100,
   if (h <= 600 || h === 844) await page.screenshot({ path: path.join(SHOTS, `ui-title-${w}x${h}.png`) });
   await page.context().browser().close();
 }
+console.log('== nothing overlaps on small phones, every wand fits');
+await closeAll();
+const box = (page, sel) => page.evaluate(q => { const r = document.querySelector(q).getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; }, sel);
+const hit = (a, b) => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
+for (const [w, h] of [[320, 568], [360, 640], [360, 662], [390, 844], [412, 780], [430, 932], [1440, 900]]) {
+  const { browser, page, errors } = await open(url, { viewport: { width: w, height: h }, mobile: w < 768 });
+  await page.evaluate(() => document.fonts.ready); await sleep(400);
+  for (const l of ['ua', 'en']) {
+    await page.evaluate(x => document.querySelector(`#lang button[data-l="${x}"]`).click(), l); await sleep(60);
+    const top = await box(page, '.topbar'), title = await box(page, '#stT'), sub = await box(page, '#stS'), cta = await box(page, '#cta'), fan = await box(page, '#stFan');
+    check(!hit(top, title) && !hit(top, sub), `${w}×${h} ${l}: the top buttons clear the title`);
+    const words = await page.evaluate(() => { const r = document.createRange(); r.selectNodeContents(document.querySelector('#stFan')); const b = r.getBoundingClientRect(); return b.top; });
+    check(cta.b <= words, `${w}×${h} ${l}: the button clears the fan notice`);
+    check(fan.b <= h + 1, `${w}×${h} ${l}: the fan notice stays on screen`);
+  }
+  await page.evaluate(() => { document.querySelector('#street').hidden = true; });
+  const bad = await page.evaluate(async () => { const { st, WANDS, showResult } = __wand, out = []; st.traits = { speed: .5, amp: .5, sharp: .5, flow: .5, curl: .5 }; st.tried = []; const res = document.querySelector('#result'), bar = document.querySelector('.topbar').getBoundingClientRect();
+    for (const l of ['ua', 'en']) { document.querySelector(`#lang button[data-l="${l}"]`).click(); for (const w of WANDS) { st.winner = w; showResult(); await new Promise(r => setTimeout(r, 20)); const kick = document.querySelector('#rKicker').getBoundingClientRect(), over = res.scrollHeight - res.clientHeight; if (over > 1 || kick.top < bar.bottom) out.push(`${w.id} ${l} over ${over}`); } } return out; });
+  check(!bad.length, `${w}×${h}: all 16 cards fit under the top buttons, both languages ${bad.join(', ')}`);
+  check(!errors.length, 'no page errors ' + errors.join(' | '));
+  await browser.close();
+}
+{ const { browser, page } = await open(url, { viewport: { width: 844, height: 390 }, mobile: true });
+  await page.evaluate(() => { const { st, WANDS, showResult } = __wand; document.querySelector('#street').hidden = true; st.winner = WANDS[0]; st.traits = { speed: .5, amp: .5, sharp: .5, flow: .5, curl: .5 }; st.tried = []; showResult(); }); await sleep(300);
+  await page.evaluate(() => { document.querySelector('#result').scrollTop = 200; }); await sleep(400);
+  check(await page.evaluate(() => getComputedStyle(document.querySelector('.topbar')).opacity === '0'), 'landscape: the top buttons step aside while the card scrolls');
+  await page.evaluate(() => { document.querySelector('#result').scrollTop = 0; }); await sleep(400);
+  check(await page.evaluate(() => getComputedStyle(document.querySelector('.topbar')).opacity === '1'), 'landscape: they come back at the top');
+  await browser.close(); }
 await closeAll(); srv.close();
 console.log(fails.length ? `\n${fails.length} FAILED:\n- ${fails.join('\n- ')}` : '\nall passed');
 process.exit(fails.length ? 1 : 0);
