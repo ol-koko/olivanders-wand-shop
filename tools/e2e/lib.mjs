@@ -9,11 +9,10 @@ export const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT = path.join(HERE, '..', '..');
 export const SHOTS = path.join(HERE, 'shots');
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json', '.ico': 'image/x-icon' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json', '.ico': 'image/x-icon' };
 
-// Test seam: the page keeps its internals private, so the test server adds an inspection hook to its own copy of index.html.
-const HOOK_AT = 'requestAnimationFrame(frame);\n})();';
-const HOOK = 'requestAnimationFrame(frame);\nwindow.__wand = { st, WANDS, wandDist, REACT, cam, pickReact, showResult, v3, makeCard, wandLen, par, layers, drawWand, smoothPath };\n})();';
+// Test seam: the page's scripts share top-level names, so the test server adds an inspection hook to the end of its own copy of shop.js.
+const HOOK = '\nwindow.__wand = { st, WANDS, wandDist, REACT, cam, pickReact, showResult, v3, makeCard, wandLen, par, layers, drawWand };\n';
 
 export function serve() {
   return new Promise(resolve => {
@@ -21,7 +20,7 @@ export function serve() {
       const p = decodeURIComponent(new URL(req.url, 'http://x').pathname), file = path.join(ROOT, p === '/' ? 'index.html' : p);
       if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end(); }
       let body = fs.readFileSync(file);
-      if (file.endsWith('index.html')) { const html = body.toString('utf8'); if (!html.includes(HOOK_AT)) throw new Error('test hook anchor not found in index.html'); body = html.replace(HOOK_AT, HOOK); }
+      if (file.endsWith('shop.js')) body = body.toString('utf8') + HOOK;
       res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' }); res.end(body);
     }).listen(0, '127.0.0.1', () => resolve({ srv, url: `http://localhost:${srv.address().port}/` }));
   });

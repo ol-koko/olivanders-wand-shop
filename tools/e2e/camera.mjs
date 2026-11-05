@@ -25,9 +25,9 @@ const scenarios = {
     const end = await camState(page);
     check(!end.on && !end.stream, 'camera stream and detection are off on the result card');
     await page.evaluate(() => document.querySelector('#bAgain').click());
-    await page.waitForFunction(() => __wand.cam.on && __wand.st.attempt === 0, null, { timeout: 30000 });
-    await page.waitForFunction(() => __wand.st.obs.length >= 1, null, { timeout: 40000 });
-    check(true, 'try again restarts the camera and takes a wave');
+    await page.waitForFunction(() => __wand.cam.on && __wand.st.attempt === 1, null, { timeout: 30000 }); // Try again skips the warm-up
+    await page.waitForFunction(() => __wand.st.obs.length >= 2, null, { timeout: 40000 });
+    check(true, 'try again restarts the camera, skips the warm-up and takes a wave');
     check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close();
   },
   async leave() {
