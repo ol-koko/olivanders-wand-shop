@@ -1,9 +1,9 @@
 // One anonymous row per game from the live host only, and the game never waits for it. Supabase is intercepted, so nothing is written.
 //   node tools/e2e/logging.mjs
-import { closeAll, serve, open, enter, choosePointer, pointerGame } from './lib.mjs';
+import { closeAll, serve, open, enter, choosePointer, pointerGame, sleep } from './lib.mjs';
 const { srv, url } = await serve(), fails = [];
 const check = (ok, what) => { console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) fails.push(what); };
-const LIVE = 'https://olivanders-wand-shop.vercel.app/', KEYS = 'amp,attempts,curl,device_type,flow,input_mode,language,sharp,speed,wand_id';
+const LIVE = 'https://olivanders-wand-shop.vercel.app/', KEYS = 'amp,attempts,curl,device_type,flow,input_mode,language,sharp,speed,wand_id,wave_dur,wave_len';
 const live = (reqs, answer) => async page => {
   await page.route(u => u.hostname === 'olivanders-wand-shop.vercel.app', async r => { const res = await fetch(url + new URL(r.request().url()).pathname.slice(1)); await r.fulfill({ status: res.status, contentType: res.headers.get('content-type') || 'text/plain', body: Buffer.from(await res.arrayBuffer()) }); });
   await page.route(u => u.hostname.endsWith('.supabase.co'), r => { if (r.request().method() === 'POST') reqs.push(r.request()); return answer(r); });
@@ -21,6 +21,7 @@ for (const [name, opts, device] of [['phone', { viewport: { width: 390, height: 
   check(Object.keys(row).sort().join() === KEYS, 'only the agreed fields');
   check(row.wand_id === winner && row.attempts === attempts && row.input_mode === 'pointer' && row.language === 'ua' && row.device_type === device, 'wand, attempts, input, language and device are right');
   check(['speed', 'amp', 'sharp', 'flow', 'curl'].every(k => row[k] >= 0 && row[k] <= 1), 'traits are between 0 and 1');
+  check(row.wave_len > 0 && row.wave_dur > 0, `wave length and duration: ${row.wave_len}, ${row.wave_dur}`);
   check(!h.cookie && !h.authorization && h.prefer === 'return=minimal', 'no cookie, no authorization');
   check(!s.errors.length, 'no page errors ' + s.errors.join(' | '));
   await closeAll();
@@ -32,6 +33,14 @@ for (const [what, answer] of [['server error', r => r.fulfill({ status: 500, hea
   check(s.game.done && reqs.length === 1, `${what}: the card still appears`);
   await closeAll();
 }
+console.log('== a finger uses the touch scale, a mouse the pointer one');
+{ const { page, browser } = await open(url, PHONE); await enter(page); await choosePointer(page); await page.waitForFunction(() => document.querySelector('#stage').classList.contains('on'));
+  const cdp = await page.context().newCDPSession(page); await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 60, y: 200 }] });
+  for (let i = 1; i <= 24; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 60 + i * 11, y: 200 + Math.sin(i / 2) * 60 }] }); await sleep(16); }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(300);
+  const r = await page.evaluate(() => { const { st } = __wand, o = st.obs[0], M = Math.min(innerWidth, innerHeight), t = WandLogic.strokeMetrics(st.stroke, M, 'touch'), m = WandLogic.strokeMetrics(st.stroke, M, 'pointer'); return { got: o.speed, touch: t.speed, mouse: m.speed, gotAmp: o.amp, touchAmp: t.amp, mouseAmp: m.amp }; });
+  check(r.got === r.touch && r.gotAmp === r.touchAmp && r.gotAmp > r.mouseAmp, `touch wave reads on the touch scale: amp ${r.gotAmp.toFixed(2)} (a mouse would read ${r.mouseAmp.toFixed(2)})`);
+  await browser.close(); }
 console.log('== other hosts send nothing');
 { const reqs = [], s = await play(url, PHONE, async page => { await page.route(u => u.hostname.endsWith('.supabase.co'), r => { reqs.push(r.request()); return r.abort(); }); });
   check(s.game.done && reqs.length === 0, 'localhost: no request'); }

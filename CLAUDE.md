@@ -26,7 +26,7 @@ waves trial wands, and one of 16 character wands eventually chooses them.
   metrics, re-run `node tools/simulate.js --calibrate`.
 - A person's waves stay alike, so the wands that chose them last count as a little further away (`RECENT` in `logic.js`, kept in `wand-recent`). Check with `node tools/simulate.js --repeat`. The simulator's other modes run without this memory, so `BIAS` stays the balance for a first game.
 - Draco's `BIAS` is set by hand below its calibrated value, about 4% in the stroke model, because real waves read sharper than the model and he won far more often for real players. Keep this value after `--calibrate`, or set it again from recorded waves.
-- `strokeMetrics` measures on a fixed 33 ms grid and on the min(w, h) scale, so input rate doesn't change traits. `SCALES` in `logic.js` holds separate ranges for pointer and camera, read from recorded waves, because a hand moves about half as fast as a finger. Check changes against real waves with `node tools/simulate.js --validate`.
+- `strokeMetrics` measures on a fixed 33 ms grid and on the min(w, h) scale, so input rate doesn't change traits. `SCALES` in `logic.js` holds separate ranges for mouse, touch and camera, because a hand moves about half as fast as a finger. Pointer and camera come from recorded waves, checked with `node tools/simulate.js --validate`. Touch comes from logged games, because a finger in the game moves far slower and narrower than in free recording, so `tools/record.html` waves don't set it.
 - The line a wave draws is softened a little by `smoothPath`, for the picture only. Traits are measured on the raw points.
 - During a wave the tip follows the hand and the handle moves only as a rigid wand requires, so the wand pivots from the grip.
 - Wand looks: `SHAPES` in `index.html` is the single shape spec. The box, hand, result card, saved card and 3D view all render from it. Matching doesn't use it.
@@ -34,9 +34,9 @@ waves trial wands, and one of 16 character wands eventually chooses them.
   Do not invent canon specs. A detail no source confirms stays out: Neville's wand shows no length.
 
 ## Result logging
-- The live site sends one anonymous row per finished game to Supabase, project `ollivanders-wand-shop`, table `wand_results`: wand, attempts, input mode, language, device type, the 5 averaged traits. No names, IDs or cookies, and `created_at` is cut to the hour. Previews, localhost and tests send nothing.
+- The live site sends one anonymous row per finished game to Supabase, project `ollivanders-wand-shop`, table `wand_results`: wand, attempts, input mode, language, device type, the 5 averaged traits, average wave length (in screen widths) and duration. No names, IDs or cookies, and `created_at` is cut to the hour. Previews, localhost and tests send nothing.
 - The public key can only insert. The game never waits for this and a failure stays silent.
-- Recalibrate on the logged traits, not on win shares, because `RECENT` also changes who wins.
+- Recalibrate on the logged traits, not on win shares, because `RECENT` also changes who wins. Rows from before the touch scale (#24) are on the old scale: separate them by `created_at`.
 
 ## Camera mode
 - The video shows inside a vintage portrait frame (`#camBox`, SVG drawn in code), like the magical portraits at Hogwarts.

@@ -59,7 +59,8 @@ function resampleTime(pts, step) {
   return out;
 }
 // Value ranges read from real recorded waves. A hand in front of a camera moves about half as fast as a finger or mouse and shakes more, so each input has its own scale.
-const SCALES = { pointer: { speed: [1, 6], amp: [.3, 1.2], loops: 5, corners: 2.5, turn: .5 }, camera: { speed: [.8, 2.8], amp: [.3, .8], loops: 4.5, corners: 3.5, turn: .8 } };
+// Touch comes from games on the live site: a finger in the game moves far slower and narrower than in free recording.
+const SCALES = { pointer: { speed: [1, 6], amp: [.3, 1.2], loops: 5, corners: 2.5, turn: .5 }, touch: { speed: [1, 3.6], amp: [.32, .8], loops: 1.5, corners: 2.5, turn: .5 }, camera: { speed: [.8, 2.8], amp: [.3, .8], loops: 4.5, corners: 3.5, turn: .8 } };
 const unit = (v, [lo, hi]) => clamp((v - lo) / (hi - lo));
 function strokeMetrics(raw, MIN, mode = 'pointer') {
   const sc = SCALES[mode];

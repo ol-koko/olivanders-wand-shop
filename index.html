@@ -1199,7 +1199,7 @@ function nudgeNote() { noteIn.classList.remove('nudge'); void noteIn.offsetWidth
 function noteTop() { return note.classList.contains('show') ? note.getBoundingClientRect().top : H; }
 
 /* ================= metrics ================= */
-const inputMode = () => st.input === 'cam' ? 'camera' : 'pointer';
+const inputMode = () => st.input === 'cam' ? 'camera' : st.touch ? 'touch' : 'pointer';
 function mergeTraits(extra) { return averageTraits(extra ? [...st.obs, extra] : st.obs); }
 function bestWand(tr) { return bestMatch(tr, st.tried); }
 
@@ -1207,7 +1207,7 @@ function bestWand(tr) { return bestMatch(tr, st.tried); }
 const stage = $('#stage');
 function accept(on) { stage.classList.toggle('on', on); }
 function pt(e) { return { x: e.clientX, y: e.clientY, t: performance.now() }; }
-stage.addEventListener('pointerdown', e => { const c = st.cap; if (!c || c.active || c.done || st.input !== 'pointer') return; e.preventDefault(); try { stage.setPointerCapture(e.pointerId); } catch (_) { } startCapture([pt(e)]); });
+stage.addEventListener('pointerdown', e => { const c = st.cap; if (!c || c.active || c.done || st.input !== 'pointer') return; e.preventDefault(); st.touch = e.pointerType === 'touch'; try { stage.setPointerCapture(e.pointerId); } catch (_) { } startCapture([pt(e)]); });
 stage.addEventListener('pointermove', e => { const c = st.cap; if (!c || !c.active || st.input !== 'pointer') return; const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e]; for (const ev of evs) addPoint(pt(ev)); });
 const endPointer = () => { const c = st.cap; if (c && c.active && st.input === 'pointer') finishCapture(); };
 stage.addEventListener('pointerup', endPointer); stage.addEventListener('pointercancel', endPointer);
@@ -1416,8 +1416,10 @@ function deviceType() { return !matchMedia('(pointer:coarse)').matches ? 'deskto
 function logResult(w, attempts, tr) {
   if (location.hostname !== LOG.host) return;
   try {
-    const row = { wand_id: w.id, attempts, input_mode: inputMode(), language: lang, device_type: deviceType() };
+    const row = { wand_id: w.id, attempts, input_mode: st.input === 'cam' ? 'camera' : 'pointer', language: lang, device_type: deviceType() };
     for (const k of ['speed', 'amp', 'sharp', 'flow', 'curl']) row[k] = +clamp(tr[k]).toFixed(3);
+    const mean = f => st.obs.reduce((s, o) => s + f(o), 0) / st.obs.length;
+    row.wave_len = +clamp(mean(o => o.len / MIN), 0, 100).toFixed(2); row.wave_dur = +clamp(mean(o => o.dur), 0, 60).toFixed(2);
     fetch(LOG.url, { method: 'POST', keepalive: true, credentials: 'omit', headers: { apikey: LOG.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(row) }).catch(() => { });
   } catch (_) { }
 }
