@@ -33,6 +33,11 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - Canon facts only: wands whose wood/core are not named in canon have `spec: null` and show no spec line, with no label about it.
   Do not invent canon specs. A detail no source confirms stays out: Neville's wand shows no length.
 
+## Result logging
+- The live site sends one anonymous row per finished game to Supabase, project `ollivanders-wand-shop`, table `wand_results`: wand, attempts, input mode, language, device type, the 5 averaged traits. No names, IDs or cookies, and `created_at` is cut to the hour. Previews, localhost and tests send nothing.
+- The public key can only insert. The game never waits for this and a failure stays silent.
+- Recalibrate on the logged traits, not on win shares, because `RECENT` also changes who wins.
+
 ## Camera mode
 - The video shows inside a vintage portrait frame (`#camBox`, SVG drawn in code), like the magical portraits at Hogwarts.
 - MediaPipe Tasks Vision HandLandmarker 0.10.14 from jsDelivr, model from storage.googleapis.com.

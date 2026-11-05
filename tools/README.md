@@ -15,6 +15,7 @@ Then:
     node tools/e2e/wand3d.mjs          # 3D view: lazy load, drag, offscreen pause, 2D fallback
     node tools/e2e/recent.mjs          # a win is remembered and counts against that wand next game
     node tools/e2e/retry.mjs           # Try again goes straight to the wands, no warm-up wave
+    node tools/e2e/logging.mjs         # one anonymous row from the live host only, the game never waits, no real requests
     node tools/e2e/card.mjs            # result card and every sharing path, both languages
     node tools/e2e/ui.mjs              # first screens across phone and desktop sizes
     node tools/e2e/sound.mjs           # sound starts on the entry tap, the choice is remembered
