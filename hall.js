@@ -115,13 +115,70 @@ function buildFg() {
     ${boats}${bare(60, 1000, 240)}${bare(942, 1000, 220)}${trees}<polygon points="${bank}" fill="#ccd6ea"/><polygon points="${bank}" fill="#5d6a90" opacity=".22"/>`;
 }
 function buildHall() {
-  const R = rng(61);
-  let win = ''; for (const x of [90, 250, 680, 840]) win += `<path d="M${x} 620V190a35 35 0 0 1 70 0v430z" fill="#1c2452"/><path d="M${x + 35} 155v465M${x} 300h70M${x} 420h70M${x} 530h70" stroke="#0c0a18" stroke-width="3"/>`;
-  $('#svgHaBack').innerHTML = `<defs><linearGradient id="gWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#07060f"/><stop offset=".6" stop-color="#231a24"/><stop offset="1" stop-color="#3a2618"/></linearGradient></defs>
-    <rect x="-400" y="-400" width="1800" height="1800" fill="url(#gWall)"/>${win}<rect x="-400" y="650" width="1800" height="600" fill="#1a110c"/>`;
-  let can = ''; for (let i = 0; i < 44; i++) { const x = R() * 1000, y = 60 + R() * 420, s = .6 + R() * .9; can += `<g class="${R() < .35 ? 'tw' : ''}"><circle cx="${x.toFixed(0)}" cy="${(y - 8 * s).toFixed(0)}" r="${(14 * s).toFixed(1)}" fill="#ffc98a" opacity=".16"/><rect x="${(x - 1.7 * s).toFixed(1)}" y="${y.toFixed(0)}" width="${(3.4 * s).toFixed(1)}" height="${(16 * s).toFixed(1)}" fill="#f0e6cf"/><ellipse cx="${x.toFixed(0)}" cy="${(y - 3 * s).toFixed(1)}" rx="${(1.9 * s).toFixed(1)}" ry="${(4 * s).toFixed(1)}" fill="#ffd787"/></g>`; }
-  let tab = ''; for (const [a, b] of [[80, 250], [300, 420], [580, 700], [750, 920]]) tab += `<polygon points="${a},640 ${b},640 ${b + (b - 500) * .28},1000 ${a + (a - 500) * .28},1000" fill="#2c1a0e"/><polygon points="${a},640 ${b},640 ${b + 2},648 ${a - 2},648" fill="#6a4524"/>`;
-  $('#svgHaMid').innerHTML = can + tab;
+  const R = rng(61), VX = 500, VY = 390, BL = 268, BR = 732, BT = 190, BB = 560;
+  // ---- far: night sky under the roof, back wall, two big windows, the tree between them
+  let stars = ''; for (let i = 0; i < 90; i++) stars += `<circle cx="${(R() * 1400 - 200).toFixed(0)}" cy="${(R() * 300 - 120).toFixed(0)}" r="${(.5 + R() * 1.2).toFixed(1)}" fill="#e4eaff" opacity="${(.3 + R() * .6).toFixed(2)}"${R() < .15 ? ' class="tw"' : ''}/>`;
+  let blocks = ''; for (let y = BT + 8; y < BB; y += 15) { const off = (y / 15 | 0) % 2 * 20; blocks += `<path d="M${BL} ${y}H${BR}" stroke="#1f140b" stroke-width="1" opacity=".3"/>`; for (let x = BL + off; x < BR; x += 40) blocks += `<path d="M${x} ${y}v15" stroke="#1f140b" stroke-width="1" opacity=".22"/>`; }
+  const bigWindow = (x, w) => { const top = 212, bot = 512, r = w / 2, cx = x + r; let lead = ''; for (let i = 1; i < 4; i++) lead += `<path d="M${x + w * i / 4} ${top + 8}V${bot}" stroke="#0a0d1c" stroke-width="2.4"/>`; for (let y = top + r + 26; y < bot; y += 34) lead += `<path d="M${x} ${y}h${w}" stroke="#0a0d1c" stroke-width="1.6"/>`; lead += `<path d="M${x + 4} ${top + r}A${r - 4} ${r - 4} 0 0 1 ${x + w - 4} ${top + r}" fill="none" stroke="#0a0d1c" stroke-width="3"/><circle cx="${cx}" cy="${top + r * .62}" r="${r * .3}" fill="none" stroke="#0a0d1c" stroke-width="2.4"/>`; for (let i = 0; i < 22; i++) lead += `<circle cx="${(x + 6 + R() * (w - 12)).toFixed(0)}" cy="${(top + r * .5 + R() * (bot - top - r * .5)).toFixed(0)}" r="${(.8 + R() * 1.5).toFixed(1)}" fill="#f4f7ff" opacity=".75"/>`;
+    return `<path d="M${x - 11} ${bot + 11}V${top + r}A${r + 11} ${r + 11} 0 0 1 ${x + w + 11} ${top + r}V${bot + 11}z" fill="#2b1d12"/><path d="M${x} ${bot}V${top + r}A${r} ${r} 0 0 1 ${x + w} ${top + r}V${bot}z" fill="url(#gHWin)"/>${lead}<rect x="${x - 14}" y="${bot + 6}" width="${w + 28}" height="8" fill="#dce4f4" opacity=".75"/>`; };
+  let tree = `<ellipse cx="500" cy="395" rx="120" ry="200" fill="url(#gTreeGlow)"/><rect x="491" y="536" width="18" height="24" fill="#3a2212"/>`;
+  for (let i = 0; i < 7; i++) { const t = 222 + i * 44, w = 19 + i * 13.5, h = 74; tree += `<polygon points="500,${t} ${500 - w},${t + h} ${500 + w},${t + h}" fill="url(#gTree)"/><polygon points="500,${t} ${500 - w * .44},${t + h * .55} ${500 - w * .1},${t + h * .4} ${500 + w * .1},${t + h * .58} ${500 + w * .4},${t + h * .42}" fill="#2c5a38" opacity=".55"/>`; }
+  for (let i = 0; i < 74; i++) { const f = R(), y = 248 + f * 300, half = 12 + f * 94, x = 500 + (R() * 2 - 1) * half, c = R(); tree += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(1.4 + R() * 2.5).toFixed(1)}" fill="${c < .5 ? '#ffd787' : c < .75 ? '#d7543f' : '#f5ead0'}"${R() < .3 ? ' class="tw"' : ''}/>`; }
+  for (let i = 0; i < 6; i++) { const y0 = 270 + i * 46, w = 20 + i * 15; tree += `<path d="M${500 - w} ${y0}Q500 ${y0 + 18} ${500 + w} ${y0 + 6}" fill="none" stroke="#e7c273" stroke-width="1.5" opacity=".65"/>`; }
+  tree += `<polygon points="500,196 505,212 522,212 508,222 513,238 500,228 487,238 492,222 478,212 495,212" fill="#ffe08a"/>`;
+  $('#svgHaBack').innerHTML = `<defs>
+    <linearGradient id="gHSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050816"/><stop offset="1" stop-color="#15204a"/></linearGradient>
+    <linearGradient id="gHBack" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b2a1b"/><stop offset=".55" stop-color="#7a5230"/><stop offset="1" stop-color="#a06c3a"/></linearGradient>
+    <linearGradient id="gHWin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#101a44"/><stop offset=".65" stop-color="#27427e"/><stop offset="1" stop-color="#5b7bb4"/></linearGradient>
+    <linearGradient id="gTree" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#173a26"/><stop offset="1" stop-color="#0c2418"/></linearGradient>
+    <radialGradient id="gTreeGlow"><stop offset="0" stop-color="#ffd38c" stop-opacity=".46"/><stop offset="1" stop-color="#ffd38c" stop-opacity="0"/></radialGradient></defs>
+    <rect x="-400" y="-400" width="1800" height="800" fill="url(#gHSky)"/>${stars}
+    <rect x="${BL}" y="${BT}" width="${BR - BL}" height="${BB - BT}" fill="url(#gHBack)"/>${blocks}
+    ${bigWindow(292, 132)}${bigWindow(576, 132)}${tree}`;
+
+  // ---- middle: stone side walls, tall windows, fires, side trees, the wooden roof, floating candles
+  const wall = side => {
+    const m = x => side < 0 ? x : 1000 - x, X = t => BL - t * 620, Yt = t => BT - t * 560, Yb = t => BB + t * 620, pt = (t, f) => `${m(X(t)).toFixed(1)},${(Yt(t) + (Yb(t) - Yt(t)) * f).toFixed(1)}`;
+    const quad = (a, b, f0, f1, fill, extra = '') => `<polygon points="${pt(a, f0)} ${pt(b, f0)} ${pt(b, f1)} ${pt(a, f1)}" fill="${fill}"${extra}/>`;
+    let o = `<polygon points="${pt(0, 0)} ${pt(1, 0)} ${pt(1, 1)} ${pt(0, 1)}" fill="url(#gSide)"/>`;
+    for (let f = .06; f < 1; f += .058) o += `<path d="M${pt(0, f)}L${pt(1, f)}" stroke="#1f140b" stroke-width="1.2" opacity=".28"/>`;
+    for (let i = 0; i < 26; i++) { const t = R(), f = R(); o += `<path d="M${pt(t, f)}L${pt(t, f + .05)}" stroke="#1f140b" stroke-width="1" opacity=".22"/>`; }
+    for (const [a, b] of [[.06, .17], [.26, .42], [.56, .8]]) {
+      o += quad(a - .012, b + .012, .1, .72, '#2b1d12');
+      o += quad(a, b, .13, .7, 'url(#gHWin)');
+      const mid = (a + b) / 2; o += `<path d="M${pt(mid, .13)}L${pt(mid, .7)}" stroke="#0a0d1c" stroke-width="2.4"/>`; for (let f = .22; f < .7; f += .1) o += `<path d="M${pt(a, f)}L${pt(b, f)}" stroke="#0a0d1c" stroke-width="1.6"/>`;
+      o += quad(a - .012, b + .012, .7, .72, '#dce4f4', ' opacity=".6"');
+    }
+    for (const t of [.21, .48]) {
+      o += quad(t, t + .045, 0, 1, '#2a1a0d') + quad(t + .03, t + .045, 0, 1, '#120a05');
+      const [fx, fy] = pt(t + .02, .44).split(',').map(Number), s = .55 + t * 1.6;
+      o += `<ellipse cx="${fx}" cy="${fy}" rx="${70 * s}" ry="${80 * s}" fill="url(#gFire)"/><path d="M${fx - 15 * s} ${fy}h${30 * s}l-${6 * s} ${12 * s}h-${18 * s}z" fill="#20130a"/><path class="tw" d="M${fx - 12 * s} ${fy}q${2 * s} -${17 * s} ${7 * s} -${25 * s}q${1 * s} ${8 * s} ${5 * s} ${10 * s}q${3 * s} -${6 * s} ${1 * s} -${15 * s}q${10 * s} ${13 * s} ${11 * s} ${30 * s}z" fill="#ffb24c"/><path d="M${fx - 5 * s} ${fy}q${2 * s} -${8 * s} ${4 * s} -${11 * s}q${3 * s} ${5 * s} ${5 * s} ${11 * s}z" fill="#ffe7a8"/>`;
+    }
+    return o;
+  };
+  const sideTree = (x, y, h) => { let o = `<ellipse cx="${x}" cy="${y - h * .5}" rx="${h * .5}" ry="${h * .62}" fill="url(#gTreeGlow)"/><rect x="${x - h * .03}" y="${y - h * .08}" width="${h * .06}" height="${h * .08}" fill="#3a2212"/>`; for (let i = 0; i < 5; i++) { const t = y - h + i * h * .165, w = h * (.09 + i * .065); o += `<polygon points="${x},${t.toFixed(0)} ${(x - w).toFixed(0)},${(t + h * .26).toFixed(0)} ${(x + w).toFixed(0)},${(t + h * .26).toFixed(0)}" fill="url(#gTree)"/>`; } for (let i = 0; i < 26; i++) { const f = R(), yy = y - h * .9 + f * h * .8, half = h * (.03 + f * .27); o += `<circle cx="${(x + (R() * 2 - 1) * half).toFixed(0)}" cy="${yy.toFixed(0)}" r="${(1.2 + R() * 1.8).toFixed(1)}" fill="${R() < .6 ? '#ffd787' : '#d7543f'}"${R() < .3 ? ' class="tw"' : ''}/>`; } return o; };
+  // the roof: wooden arches getting closer, joined by rafters that run towards the back wall
+  let roof = ''; const arch = t => ({ hw: 232 + t * 620, sp: BT - t * 560 + (BB - BT + t * 1180) * .02, ap: 86 - t * 500 });
+  for (let i = 0; i < 26; i++) { const a = -1.5 + i * .12, x0 = VX + Math.sin(a) * 232, y0 = 86 + (1 - Math.cos(a)) * 110, x1 = VX + Math.sin(a) * 980, y1 = -490 + (1 - Math.cos(a)) * 580; roof += `<path d="M${x0.toFixed(0)} ${y0.toFixed(0)}L${x1.toFixed(0)} ${y1.toFixed(0)}" stroke="#2c1a0c" stroke-width="${(3 + (i % 3 === 0 ? 3 : 0)).toFixed(0)}" opacity=".92"/>`; }
+  for (const t of [.72, .48, .28, .12, 0]) { const { hw, sp, ap } = arch(t), w = 11 + t * 34, l = VX - hw, r = VX + hw, c = `M${l} ${sp + 40 + t * 70}Q${l + hw * .05} ${ap + 46} ${VX} ${ap}Q${r - hw * .05} ${ap + 46} ${r} ${sp + 40 + t * 70}`;
+    roof += `<path d="${c}" fill="none" stroke="#1a0e06" stroke-width="${w * 1.5}"/><path d="${c}" fill="none" stroke="#4d2f16" stroke-width="${w}"/><path d="${c}" fill="none" stroke="#7a5128" stroke-width="${w * .22}" opacity=".85" transform="translate(0 ${(-w * .22).toFixed(1)})"/>`;
+    for (const s of [-1, 1]) { const kx = VX + s * hw * .86, ky = ap + (sp - ap) * .66; roof += `<path d="M${kx.toFixed(0)} ${(ky - w).toFixed(0)}l${(s * w * .9).toFixed(0)} ${(w * 1.8).toFixed(0)}l${(-s * w * 1.1).toFixed(0)} ${(w * .55).toFixed(0)}z" fill="#6b4522"/>`; } }
+  let can = ''; for (let i = 0; i < 52; i++) { const x = 40 + R() * 920, y = 80 + R() * 400, s = .55 + R() * 1; can += `<g${R() < .35 ? ' class="tw"' : ''}><circle cx="${x.toFixed(0)}" cy="${(y - 8 * s).toFixed(0)}" r="${(20 * s).toFixed(1)}" fill="url(#gCandle)"/><rect x="${(x - 1.7 * s).toFixed(1)}" y="${y.toFixed(0)}" width="${(3.4 * s).toFixed(1)}" height="${(17 * s).toFixed(1)}" fill="#f0e6cf"/><ellipse cx="${x.toFixed(0)}" cy="${(y - 3 * s).toFixed(1)}" rx="${(1.9 * s).toFixed(1)}" ry="${(4.2 * s).toFixed(1)}" fill="#ffd787"/></g>`; }
+  $('#svgHaMid').innerHTML = `<defs><linearGradient id="gSide" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#20160e"/><stop offset=".5" stop-color="#6b4728"/><stop offset="1" stop-color="#8a5c31"/></linearGradient>
+    <radialGradient id="gFire"><stop offset="0" stop-color="#ffb65f" stop-opacity=".6"/><stop offset="1" stop-color="#ffb65f" stop-opacity="0"/></radialGradient>
+    <radialGradient id="gCandle"><stop offset="0" stop-color="#ffd38c" stop-opacity=".42"/><stop offset="1" stop-color="#ffd38c" stop-opacity="0"/></radialGradient></defs>
+    ${wall(-1)}${wall(1)}${sideTree(210, 632, 220)}${sideTree(790, 632, 220)}${roof}${can}`;
+
+  // ---- near: stone floor and four long tables running towards the back
+  const quadP = (ax, bx, y0, y1, fill) => { const k = (x, y) => VX + (x - VX) * (y - VY) / (BB - VY); return `<polygon points="${ax},${y0} ${bx},${y0} ${k(bx, y1).toFixed(1)},${y1} ${k(ax, y1).toFixed(1)},${y1}" fill="${fill}"/>`; };
+  let floor = `<polygon points="${BL},${BB} ${BR},${BB} ${BR + 800},${BB + 800} ${BL - 800},${BB + 800}" fill="url(#gFloor)"/>`; for (let i = 0; i <= 22; i++) { const x = BL + (BR - BL) * i / 22; floor += `<path d="M${x.toFixed(0)} ${BB}L${(VX + (x - VX) * 2.9).toFixed(0)} 1100" stroke="#1a110a" stroke-width="1" opacity=".35"/>`; } for (let y = BB + 8, d = 8; y < 1100; d *= 1.18, y += d) floor += `<path d="M${BL - (y - BB)} ${y.toFixed(0)}H${BR + (y - BB)}" stroke="#1a110a" stroke-width="1" opacity=".3"/>`;
+  let tables = ''; for (const [a, b] of [[300, 342], [392, 434], [566, 608], [658, 700]]) {
+    tables += quadP(a - 15, a - 4, BB + 1, 1080, '#1b0f07') + quadP(b + 4, b + 15, BB + 1, 1080, '#1b0f07') + quadP(a, b, BB, 1080, 'url(#gTable)');
+    const k = (x, y) => VX + (x - VX) * (y - VY) / (BB - VY);
+    for (let i = 0; i < 26; i++) { const f = R(), y = BB + 3 + f * f * 500, u = .15 + R() * .7, x = k(a + (b - a) * u, y), s = (y - VY) / (BB - VY); tables += R() < .55 ? `<ellipse cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" rx="${(4.4 * s).toFixed(1)}" ry="${(1.6 * s).toFixed(1)}" fill="#d7c39a" opacity=".85"/>` : `<g><ellipse cx="${x.toFixed(0)}" cy="${(y - 9 * s).toFixed(0)}" rx="${(11 * s).toFixed(1)}" ry="${(12 * s).toFixed(1)}" fill="url(#gTableGlow)"/><rect x="${(x - s).toFixed(1)}" y="${(y - 9 * s).toFixed(1)}" width="${(2 * s).toFixed(1)}" height="${(9 * s).toFixed(1)}" fill="#f0e6cf"/><circle cx="${x.toFixed(1)}" cy="${(y - 10 * s).toFixed(1)}" r="${(1.5 * s).toFixed(1)}" fill="#ffd787"/></g>`; }
+  }
+  $('#svgHaFront').innerHTML = `<defs><linearGradient id="gFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a4a2c"/><stop offset=".4" stop-color="#3a2a1b"/><stop offset="1" stop-color="#150e08"/></linearGradient>
+    <radialGradient id="gTableGlow"><stop offset="0" stop-color="#ffd38c" stop-opacity=".4"/><stop offset="1" stop-color="#ffd38c" stop-opacity="0"/></radialGradient><linearGradient id="gTable" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5a2c"/><stop offset=".3" stop-color="#5a3518"/><stop offset="1" stop-color="#2c170a"/></linearGradient></defs>${floor}${tables}`;
 }
 
 /* ================= language ================= */
@@ -142,7 +199,7 @@ async function enterHall() {
   if (A.on) { audioInit(); if (A.ctx && A.ctx.state === 'suspended') A.ctx.resume(); SFX.bell(); }
   $('#cta').style.opacity = 0; $('#stFan').style.opacity = 0; $('#stTitle').style.opacity = 0; $('#stTitle').style.transform = 'translateY(-20px)';
   const wr = $('#hallHit').getBoundingClientRect(), cx = wr.left + wr.width / 2, cy = wr.top + wr.height / 2;
-  const out = ['caSky', 'caFar', 'caMain', 'caFg'].map(id => layers[id]), inn = ['haBack', 'haMid'];
+  const out = ['caSky', 'caFar', 'caMain', 'caFg'].map(id => layers[id]), inn = ['haBack', 'haMid', 'haFront'];
   out.forEach(Ly => { const r = Ly.el.getBoundingClientRect(); Ly.el.style.transformOrigin = `${(cx - r.left) / Ly.s}px ${(cy - r.top) / Ly.s}px`; });
   const fl = $('#flash'); fl.style.setProperty('--fx', cx + 'px'); fl.style.setProperty('--fy', cy + 'px');
   const hall = $('#hall'), dur = reduceMotion ? 500 : 2100; hall.hidden = false; buildHall(); hall.style.opacity = 0;
@@ -153,6 +210,8 @@ async function enterHall() {
     if (!reduceMotion) { layers.caSky.s = 1 + .3 * z; layers.caFar.s = 1 + 1.1 * z; layers.caMain.s = 1 + 7 * Math.pow(z, 1.8); layers.caFg.s = 1 + 10 * Math.pow(z, 1.4); layers.caMain.blur = z > .55 ? (z - .55) * 10 : 0; layers.caFg.blur = z * 9; }
     fl.style.opacity = clamp((t - .5) / .42); drawSnow(performance.now(), 1 - z);
   });
+  // the snow keeps falling inside
+  $('#haMid').after($('#snowBack')); $('#haFront').after($('#snowFront'));
   $('#castle').hidden = true; hall.style.opacity = 1;
   await run(reduceMotion ? 400 : 1300, t => { const e = easeOut(t); if (!reduceMotion) inn.forEach((id, i) => { layers[id].s = 1 + (.3 + i * .1) * (1 - e); }); fl.style.opacity = 1 - easeOut(clamp(t / .75)); });
   st.phase = 'hall';
@@ -170,6 +229,6 @@ buildSky(); buildFar(); buildMain(); buildFg(); setViewBoxes(); initSnow(); appl
 function frame(t) {
   requestAnimationFrame(frame); // first, so an error in one frame can't stop the page
   now = t; updatePar(t);
-  if (st.phase === 'castle') drawSnow(t);
+  if (st.phase === 'castle') drawSnow(t); else if ($('#castle').hidden) drawSnow(t, .75);
 }
 requestAnimationFrame(frame);
