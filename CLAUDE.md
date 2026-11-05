@@ -4,7 +4,8 @@ A small winter-themed web app (fan project, Harry Potter world). The user enters
 waves trial wands, and one of 16 character wands eventually chooses them.
 
 ## Current state
-- Static site, no build step. `index.html` holds the page, styles, drawing, FX and flow. `logic.js` holds the game logic with no DOM (wands, metrics, choosing, camera motion), shared with `tools/`.
+- Static site, no build step. `index.html` holds the page and the shop's styles. `core.js` and `core.css` hold what every screen shares: helpers, language, depth, sound, the parchment note, logging. `shop.js` holds the shop's drawing, FX and flow. `logic.js` holds the game logic with no DOM (wands, metrics, choosing, camera motion), shared with `tools/`.
+- The scripts are plain `<script>` tags in that order (`logic.js`, `core.js`, `shop.js`) and share top-level names. `core.js` expects each page's script to declare `st` and add its strings to `S`.
 - Visuals are drawn in code: SVG street scene, canvas shop interior, canvas FX layer. The only image files are `og.jpg`, `favicon.svg` and `apple-touch-icon.png`, for link previews and icons; `tools/make-og.mjs` generates them from the game's own drawing.
 - `tools/` is local only and never ships: balance simulator, wave recorder, Playwright tests. See `tools/README.md`.
 - Sound is generated with WebAudio. It starts on the tap that enters the shop, because browsers allow sound only after a tap. The toggle is top-right and the person's choice is remembered.

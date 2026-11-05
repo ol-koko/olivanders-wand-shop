@@ -1,0 +1,48 @@
+/* Shared by every screen: page base, the parchment note, the top buttons. */
+@property --g{syntax:'<number>';inherits:true;initial-value:0}
+:root{--gold:#d9b46a;--gold2:#f6e2ae;--ink:#3a2516;--serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;--hand:'Marck Script','Segoe Script','Bradley Hand',cursive}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-family:var(--serif);-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;overscroll-behavior:none}
+#app{position:fixed;inset:0;overflow:hidden;background:#07060a}
+#app.shake{animation:shake .55s cubic-bezier(.36,.07,.19,.97)}
+@keyframes shake{10%,90%{transform:translate(-2px,1px)}20%,80%{transform:translate(4px,-2px)}30%,50%,70%{transform:translate(-7px,3px) rotate(-.4deg)}40%,60%{transform:translate(7px,-3px) rotate(.4deg)}}
+.scene{position:absolute;inset:0;overflow:hidden}
+.pl{position:absolute;left:-4%;top:-4%;width:108%;height:108%;will-change:transform;transform-origin:50% 50%}
+.pl>svg,.pl>canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.full{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:block}
+
+
+/* note */
+#note{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 12px);transform:translateX(-50%) translateY(30px);width:min(93vw,560px);padding-top:13px;z-index:20;opacity:0;transition:opacity .6s ease,transform .7s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+#note.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
+.note-in{position:relative;isolation:isolate;color:var(--ink);padding:25px 20px 18px;transition:opacity .35s}
+.note-in.fade{opacity:0}
+#noteBg{position:absolute;left:-24px;top:-28px;width:calc(100% + 48px);height:calc(100% + 56px);z-index:-1;pointer-events:none}
+.note-in.nudge{animation:nudge .45s}
+@keyframes nudge{25%{transform:translateX(-6px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.kicker{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#8a5a2a;font-weight:700;min-height:14px}
+.hand{font-family:var(--hand);font-size:clamp(23px,5.6vw,30px);line-height:1.12;color:#2a170b;margin-top:6px}
+.nspec{font-size:14px;font-style:italic;font-weight:500;line-height:1.32;color:#4a3322;margin-top:6px}
+.nspec:empty{display:none}
+.nspec:not(:empty)+.hand{margin-top:18px}
+.instr{font-size:clamp(16.5px,4.1vw,19px);line-height:1.32;margin-top:6px;color:#4a3322;font-weight:600}
+.instr:empty{display:none}
+.instr b{color:#6a2a10}
+.status{font-size:15px;font-style:italic;color:#8a4a1a;margin-top:6px;font-weight:600;min-height:0}
+.status:empty{display:none}
+.nbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.nbtns:empty{display:none}
+.nbtns.eq{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))}
+.btn{font:inherit;font-weight:700;font-size:17px;background:#2b1a0e;color:var(--gold2);border:1px solid #7a5428;padding:10px 20px;border-radius:999px;cursor:pointer;transition:transform .15s,box-shadow .2s}
+.btn.ghost{background:transparent;color:#3a2516;border-color:#8a6a3a}
+.btn:hover{box-shadow:0 0 18px rgba(255,190,100,.35)}
+.btn:active{transform:scale(.97)}
+
+.topbar{position:absolute;z-index:40;top:calc(env(safe-area-inset-top) + 12px);right:calc(env(safe-area-inset-right) + 12px);display:flex;gap:8px;align-items:center;transition:opacity .25s}
+.topbar.away{opacity:0;pointer-events:none}
+#snd{width:42px;height:42px;border-radius:50%;border:1px solid rgba(217,180,106,.55);background:rgba(14,10,20,.55);color:var(--gold2);display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+#snd svg{width:20px;height:20px}
+#lang{display:flex;height:42px;border-radius:999px;border:1px solid rgba(217,180,106,.55);background:rgba(14,10,20,.55);padding:3px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+#lang button{font:inherit;font-weight:700;font-size:15px;letter-spacing:.06em;border:0;background:transparent;color:#cdb78c;padding:0 11px;border-radius:999px;cursor:pointer}
+#lang button.on{background:linear-gradient(180deg,#f2d38e,#c99a4e);color:#2a170b}
