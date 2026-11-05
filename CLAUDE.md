@@ -34,6 +34,10 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - Canon facts only: wands whose wood/core are not named in canon have `spec: null` and show no spec line, with no label about it.
   Do not invent canon specs. A detail no source confirms stays out: Neville's wand shows no length.
 
+## Sorting Ceremony (in progress, not linked from the game yet)
+- `sorting-logic.js` holds the scoring with no DOM and `sorting-questions.js` the pool, both shared with `tools/simulate-sorting.js`. Each game asks 3 questions, one per category, then the wish. Not wanting a house is an optional action on the wish screen, not a separate screen.
+- Targets: about 25% per house on random answers, 60–70% for a wished house, under 10% for an unwanted one. After any change to the pool or the weights, re-run `node tools/simulate-sorting.js`.
+
 ## Result logging
 - The live site sends one anonymous row per finished game to Supabase, project `ollivanders-wand-shop`, table `wand_results`: wand, attempts, input mode, language, device type, the 5 averaged traits, average wave length (in screen widths) and duration. No names, IDs or cookies, and `created_at` is cut to the hour. Previews, localhost and tests send nothing.
 - The public key can only insert. The game never waits for this and a failure stays silent.

@@ -39,6 +39,11 @@ No dependencies:
 
 The simulator runs the game's own `logic.js`. Re-run it after any change to wand profiles or metrics.
 
+## Sorting balance
+No dependencies:
+
+    node tools/simulate-sorting.js      # checks the pool and the balance targets on the game's own sorting-logic.js
+
 ## Recording real waves
 Open `http://localhost:8000/tools/record.html` (from `python3 -m http.server 8000` in the repo root), wave about 30 times, press "Зберегти JSON", then:
 
