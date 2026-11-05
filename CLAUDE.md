@@ -35,6 +35,7 @@ waves trial wands, and one of 16 character wands eventually chooses them.
   Do not invent canon specs. A detail no source confirms stays out: Neville's wand shows no length.
 
 ## Sorting Ceremony (in progress, not linked from the game yet)
+- `/sorting` is `sorting/index.html` with `hall.js`: the Hogwarts exterior, drawn in code with the same depth as the street, and a flight through the wall into the Great Hall. It's `noindex` and unlinked until the ceremony is ready. House crests, film designs and named ghosts stay out: everything is our own drawing.
 - `sorting-logic.js` holds the scoring with no DOM and `sorting-questions.js` the pool, both shared with `tools/simulate-sorting.js`. Each game asks 3 questions, one per category, then the wish. Not wanting a house is an optional action on the wish screen, not a separate screen.
 - Targets: about 25% per house on random answers, 60–70% for a wished house, under 10% for an unwanted one. After any change to the pool or the weights, re-run `node tools/simulate-sorting.js`.
 
