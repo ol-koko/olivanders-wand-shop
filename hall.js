@@ -16,71 +16,103 @@ Object.assign(S, {
 const st = { phase: 'castle', cap: null, noteFn: null, input: 'pointer' };
 
 /* ================= castle ================= */
-const CASTLE_TOP = 285; // the highest spire: the view keeps it below the title
+const CASTLE_TOP = 165; // the highest spire: the view keeps it below the title
 function setViewBoxes() {
   if (!W || !H) return;
-  const a = W / H, base = a > .9 ? 760 : 1080, title = $('#stTitle').getBoundingClientRect().bottom + 28;
+  const a = W / H, base = a > .9 ? 760 : Math.max(1080, 600 / a), title = $('#stTitle').getBoundingClientRect().bottom + 28; // on a phone the whole castle fits the width
   const vbH = st.phase === 'castle' && title < H * .8 ? Math.max(base, Math.min((1018 - CASTLE_TOP) / (1 - title / H), 2800 / a)) : base;
-  const vbW = vbH * a, vb = `${(500 - vbW / 2).toFixed(1)} ${(1018 - vbH).toFixed(1)} ${vbW.toFixed(1)} ${vbH.toFixed(1)}`;
+  const vbW = vbH * a, vb = `${(514 - vbW / 2).toFixed(1)} ${(1018 - vbH).toFixed(1)} ${vbW.toFixed(1)} ${vbH.toFixed(1)}`;
   ['#svgCaSky', '#svgCaFar', '#svgCaMain', '#svgCaFg'].forEach(s => $(s).setAttribute('viewBox', vb));
-  // the moon stays clear of the title: lower on tall screens, to the side on wide ones
+  // the moon sits behind the main tower, and moves down if the title would touch it
   const titleY = 1018 - vbH + ($('#stTitle').getBoundingClientRect().bottom + H * .04) / (H * 1.08) * vbH; // the layer is 108% of the screen
-  $('#caMoon').setAttribute('transform', a > .9 ? `translate(-${Math.round(vbW * .3)} 0)` : `translate(0 ${Math.max(0, Math.round(titleY + 22 - 153))})`);
+  $('#caMoon').setAttribute('transform', `translate(0 ${Math.max(0, Math.round(titleY + 24 - 178))})`);
 }
 function buildSky() {
   const R = rng(11), s = $('#svgCaSky');
-  let stars = ''; for (let i = 0; i < 260; i++) { const r = .5 + R() * 1.3, x = -900 + R() * 2800, y = -1400 + R() * 2100; stars += `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${r.toFixed(1)}" fill="#fff" opacity="${(.3 + R() * .6).toFixed(2)}"${R() < .12 ? ' class="tw"' : ''}/>`; }
-  s.innerHTML = `<defs><linearGradient id="gCaSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#04060f"/><stop offset=".62" stop-color="#101a3c"/><stop offset=".86" stop-color="#2b2c58"/><stop offset="1" stop-color="#3f3560"/></linearGradient>
-    <radialGradient id="gCaMoon"><stop offset="0" stop-color="#fff2cf" stop-opacity=".5"/><stop offset=".35" stop-color="#d9ddf5" stop-opacity=".16"/><stop offset="1" stop-color="#d9ddf5" stop-opacity="0"/></radialGradient></defs>
+  let stars = ''; for (let i = 0; i < 300; i++) { const r = .4 + R() * 1.2, x = -1000 + R() * 3000, y = -1500 + R() * 2200; stars += `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${r.toFixed(1)}" fill="#dfe6ff" opacity="${(.25 + R() * .6).toFixed(2)}"${R() < .1 ? ' class="tw"' : ''}/>`; }
+  let clouds = ''; for (let i = 0; i < 46; i++) { const near = i < 18, x = near ? 405 + (R() - .5) * 760 : -1000 + R() * 3000, y = near ? 250 + (R() - .5) * 330 : -300 + R() * 920, rx = 90 + R() * 240, ry = 26 + R() * 70, o = near ? .14 + R() * .2 : .08 + R() * .16; clouds += `<ellipse cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" rx="${rx.toFixed(0)}" ry="${ry.toFixed(0)}" fill="url(#${near ? 'gCloudLit' : 'gCloud'})" opacity="${o.toFixed(2)}"/>`; }
+  s.innerHTML = `<defs><linearGradient id="gCaSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#010207"/><stop offset=".6" stop-color="#070a14"/><stop offset=".86" stop-color="#101626"/><stop offset="1" stop-color="#161c2e"/></linearGradient>
+    <radialGradient id="gCaMoon"><stop offset="0" stop-color="#f4ecd2" stop-opacity=".62"/><stop offset=".3" stop-color="#b9c4dc" stop-opacity=".22"/><stop offset="1" stop-color="#8fa0c6" stop-opacity="0"/></radialGradient>
+    <radialGradient id="gCloud"><stop offset="0" stop-color="#46536f"/><stop offset="1" stop-color="#46536f" stop-opacity="0"/></radialGradient>
+    <radialGradient id="gCloudLit"><stop offset="0" stop-color="#aab6c8"/><stop offset="1" stop-color="#aab6c8" stop-opacity="0"/></radialGradient></defs>
     <rect x="-1500" y="-1800" width="4000" height="3000" fill="url(#gCaSky)"/>${stars}
-    <g id="caMoon"><circle cx="335" cy="205" r="210" fill="url(#gCaMoon)"/><circle id="caMoonDisc" cx="335" cy="205" r="52" fill="#f5ecd2"/><circle cx="320" cy="190" r="9" fill="#dcd2b4" opacity=".6"/><circle cx="352" cy="222" r="13" fill="#dcd2b4" opacity=".45"/><circle cx="348" cy="184" r="5" fill="#dcd2b4" opacity=".5"/></g>
-    <g fill="#c9cfee" opacity=".07"><ellipse cx="120" cy="330" rx="340" ry="26"/><ellipse cx="760" cy="240" rx="300" ry="20"/><ellipse cx="1260" cy="400" rx="420" ry="30"/></g>`;
+    <g id="caMoon"><circle cx="405" cy="248" r="330" fill="url(#gCaMoon)"/><circle id="caMoonDisc" cx="405" cy="248" r="70" fill="#f1e8cd"/><circle cx="384" cy="228" r="13" fill="#d4c9a8" opacity=".6"/><circle cx="430" cy="270" r="18" fill="#d4c9a8" opacity=".45"/><circle cx="426" cy="222" r="7" fill="#d4c9a8" opacity=".5"/><circle cx="378" cy="276" r="8" fill="#d4c9a8" opacity=".4"/></g>${clouds}`;
 }
 function buildFar() {
   const R = rng(23); let a = '-1500,860', b = '-1500,860';
-  for (let x = -1500; x <= 2500; x += 70) { a += ` ${x},${(610 + Math.sin(x * .004) * 70 + R() * 70).toFixed(0)}`; b += ` ${x},${(700 + Math.sin(x * .006 + 2) * 50 + R() * 45).toFixed(0)}`; }
+  for (let x = -1500; x <= 2500; x += 60) { const gap = Math.abs(x - 500) < 340 ? 70 : 0; a += ` ${x},${(640 + gap + Math.sin(x * .004) * 80 + R() * 60).toFixed(0)}`; b += ` ${x},${(730 + gap * .6 + Math.sin(x * .007 + 2) * 45 + R() * 36).toFixed(0)}`; }
   a += ' 2500,860'; b += ' 2500,860';
-  $('#svgCaFar').innerHTML = `<defs><linearGradient id="gMnt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c3160"/><stop offset="1" stop-color="#1a1d40"/></linearGradient></defs>
-    <polygon points="${a}" fill="url(#gMnt)"/><polygon points="${b}" fill="#141633"/>`;
+  $('#svgCaFar').innerHTML = `<polygon points="${a}" fill="#0c1120"/><polygon points="${b}" fill="#070a14"/>`;
 }
-// One tower: stone body, conical roof with snow, lit windows.
-function tower(x, base, w, h, roof, R, windows = 3) {
-  const top = base - h, l = x - w / 2;
-  let out = `<rect x="${l}" y="${top}" width="${w}" height="${h}" fill="url(#gStone)"/><rect x="${l}" y="${top}" width="${(w * .28).toFixed(1)}" height="${h}" fill="#000" opacity=".22"/>`;
-  out += `<polygon points="${l - 5},${top} ${x},${top - roof} ${l + w + 5},${top}" fill="url(#gRoof)"/><polygon points="${x - w * .2},${(top - roof * .62).toFixed(1)} ${x},${top - roof} ${x + w * .2},${(top - roof * .62).toFixed(1)} ${x + w * .05},${(top - roof * .55).toFixed(1)} ${x - w * .1},${(top - roof * .58).toFixed(1)}" fill="#e6ecfa"/><rect x="${l - 3}" y="${top - 2}" width="${w + 6}" height="5" fill="#0d0c1e"/>`;
-  for (let i = 0; i < windows; i++) { const wy = top + 16 + (h - 34) * (i + R() * .4) / windows, wx = x - 3 + (R() - .5) * w * .4; out += `<path d="M${wx.toFixed(1)} ${(wy + 13).toFixed(1)}v-9a3.2 3.2 0 0 1 6.4 0v9z" fill="#f5c774"${R() < .3 ? ' class="tw"' : ''}/>`; }
-  return out;
+// Shared glow behind a lit area.
+const glow = (x, y, rx, ry, o = 1) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#gHalo)" opacity="${o}"/>`;
+const litWindow = (x, y, w, h, R) => `<path d="M${x.toFixed(1)} ${(y + h).toFixed(1)}v-${(h - w / 2).toFixed(1)}a${(w / 2).toFixed(1)} ${(w / 2).toFixed(1)} 0 0 1 ${w.toFixed(1)} 0v${(h - w / 2).toFixed(1)}z" fill="${R() < .78 ? '#f7c56e' : '#c98b3e'}"${R() < .16 ? ' class="tw"' : ''}/>`;
+// A round tower: shaded body, a band of battlements, a tall flared cone with snow on one side.
+function tower(x, base, w, top, peak, R, windows = 3) {
+  const l = x - w / 2, r = x + w / 2, ey = top + 2, flare = w * .22;
+  let o = `<rect x="${l}" y="${top}" width="${w}" height="${base - top}" fill="url(#gCyl)"/>`;
+  for (let i = 0; i < windows; i++) { const wy = top + 14 + (base - top - 34) * (i + R() * .5) / windows; o += litWindow(x - w * .08 + (R() - .5) * w * .34, wy, Math.max(3, w * .11), Math.max(8, w * .28), R); }
+  o += `<rect x="${l - 2}" y="${top - 5}" width="${w + 4}" height="7" fill="#05060c"/>`;
+  o += `<path d="M${l - flare} ${ey}Q${x - w * .17} ${(ey + peak) / 2} ${x} ${peak}Q${x + w * .17} ${(ey + peak) / 2} ${r + flare} ${ey}Q${x} ${ey + 9} ${l - flare} ${ey}Z" fill="url(#gCone)"/>`;
+  o += `<path d="M${x - w * .05} ${peak + (ey - peak) * .12}Q${x - w * .22} ${(ey + peak) / 2} ${l - flare * .3} ${ey - 3}Q${x - w * .22} ${ey - (ey - peak) * .28} ${x - w * .02} ${peak + (ey - peak) * .4}Z" fill="#dbe3f4" opacity=".62"/>`;
+  return o;
+}
+const spire = (x, base, w, peak) => `<polygon points="${x - w / 2},${base} ${x},${peak} ${x + w / 2},${base}" fill="url(#gCone)"/><polygon points="${x - w * .1},${peak + (base - peak) * .4} ${x},${peak} ${x + w * .04},${peak + (base - peak) * .3}" fill="#dbe3f4" opacity=".6"/>`;
+// A rock mass: an outline filled with random facets, with snow lying on the upper ledges.
+function rock(id, pts, R, top, bottom) {
+  const xs = pts.map(p => p[0]), x0 = Math.min(...xs), x1 = Math.max(...xs), poly = pts.map(p => p.join(',')).join(' ');
+  let f = ''; const n = Math.round((x1 - x0) / 7); for (let i = 0; i < n; i++) { const x = x0 + R() * (x1 - x0), y = top + R() * (bottom - top), w = 10 + R() * 30, h = 40 + R() * 90, lean = (R() - .5) * 14, c = R() < .6 ? '#05060c' : R() < .85 ? '#161b2a' : '#222a3e'; f += `<polygon points="${(x + lean).toFixed(0)},${y.toFixed(0)} ${(x + w).toFixed(0)},${(y + h * .55).toFixed(0)} ${(x + w * .4 - lean).toFixed(0)},${(y + h).toFixed(0)}" fill="${c}" opacity="${(.2 + R() * .32).toFixed(2)}"/>`; }
+  for (let i = 0; i < n * .3; i++) { const x = x0 + R() * (x1 - x0), y = top + 6 + Math.pow(R(), 1.7) * (bottom - top) * .8, w = 5 + R() * 16; f += `<polygon points="${x.toFixed(0)},${y.toFixed(0)} ${(x + w).toFixed(0)},${(y + 2 + R() * 4).toFixed(0)} ${(x + w * .5).toFixed(0)},${(y + 4 + R() * 8).toFixed(0)}" fill="#d6dff2" opacity="${(.28 + R() * .46).toFixed(2)}"/>`; }
+  return `<clipPath id="${id}"><polygon points="${poly}"/></clipPath><polygon points="${poly}" fill="url(#gRock)"/><g clip-path="url(#${id})">${f}</g>`;
 }
 function buildMain() {
-  const R = rng(37), sw = -1400, se = 2400;
-  let hall = ''; for (let i = 0; i < 5; i++) { const x = 416 + i * 37; hall += `<path d="M${x} 716v-72a11 11 0 0 1 22 0v72z" fill="url(#gLit)"/><path d="M${x + 11} 633v83M${x} 672h22" stroke="#3a2614" stroke-width="1.6"/>`; }
-  let rippl = ''; for (let i = 0; i < 46; i++) { const y = 836 + R() * 170, w = 20 + R() * 110, x = -500 + R() * 2000; rippl += `<rect x="${x.toFixed(0)}" y="${y.toFixed(0)}" width="${w.toFixed(0)}" height="1.6" fill="#8fa0da" opacity="${(.06 + R() * .14).toFixed(2)}"/>`; }
-  let lit = ''; for (let i = 0; i < 26; i++) { const y = 842 + i * 6.5, w = 40 + R() * 70; lit += `<rect x="${(505 - w / 2 + (R() - .5) * 26).toFixed(0)}" y="${y.toFixed(0)}" width="${w.toFixed(0)}" height="2" fill="#f0bb6d" opacity="${(.36 - i * .011).toFixed(2)}"/>`; }
+  const R = rng(37), sw = -1500, se = 2500;
+  let rippl = ''; for (let i = 0; i < 70; i++) { const y = 836 + R() * 180, w = 16 + R() * 120, x = -600 + R() * 2200; rippl += `<rect x="${x.toFixed(0)}" y="${y.toFixed(0)}" width="${w.toFixed(0)}" height="1.5" fill="#9fb0d8" opacity="${(.05 + R() * .16).toFixed(2)}"/>`; }
+  let lit = ''; for (let i = 0; i < 26; i++) { const y = 840 + i * 6.8, w = 26 + R() * 74; lit += `<rect x="${(372 - w / 2 + (R() - .5) * 40).toFixed(0)}" y="${y.toFixed(0)}" width="${w.toFixed(0)}" height="2" fill="#f0bb6d" opacity="${(.34 - i * .011).toFixed(2)}"/>`; }
+  // the long hall on the left: buttresses and tall lit windows under a steep snowy roof
+  let hallWin = '', butt = ''; for (let i = 0; i < 8; i++) { const x = 256 + i * 24.5; hallWin += litWindow(x, 450, 12, 80, R) + `<path d="M${x + 6} 454v76" stroke="#3a2614" stroke-width="1"/>`; butt += `<polygon points="${x - 7},562 ${x - 7},430 ${x - 3},420 ${x + 1},430 ${x + 1},562" fill="#0c0e18"/>`; }
+  const castle = `
+    ${tower(742, 590, 34, 452, 372, R, 2)}${spire(780, 480, 14, 396)}
+    <rect x="628" y="478" width="110" height="112" fill="url(#gStone)"/>
+    ${tower(696, 590, 48, 372, 268, R, 4)}${spire(650, 450, 18, 340)}${spire(722, 372, 12, 300)}
+    <polygon points="622,480 662,424 702,480" fill="url(#gCone)"/><polygon points="648,444 662,424 676,444 662,438" fill="#dbe3f4" opacity=".6"/>
+    ${litWindow(640, 505, 7, 20, R)}${litWindow(660, 500, 7, 22, R)}${litWindow(716, 520, 6, 18, R)}${litWindow(632, 546, 6, 16, R)}${litWindow(668, 548, 6, 16, R)}
+    <rect x="520" y="584" width="130" height="58" fill="#10121d"/><path d="M520 584h130" stroke="#d6dff2" stroke-width="2.5" opacity=".6"/>
+    ${[528, 556, 584, 612].map(x => `<path d="M${x} 642v-30a11 11 0 0 1 22 0v30z" fill="#06070d"/>`).join('')}
+    <rect x="490" y="468" width="118" height="100" fill="url(#gStone)"/><polygon points="484,470 522,424 560,470" fill="url(#gCone)"/><polygon points="510,438 522,424 534,438 522,433" fill="#dbe3f4" opacity=".6"/>
+    ${tower(576, 566, 42, 410, 306, R, 3)}${spire(530, 424, 11, 362)}${spire(612, 468, 13, 392)}
+    ${litWindow(506, 490, 7, 22, R)}${litWindow(526, 490, 7, 22, R)}${litWindow(546, 492, 7, 22, R)}${litWindow(510, 530, 6, 16, R)}${litWindow(536, 530, 6, 16, R)}
+    <rect x="244" y="430" width="212" height="132" fill="url(#gStone)"/>${butt}${hallWin}
+    <polygon points="238,432 266,368 430,368 462,432" fill="url(#gCone)"/><polygon points="266,368 430,368 440,384 256,384" fill="#dbe3f4" opacity=".55"/>
+    ${spire(262, 372, 12, 318)}${spire(312, 372, 9, 334)}${spire(374, 372, 9, 334)}
+    ${glow(345, 500, 170, 110, .55)}
+    ${tower(470, 566, 66, 322, 165, R, 5)}${spire(428, 372, 13, 296)}${spire(512, 400, 14, 318)}
+    <rect id="hallHit" x="256" y="446" width="186" height="90" fill="transparent"/>`;
   $('#svgCaMain').innerHTML = `<defs>
-    <linearGradient id="gStone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3560"/><stop offset="1" stop-color="#1a1730"/></linearGradient>
-    <linearGradient id="gRoof" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#141633"/><stop offset="1" stop-color="#2f3a72"/></linearGradient>
-    <linearGradient id="gLit" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe3a4"/><stop offset="1" stop-color="#e99b47"/></linearGradient>
-    <linearGradient id="gRock" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2748"/><stop offset="1" stop-color="#0d0c1e"/></linearGradient>
-    <linearGradient id="gLake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2150"/><stop offset="1" stop-color="#070a20"/></linearGradient>
-    <radialGradient id="gHalo"><stop offset="0" stop-color="#ffc98a" stop-opacity=".42"/><stop offset="1" stop-color="#ffc98a" stop-opacity="0"/></radialGradient></defs>
-    <rect x="${sw}" y="824" width="${se - sw}" height="300" fill="url(#gLake)"/>${rippl}${lit}
-    ${tower(38, 760, 44, 150, 96, R)}${tower(960, 760, 48, 170, 104, R)}${tower(-210, 790, 40, 110, 80, R, 2)}${tower(1200, 790, 44, 120, 84, R, 2)}
-    <polygon points="-420,840 -300,780 -120,760 40,716 170,700 300,690 700,690 830,704 980,724 1140,770 1320,790 1460,842" fill="url(#gRock)"/>
-    <path d="M40 716l50 8 40-14 54 8M830 704l44 12 56-4 50 14M-120 760l60 6 48-14" stroke="#c8d2f0" stroke-width="3" fill="none" opacity=".55"/>
-    ${tower(178, 708, 46, 190, 100, R)}${tower(822, 708, 50, 212, 108, R)}
-    <rect x="178" y="650" width="210" height="26" fill="#22203f"/><rect x="178" y="646" width="210" height="4" fill="#d6def5" opacity=".7"/>
-    <rect x="640" y="650" width="182" height="26" fill="#22203f"/><rect x="640" y="646" width="182" height="4" fill="#d6def5" opacity=".7"/>
-    ${tower(288, 716, 58, 290, 120, R, 5)}${tower(696, 716, 66, 300, 131, R, 5)}
-    <rect x="388" y="618" width="224" height="106" fill="url(#gStone)"/><polygon points="376,620 500,540 624,620" fill="url(#gRoof)"/><polygon points="438,582 500,540 562,582 528,574 500,560 470,578" fill="#e6ecfa"/>
-    <ellipse cx="500" cy="680" rx="170" ry="120" fill="url(#gHalo)"/>${hall}
-    <rect id="hallHit" x="412" y="630" width="176" height="90" fill="transparent"/>`;
+    <linearGradient id="gStone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232838"/><stop offset="1" stop-color="#0b0d16"/></linearGradient>
+    <linearGradient id="gCyl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0a0c15"/><stop offset=".3" stop-color="#2c3346"/><stop offset=".62" stop-color="#1a1e2c"/><stop offset="1" stop-color="#07080f"/></linearGradient>
+    <linearGradient id="gCone" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a4560"/><stop offset=".5" stop-color="#141927"/><stop offset="1" stop-color="#05060c"/></linearGradient>
+    <linearGradient id="gRock" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#20263a"/><stop offset=".5" stop-color="#0e111c"/><stop offset="1" stop-color="#040509"/></linearGradient>
+    <linearGradient id="gLake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0c1224"/><stop offset="1" stop-color="#020308"/></linearGradient>
+    <radialGradient id="gHalo"><stop offset="0" stop-color="#ffb868" stop-opacity=".5"/><stop offset="1" stop-color="#ffb868" stop-opacity="0"/></radialGradient></defs>
+    <rect x="${sw}" y="826" width="${se - sw}" height="300" fill="url(#gLake)"/>${rippl}${lit}
+    ${rock('rkB', [[600, 840], [612, 650], [636, 588], [760, 584], [812, 640], [848, 740], [930, 842]], R, 584, 842)}
+    ${rock('rkA', [[60, 842], [120, 740], [176, 640], [226, 572], [250, 556], [500, 556], [536, 610], [560, 700], [600, 780], [650, 842]], R, 556, 842)}
+    ${rock('rkL', [[-600, 842], [-340, 760], [-140, 690], [20, 720], [120, 780], [200, 842]], R, 690, 842)}
+    ${glow(590, 620, 90, 70, .5)}${castle}`;
 }
 function buildFg() {
   const R = rng(51);
-  const pine = (x, y, h) => { const w = h * .42; let o = `<rect x="${x - 4}" y="${y - 14}" width="8" height="16" fill="#120d0c"/>`; for (let i = 0; i < 4; i++) { const t = y - h + i * h * .2, bw = w * (.38 + i * .22), bh = h * .34; o += `<polygon points="${x},${t.toFixed(0)} ${(x - bw).toFixed(0)},${(t + bh).toFixed(0)} ${(x + bw).toFixed(0)},${(t + bh).toFixed(0)}" fill="#0d1c1c"/><polygon points="${x},${t.toFixed(0)} ${(x - bw * .46).toFixed(0)},${(t + bh * .42).toFixed(0)} ${x},${(t + bh * .34).toFixed(0)} ${(x + bw * .46).toFixed(0)},${(t + bh * .42).toFixed(0)}" fill="#e6ecfa" opacity=".82"/>`; } return o; };
-  let trees = ''; for (const [x, y, h] of [[-420, 1000, 300], [-250, 1010, 240], [-90, 1000, 310], [70, 1012, 210], [205, 1008, 190], [262, 1016, 130], [752, 1014, 145], [806, 1008, 205], [930, 1012, 240], [1090, 1000, 310], [1260, 1010, 250], [1430, 1000, 300]]) trees += pine(x, y, h);
-  let bank = '-1500,1100 -1500,985'; for (let x = -1500; x <= 2500; x += 90) bank += ` ${x},${(982 + Math.sin(x * .011) * 14 + R() * 6).toFixed(0)}`; bank += ' 2500,1100';
-  $('#svgCaFg').innerHTML = `${trees}<polygon points="${bank}" fill="#dce4f6"/><polygon points="${bank}" fill="#9aa8d8" opacity=".18"/>`;
+  const bare = (x, y, h) => { let o = `<path d="M${x} ${y}L${x + 3} ${y - h * .55}" stroke="#020307" stroke-width="${(h * .05).toFixed(1)}"/>`; for (let i = 0; i < 9; i++) { const t = .3 + R() * .68, a = (R() < .5 ? -1 : 1) * (.5 + R() * .9), l = h * (.16 + R() * .22), bx = x + 1.5, by = y - h * .55 * t - h * .2 * R(); o += `<path d="M${bx.toFixed(0)} ${by.toFixed(0)}L${(bx + Math.sin(a) * l).toFixed(0)} ${(by - Math.cos(a) * l).toFixed(0)}" stroke="#020307" stroke-width="${(1.5 + R() * 2).toFixed(1)}"/>`; } return o; };
+  const pine = (x, y, h) => { const w = h * .4; let o = `<rect x="${x - 4}" y="${y - 12}" width="8" height="14" fill="#020307"/>`; for (let i = 0; i < 4; i++) { const t = y - h + i * h * .2, bw = w * (.38 + i * .22), bh = h * .34; o += `<polygon points="${x},${t.toFixed(0)} ${(x - bw).toFixed(0)},${(t + bh).toFixed(0)} ${(x + bw).toFixed(0)},${(t + bh).toFixed(0)}" fill="#04070c"/><polygon points="${x},${t.toFixed(0)} ${(x - bw * .44).toFixed(0)},${(t + bh * .4).toFixed(0)} ${x},${(t + bh * .32).toFixed(0)} ${(x + bw * .44).toFixed(0)},${(t + bh * .4).toFixed(0)}" fill="#cfd8ea" opacity=".6"/>`; } return o; };
+  let trees = ''; for (const [x, y, h] of [[-470, 1000, 300], [-280, 1006, 230], [-130, 1000, 280], [10, 1008, 210], [130, 1010, 170], [230, 1014, 120], [772, 1014, 125], [880, 1008, 190], [1040, 1004, 270], [1240, 1006, 240], [1440, 1000, 300]]) trees += pine(x, y, h);
+  // little boats with lanterns on the lake
+  let boats = ''; for (const [x, y, s] of [[330, 852, .7], [438, 866, .85], [566, 856, .75], [676, 872, .9]]) boats += `<ellipse cx="${x}" cy="${y - 20 * s}" rx="${40 * s}" ry="${40 * s}" fill="url(#gLantern)"/><path d="M${x - 22 * s} ${y}q${22 * s} ${11 * s} ${44 * s} 0l-${5 * s} ${8 * s}h-${34 * s}z" fill="#040509"/><path d="M${x} ${y}v-${24 * s}" stroke="#040509" stroke-width="1.6"/><circle cx="${x}" cy="${y - 26 * s}" r="${3.4 * s}" fill="#ffd787"/><rect x="${x - 7 * s}" y="${y + 9 * s}" width="${14 * s}" height="1.6" fill="#f0bb6d" opacity=".5"/><rect x="${x - 4 * s}" y="${y + 14 * s}" width="${8 * s}" height="1.4" fill="#f0bb6d" opacity=".35"/>`;
+  let bank = '-1500,1100 -1500,985'; for (let x = -1500; x <= 2500; x += 90) bank += ` ${x},${(984 + Math.sin(x * .011) * 12 + R() * 6).toFixed(0)}`; bank += ' 2500,1100';
+  $('#svgCaFg').innerHTML = `<defs><radialGradient id="gLantern"><stop offset="0" stop-color="#ffc56e" stop-opacity=".5"/><stop offset="1" stop-color="#ffc56e" stop-opacity="0"/></radialGradient>
+    <linearGradient id="gFgRock" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141927"/><stop offset="1" stop-color="#030409"/></linearGradient></defs>
+    <polygon points="880,1010 960,800 1020,700 1120,610 1260,560 1440,600 1700,540 1900,1010" fill="url(#gFgRock)"/>
+    ${boats}${bare(60, 1000, 240)}${bare(942, 1000, 220)}${trees}<polygon points="${bank}" fill="#ccd6ea"/><polygon points="${bank}" fill="#5d6a90" opacity=".22"/>`;
 }
 function buildHall() {
   const R = rng(61);
@@ -107,7 +139,7 @@ document.querySelectorAll('#lang button').forEach(b => b.addEventListener('click
 async function enterHall() {
   if (st.phase !== 'castle') return; st.phase = 'entering';
   // Browsers allow sound only after a tap, so the entry tap is what starts it.
-  if (A.on) { audioInit(); if (A.ctx && A.ctx.state === 'suspended') A.ctx.resume(); SFX.whoosh(); SFX.chime(); }
+  if (A.on) { audioInit(); if (A.ctx && A.ctx.state === 'suspended') A.ctx.resume(); SFX.bell(); }
   $('#cta').style.opacity = 0; $('#stFan').style.opacity = 0; $('#stTitle').style.opacity = 0; $('#stTitle').style.transform = 'translateY(-20px)';
   const wr = $('#hallHit').getBoundingClientRect(), cx = wr.left + wr.width / 2, cy = wr.top + wr.height / 2;
   const out = ['caSky', 'caFar', 'caMain', 'caFg'].map(id => layers[id]), inn = ['haBack', 'haMid'];
