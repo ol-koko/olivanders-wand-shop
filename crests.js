@@ -8,11 +8,12 @@ const METAL = {
   ink: ['#000000', '#3b3226', '#14100a', '#4a3f2e', '#000000'],
 };
 const LION = {
-  shape: 'M47 69C31 73 18 64 21 45 22 39 29 38 31 44 29 54 35 60 49 58ZM53 46C45 52 40 60 42 70L33 92 31 96H46L52 80 60 79 63 96H78L72 70C72 62 70 54 66 48ZM63 50 83 33C87 28 95 32 92 39L72 60ZM61 62 82 55C88 53 92 60 86 64L66 74Z',
-  mane: 'M60 6 66 13 74 8 76 17 85 17 82 25 90 30 82 35 85 43 76 43 74 51 66 47 60 54 54 47 46 51 44 43 35 43 38 35 30 30 38 25 35 17 44 17 46 8 54 13Z',
-  face: 'M60 19C69 19 74 25 74 32 74 40 67 44 60 44 53 44 46 40 46 32 46 25 51 19 60 19Z',
-  marks: 'M51 27q4-3 7 0M62 27q4-3 7 0M60 31v5M55 39q5 3 10 0M60 36l-3-1M60 36l3-1',
-  lines: 'M60 11v6M49 14l3 6M71 14l-3 6M40 25l6 3M80 25l-6 3M41 38l6-2M79 38l-6-2M50 47l3-5M70 47l-3-5M46 66q8-6 16-5M47 74q8-3 15-1M28 44q-2 10 4 15M73 56q4-3 8-7M70 67q5-2 10-3',
+  shape: 'M71 72C82 74 88 65 85 53 83 44 86 34 90 27 86 23 92 15 96 20 101 19 101 29 95 31 91 37 90 45 92 54 95 70 83 81 69 78ZM44 36C53 32 61 39 63 49 67 57 72 63 72 72 72 78 69 83 73 88L80 92C82 95 80 97 76 97H62C60 91 58 85 53 80 51 86 47 90 44 92L49 96C50 98 48 98 46 98H33C31 93 33 88 37 84 42 78 42 72 40 66 34 62 31 54 33 45ZM41 41C33 40 26 37 20 31L13 29C9 29 9 33 12 35L10 39C14 42 19 40 23 42 29 46 35 50 42 50ZM38 54C32 54 26 52 20 49L13 50C9 52 11 56 15 56L14 60C20 61 28 61 38 63Z',
+  mane: 'M39 6C48 3 57 8 61 16L68 13 65 22 74 23 67 30 74 36 66 39 70 47 61 45 60 54 53 49 47 56 42 49 34 51 35 43 28 41C27 28 29 12 39 6Z',
+  face: 'M31 17C25 18 20 23 18 28L12 30 12 34 16 37 21 37 23 41 29 42C35 41 41 36 43 29 44 22 38 16 31 17Z',
+  marks: 'M26 25q4-3 8 0q-4 2-8 0ZM13 31l4 1M16 36q5 1 9-2M22 41l4-5',
+  lines: 'M42 11q6 7 5 16M50 12q5 7 4 16M58 19q-1 7-4 13M64 28q-5 3-8 8M62 40q-5-1-9 1M56 48q-1-5-4-8M47 50q0-5 2-9M38 46q2-4 5-7M36 22q2 5 1 10M46 57q7-2 13 2M43 68q8-3 16 1M52 77q6-3 12-1M64 66q3 6 2 12M60 88q2 3 2 8M41 88q0 4-2 8M18 33l2 3M14 53l3 3M30 44q5 3 10 3M28 55q5 1 9 2',
+  shade: 'M60 50C65 58 70 64 70 72 70 78 67 83 71 88 65 86 60 78 58 70 56 62 56 54 60 50Z',
 };
 const SNAKE = {
   shape: 'M68 8C81 5 91 14 89 24 87 32 80 35 73 34 60 31 42 30 37 38 32 47 49 50 60 54 77 60 88 72 77 84 66 96 36 96 19 86L14 76C28 84 54 88 64 79 70 73 58 67 46 63 28 57 15 48 22 32 29 16 53 12 68 8Z',
@@ -27,10 +28,12 @@ const RAVEN = {
   lines: 'M38 56q12-8 24-8M36 60q12-3 24-8M45 40q6-3 12-3M70 37l12 1M10 78l19-10M14 80l18-8M64 41q2 10-4 18',
 };
 const BADGER = {
-  shape: 'M4 66C8 46 28 36 50 38 60 27 78 25 88 36L99 51C97 58 90 60 84 60L78 62 81 84H69L65 68 41 70 44 86H32L25 68C15 72 2 75 4 66Z',
-  stripe: 'M70 31 92 48 86 52 64 35ZM56 40 76 56 70 58 50 43Z',
-  marks: 'M77 43a2.2 2.2 0 1 0 .1 0Z',
-  lines: 'M14 58q8-10 20-12M18 64q10-8 22-9M34 52q10-4 18-2',
+  shape: 'M5 72C3 60 11 47 27 42 41 37 55 37 66 41 72 36 81 36 88 43L99 57C100 61 96 64 92 62 88 65 81 65 77 63 75 67 73 69 71 71L73 83 78 87C79 89 77 90 75 90H64L60 74C52 76 44 76 38 76L36 85 41 89C42 91 40 91 38 91H27L24 74C20 74 16 76 12 78 8 80 5 77 5 72Z',
+  head: 'M67 42C72 37 81 37 88 44L99 57C100 61 96 64 92 62 88 65 81 65 77 63 72 58 68 50 67 42Z',
+  ear: 'M69 40C68 34 74 32 77 36 77 39 73 42 69 40Z',
+  stripe: 'M71 41 76 39 96 56 92 59ZM84 41 88 44 99 57 96 57Z',
+  marks: 'M80 50.5a2 2 0 1 0 .1 0ZM96 59a2 2 0 1 0 .1 0Z',
+  lines: 'M12 60l5-6M18 66l5-7M26 52l4-6M30 62l4-7M38 48l3-6M40 60l3-6M50 44l2-6M50 56l3-6M60 44l1-6M60 56l3-6M16 74l-3 4M26 70l-2 5M36 72l-1 4M48 72l-1 4M58 70l0 4M67 62l3 5M62 74l2 8M27 76l1 8',
 };
 const HOUSES = {
   G: { field: ['#c02a2c', '#6b0d12', '#2e0408'], metal: 'gold', animal: LION },
@@ -49,7 +52,7 @@ const SHIELD_IN = 'M68 68Q94 79 120 68 146 79 172 68 178 88 172 112V150C172 190 
 const CROWN = 'M84 44 76 14 94 28 106 8 120 26 134 8 146 28 164 14 156 44Q120 56 84 44Z';
 // A crest as SVG. `name` adds a ribbon with the house name, for the bigger sizes.
 function svg(h, name) {
-  const o = HOUSES[h], a = o.animal, n = ++uid, gold = `cG${n}`, mt = `cM${n}`, fld = `cF${n}`, pat = `cP${n}`, rib = `cR${n}`, line = o.metal === 'ink' ? '#f8d76a' : '#1a0d03', ink = o.metal === 'ink';
+  const o = HOUSES[h], a = o.animal, n = ++uid, gold = `cG${n}`, mt = `cM${n}`, fld = `cF${n}`, pat = `cP${n}`, rib = `cR${n}`, line = o.metal === 'ink' ? '#a89f8a' : '#1a0d03', ink = o.metal === 'ink';
   const mantle = MANTLE.map(d => scroll(d, gold)).join('');
   const leaves = [[20, 92], [18, 138], [32, 188]].map(([x, y]) => `<path d="M${x} ${y}c-10-6-14-16-10-26 8 4 14 14 10 26z" fill="url(#${gold})" stroke="#2a1806" stroke-width="1"/>`).join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 ${name ? 300 : 262}" aria-hidden="true"><defs>${grad(gold, METAL.gold)}${grad(mt, METAL[o.metal])}
@@ -59,7 +62,7 @@ function svg(h, name) {
     ${mantle}${leaves}${mirror(mantle + leaves)}
     <path d="${CROWN}" fill="url(#${gold})" stroke="#2a1806" stroke-width="1.6"/><circle cx="76" cy="12" r="4" fill="url(#${gold})" stroke="#2a1806"/><circle cx="106" cy="6" r="4" fill="url(#${gold})" stroke="#2a1806"/><circle cx="134" cy="6" r="4" fill="url(#${gold})" stroke="#2a1806"/><circle cx="164" cy="12" r="4" fill="url(#${gold})" stroke="#2a1806"/><path d="M88 42Q120 52 152 42" fill="none" stroke="#2a1806" stroke-width="1.4"/><circle cx="120" cy="38" r="5" fill="${o.field[0]}" stroke="#2a1806"/><circle cx="118.6" cy="36.6" r="1.4" fill="#fff" opacity=".8"/><circle cx="100" cy="36" r="3" fill="${o.field[0]}" stroke="#2a1806"/><circle cx="140" cy="36" r="3" fill="${o.field[0]}" stroke="#2a1806"/>
     <path d="${SHIELD}" fill="url(#${gold})" stroke="#2a1806" stroke-width="2"/><path d="${SHIELD_IN}" fill="url(#${fld})" stroke="#2a1806" stroke-width="1.6"/><path d="${SHIELD_IN}" fill="url(#${pat})"/>
-    ${h === 'H' ? '<g opacity=".14" fill="#000"><rect x="84" y="70" width="14" height="150"/><rect x="113" y="70" width="14" height="165"/><rect x="142" y="70" width="14" height="150"/></g>' : ''}
+    ${h === 'H' ? `<clipPath id="cC${n}"><path d="${SHIELD_IN}"/></clipPath><g clip-path="url(#cC${n})" opacity=".14" fill="#000"><rect x="84" y="60" width="14" height="180"/><rect x="113" y="60" width="14" height="180"/><rect x="142" y="60" width="14" height="180"/></g>` : ''}
     <path d="M74 74Q96 84 120 74" fill="none" stroke="#fff" stroke-width="1.2" opacity=".28"/>
     <g fill="url(#${gold})" stroke="#2a1806" stroke-width=".8"><circle cx="64" cy="66" r="2.6"/><circle cx="176" cy="66" r="2.6"/><circle cx="120" cy="238" r="2.6"/><circle cx="64" cy="116" r="2.2"/><circle cx="176" cy="116" r="2.2"/></g>
     <g transform="translate(66 88) scale(1.08)" stroke-linejoin="round">
@@ -67,9 +70,11 @@ function svg(h, name) {
       <path d="${a.shape}" fill="url(#${mt})" stroke="${ink ? '#000' : '#1a0d03'}" stroke-width="1.4"/>
       ${a.mane ? `<path d="${a.mane}" fill="url(#${mt})" stroke="#1a0d03" stroke-width="1.4"/><path d="${a.face}" fill="url(#${mt})" stroke="#1a0d03" stroke-width="1.2"/>` : ''}
       ${a.wing ? `<path d="${a.wing}" fill="#2a1a08" opacity=".5"/>` : ''}
-      ${a.stripe ? `<path d="${a.stripe}" fill="#f6e3a4"/>` : ''}
+      ${a.shade ? `<path d="${a.shade}" fill="#2a1806" opacity=".22"/>` : ''}
+      ${a.head ? `<path d="${a.head}" fill="#f1ead8" stroke="#000" stroke-width="1"/><path d="${a.ear}" fill="#14100a" stroke="#f1ead8" stroke-width=".8"/>` : ''}
+      ${a.stripe ? `<path d="${a.stripe}" fill="#14100a"/>` : ''}
       <path d="${a.lines}" fill="none" stroke="${line}" stroke-width="1.1" stroke-linecap="round" opacity=".7"/>
-      <path d="${a.marks}" fill="${ink ? '#f6e3a4' : '#1a0d03'}" stroke="${ink ? '#f6e3a4' : '#1a0d03'}" stroke-width=".9" stroke-linecap="round"/>
+      <path d="${a.marks}" fill="${ink ? '#f1ead8' : '#1a0d03'}" stroke="${ink ? '#000' : '#1a0d03'}" stroke-width=".9" stroke-linecap="round"/>
     </g>
     ${name ? `<path d="M14 262 40 250 40 284 26 276 14 284Z" fill="#8f6a30" stroke="#2a1806"/><path d="M226 262 200 250 200 284 214 276 226 284Z" fill="#8f6a30" stroke="#2a1806"/><path d="M32 246Q120 266 208 246V278Q120 298 32 278Z" fill="url(#${rib})" stroke="#2a1806" stroke-width="1.6"/><path id="cT${n}" d="M38 270Q120 288 202 270" fill="none"/><text font-family="'Cormorant Garamond',Georgia,serif" font-size="19" font-weight="700" letter-spacing="1.5" fill="#2a1806" text-anchor="middle"><textPath href="#cT${n}" startOffset="50%">${name}</textPath></text>` : ''}
   </svg>`;
