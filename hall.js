@@ -218,13 +218,14 @@ function buildHat() {
 }
 // The tallest note this screen can show, measured on a hidden copy, so the Hat keeps one place while notes change.
 const HOUSES = {
-  G: { bg: '#7a1c1c', fg: '#e8c27a', d: 'M50 14 60 22 72 18 74 30 86 34 80 46 88 56 76 62 74 76 62 74 50 84 38 74 26 76 24 62 12 56 20 46 14 34 26 30 28 18 40 22ZM38 44h7v6h-7zM55 44h7v6h-7zM44 58h12l-6 8z' },
-  S: { bg: '#174a30', fg: '#cfd6d2', d: 'M72 18C44 10 22 20 26 36c4 16 44 12 50 30 5 16-20 24-48 14l-2 6c32 12 62 2 58-20C80 44 40 46 36 34c-3-10 14-16 34-10zM78 12a10 9 0 1 1 0 18 10 9 0 0 1 0-18zM80 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM86 16l8-4-2 6 6 1-10 3z' },
-  R: { bg: '#1c2f63', fg: '#c9a36a', d: 'M50 24 58 38 88 28 76 50 90 52 68 62 60 58 56 82 50 72 44 82 40 58 32 62 10 52 24 50 12 28 42 38Z' },
-  H: { bg: '#d8a72e', fg: '#1a1508', d: 'M50 18C72 18 84 40 78 58c-5 16-18 26-28 28-10-2-23-12-28-28C16 40 28 18 50 18ZM42 24l-6 30 8-2 4-28zM58 24l6 30-8-2-4-28z' },
+  G: { bg: '#8e1b1f', rim: '#d9b46a', fg: '#e9c675', parts: [["M38 72C22 74 12 62 18 44 20 36 28 36 30 44 26 54 32 62 44 62Z", "fg"], ["M50 44C42 52 36 62 38 72L30 92H43L48 77H58L60 92H73L68 70C68 60 66 52 62 46Z", "fg"], ["M60 50 82 34C86 32 90 36 88 40L68 60ZM58 60 80 54C84 54 86 60 82 62L62 72Z", "fg"], ["M56 8 62 14 70 11 71 19 79 21 75 28 81 34 73 37 73 45 65 43 60 50 54 44 46 47 46 39 38 37 42 30 37 24 45 21 46 13 53 15Z", "fg"], ["M57 20C65 20 69 26 69 32 69 38 64 42 57 42 50 42 46 38 46 32 46 26 50 20 57 20Z", "bg"], ["M52 28a2.4 2.4 0 1 0 .1 0ZM63 28a2.4 2.4 0 1 0 .1 0ZM54 33h7l-3.5 4Z", "fg"]] },
+  S: { bg: '#14502f', rim: '#cfd6d2', fg: '#dfe5e2', parts: [["M66 10C78 8 86 16 84 24 82 30 76 32 70 31 58 28 42 28 36 36 30 46 46 50 58 54 74 60 82 70 72 80 62 90 36 90 22 82L18 74C30 80 52 84 62 76 68 70 56 64 44 60 28 54 18 46 24 32 30 18 52 14 66 10ZM72 15a2.4 2.4 0 1 0 .1 0ZM84 22 96 18 90 23 96 28 84 26Z", "fg"]] },
+  R: { bg: '#1b3370', rim: '#c39a5e', fg: '#c9a36a', parts: [["M8 74 30 58C34 44 48 34 62 34L66 28C72 22 80 24 84 28L98 36 83 39C82 48 74 60 62 66L66 78 73 83H60L54 68 46 70 50 80 57 85H44L38 70 8 80Z", "fg"], ["M34 54C44 45 56 42 66 46 60 56 48 60 32 61ZM74 27a2.6 2.6 0 1 0 .1 0Z", "bg"]] },
+  H: { bg: '#e0ae2c', rim: '#1b1508', fg: '#1b1508', parts: [["M6 64C10 46 28 36 48 38 58 28 76 26 86 36L96 50C94 56 88 58 82 58L76 60 78 80H68L64 66 40 68 42 82H32L26 66C16 70 6 72 6 64ZM70 33 88 47 84 49 66 36ZM58 40 74 54 70 56 54 42ZM76 44a2 2 0 1 0 .1 0Z", "fg"]] },
 };
+const SHIELD = 'M8 6H112V78C112 112 84 132 60 144 36 132 8 112 8 78Z', SHIELD_IN = 'M15 13H105V78C105 106 80 124 60 135 40 124 15 106 15 78Z';
 const houseName = h => pickLang(HAT.houses[h][0], HAT.houses[h][1]);
-const bannerSvg = h => `<svg viewBox="0 0 120 150" aria-hidden="true"><path d="M6 2h108v130l-54-22-54 22z" fill="${HOUSES[h].bg}"/><path d="M6 2h108v8H6z" fill="#000" opacity=".3"/><g transform="translate(14 14) scale(.92)"><path fill-rule="evenodd" d="${HOUSES[h].d}" fill="${HOUSES[h].fg}"/></g></svg>`;
+const bannerSvg = h => { const o = HOUSES[h]; return `<svg viewBox="0 0 120 150" aria-hidden="true"><path d="${SHIELD}" fill="${o.bg}" stroke="${o.rim}" stroke-width="5"/><path d="${SHIELD_IN}" fill="none" stroke="${o.rim}" stroke-width="1.2" opacity=".6"/><g transform="translate(14 28) scale(.92)">${o.parts.map(([d, c]) => `<path fill-rule="evenodd" d="${d}" fill="${c === 'fg' ? o.fg : o.bg}"/>`).join('')}</g></svg>`; };
 const wishBtns = () => ['G', 'S', 'R', 'H'].map(h => ({ cls: 'ban' + (st.wish === h ? ' want' : '') + (st.avoid === h ? ' nope' : ''), html: `${bannerSvg(h)}<span>${houseName(h)}</span>`, fn: () => tapHouse(h) })).concat([
   { cls: 'wide', label: pickLang(...(st.wish ? HAT.yes.go : HAT.yes.skip)), fn: decide },
   { cls: 'wide', ghost: true, label: st.avoiding ? pickLang(...HAT.no.back) : pickLang(HAT.no.ua, HAT.no.en), fn: () => { st.avoiding = !st.avoiding; showWish(); } },
@@ -322,7 +323,7 @@ async function makeCard() {
   cardFrame(x, CW, CH);
   x.textAlign = 'center'; x.fillStyle = '#c79a55'; x.font = `700 34px ${serif}`; x.fillText(T('doneK').toUpperCase().split('').join(' '), CW / 2, 170);
   const tg = x.createLinearGradient(0, 190, 0, 330); tg.addColorStop(0, '#fff2cc'); tg.addColorStop(1, '#c9944a'); x.fillStyle = tg; x.font = `700 92px ${serif}`; x.fillText(houseName(h), CW / 2, 290);
-  x.save(); x.translate(CW / 2 - 180, 350); x.scale(3, 3); x.fillStyle = H0.bg; x.fill(new Path2D('M6 2h108v130l-54-22-54 22z')); x.translate(14, 14); x.scale(.92, .92); x.fillStyle = H0.fg; x.fill(new Path2D(H0.d), 'evenodd'); x.restore();
+  x.save(); x.translate(CW / 2 - 180, 350); x.scale(3, 3); const sh = new Path2D(SHIELD); x.fillStyle = H0.bg; x.fill(sh); x.strokeStyle = H0.rim; x.lineWidth = 5; x.stroke(sh); x.lineWidth = 1.2; x.globalAlpha = .6; x.stroke(new Path2D(SHIELD_IN)); x.globalAlpha = 1; x.translate(14, 28); x.scale(.92, .92); for (const [d, col] of H0.parts) { x.fillStyle = col === 'fg' ? H0.fg : H0.bg; x.fill(new Path2D(d), 'evenodd'); } x.restore();
   x.fillStyle = '#ecdcb8'; x.font = `italic 500 44px ${serif}`; let y = wrapText(x, T(h.toLowerCase() + 'Line'), CW / 2, 880, 860, 56);
   const w = st.wandId && WANDS.find(v => v.id === st.wandId); if (w) { x.fillStyle = '#d6c3a0'; x.font = `500 36px ${serif}`; wrapText(x, T('wandIs', { w: L(w.name) }), CW / 2, y + 26, 860, 46); }
   cardHost(x, CW);
