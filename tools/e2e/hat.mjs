@@ -12,8 +12,10 @@ async function game(page, onQ) { const asked = []; await page.waitForFunction(()
 console.log('== a full game');
 for (const [w, h] of [[390, 844], [1440, 900]]) {
   const reqs = [], { browser, page, errors } = await open(url + 'sorting', { viewport: { width: w, height: h }, mobile: w < 768, route: async p => p.on('request', r => reqs.push(r.url())) });
-  await enterHall(page); check((await buttons(page))[0] === 'Вдягти', `${w}: the Hat opens with one button`); await press(page);
-  const a = await game(page);
+  await enterHall(page); check((await buttons(page))[0] === 'Вдягти', `${w}: the Hat opens with one button`);
+  const spot = () => page.evaluate(() => { const h = document.querySelector('#hat'); return h.style.bottom + ' ' + h.style.width; }), spot0 = await spot(); await press(page);
+  const a = await game(page, async () => { if (await spot() !== spot0) check(false, `${w}: the Hat moved between notes`); });
+  check(await spot() === spot0, `${w}: the Hat keeps its place through every note: ${spot0}`);
   check(a.map(q => q.cat).join() === '1,2,3', `${w}: one question per category, then the result: ${a.map(q => q.id).join(' ')}`);
   check(a.every(q => q.btns.join() === q.order.join() && q.btns.length >= 2 && q.btns.length <= 4), `${w}: the buttons are the shuffled options`);
   const r = await page.evaluate(() => ({ house: __hall.st.house, hand: document.querySelector('#nHand').textContent, seen: JSON.parse(localStorage.getItem('hat-seen')), page: document.body.innerText }));
@@ -32,7 +34,7 @@ for (const [w, h] of [[320, 568], [360, 662], [390, 844], [844, 390], [1440, 900
   const { browser, page, errors } = await open(url + 'sorting', { viewport: { width: w, height: h }, mobile: w < 1000 });
   await enterHall(page);
   for (const l of ['ua', 'en']) { await page.evaluate(x => document.querySelector(`#lang button[data-l="${x}"]`).click(), l);
-    const bad = await page.evaluate(async x => { const { POOL, setNote, placeHat, st } = __hall, out = []; for (const q of POOL) { setNote(() => ({ kicker: 'K', hand: x === 'en' ? q.en : q.ua, btns: q.o.map(o => ({ label: x === 'en' ? o.e : o.u, ghost: true, fn() { } })) }), true); await new Promise(r => requestAnimationFrame(r)); placeHat(); const n = document.querySelector('#note').getBoundingClientRect(), bar = document.querySelector('.topbar').getBoundingClientRect(), hat = document.querySelector('#hat'), hb = hat.getBoundingClientRect(), wide = [...document.querySelectorAll('#nBtns button')].some(b => b.getBoundingClientRect().right > innerWidth + 1); if (n.top < bar.bottom || n.bottom > innerHeight + 1 || wide || (+getComputedStyle(hat).opacity > 0 && hb.top < bar.bottom - 8)) out.push(`${q.id} note ${Math.round(n.top)}-${Math.round(n.bottom)} hat ${Math.round(hb.top)}`); } return out; }, l);
+    const bad = await page.evaluate(async x => { const { POOL, setNote, placeHat, st } = __hall, out = []; for (const q of POOL) { setNote(() => ({ kicker: 'K', hand: x === 'en' ? q.en : q.ua, btns: q.o.map(o => ({ label: x === 'en' ? o.e : o.u, ghost: true, fn() { } })) }), true); await new Promise(r => requestAnimationFrame(r)); placeHat(); const n = document.querySelector('#note').getBoundingClientRect(), bar = document.querySelector('.topbar').getBoundingClientRect(), hat = document.querySelector('#hat'), hb = hat.getBoundingClientRect(), wide = [...document.querySelectorAll('#nBtns button')].some(b => b.getBoundingClientRect().right > innerWidth + 1); if (n.top < bar.bottom || n.bottom > innerHeight + 1 || wide || (getComputedStyle(hat).display !== 'none' && hb.top < bar.bottom - 14)) out.push(`${q.id} note ${Math.round(n.top)}-${Math.round(n.bottom)} hat ${Math.round(hb.top)}`); } return out; }, l);
     check(!bad.length, `${w}×${h} ${l}: all ${36} questions fit ${bad.slice(0, 5).join(', ')}`); }
   check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close();
 }

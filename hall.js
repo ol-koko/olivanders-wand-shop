@@ -190,28 +190,37 @@ function buildHall() {
 
 /* ================= the Hat ================= */
 function buildHat() {
-  $('#hat').innerHTML = `<svg viewBox="0 0 400 420"><defs>
-    <linearGradient id="gHat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a6a43"/><stop offset=".55" stop-color="#5b4128"/><stop offset="1" stop-color="#2f2014"/></linearGradient>
-    <linearGradient id="gBrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a4d30"/><stop offset="1" stop-color="#2a1c11"/></linearGradient></defs>
-    <rect x="176" y="372" width="48" height="60" fill="#2a180c"/><ellipse cx="200" cy="376" rx="118" ry="20" fill="#3d2513"/>
-    <ellipse cx="200" cy="340" rx="182" ry="42" fill="url(#gBrim)"/><path d="M26 342q60 34 174 34t174-34" fill="none" stroke="#1d130b" stroke-width="4"/><path d="M62 322q28 12 56 15M284 336q28-3 56-16" fill="none" stroke="#8d6f49" stroke-width="2.4" opacity=".55"/>
-    <g id="hatBody"><path d="M88 332C104 262 128 206 150 150c7-18 24-40 52-46 14-3 36-2 50 4l26 136 28 84q-110 26-218 4z" fill="url(#gHat)"/>
-      <g id="hatTip"><path d="M150 152C164 94 196 62 244 44c20-8 44-8 62 2-16 2-30 12-34 24-3 12 4 24 2 38-2 12-14 20-26 22-34 6-68 12-98 22z" fill="url(#gHat)"/><path d="M196 92q34-10 64 2M178 122q40-12 86-2" fill="none" stroke="#2b1c10" stroke-width="3.2" opacity=".65"/>
-        <polygon points="236,66 262,58 268,84 242,92" fill="#6f4f33"/><path d="M236 66l3 3M244 63l2 4M254 60l2 4M262 58l-3 3M268 84l-3-3M242 92l2-4M252 90l1-4" stroke="#d6c39a" stroke-width="1.6"/></g>
-      <polygon points="112,288 158,276 170,316 118,326" fill="#6d4c2e"/><path d="M112 288l5 3M122 285l3 4M134 282l3 4M146 279l3 4M158 276l-3 5M170 316l-4-3M155 319l-2-4M138 322l-2-4M118 326l3-4M114 306l4-1" stroke="#d6c39a" stroke-width="1.8"/>
-      <polygon points="242,246 284,240 292,288 248,294" fill="#7b5a39"/><path d="M242 246l4 4M254 244l2 4M270 241l2 4M284 240l-3 4M292 288l-4-3M270 291l-2-4M248 294l3-4M244 270l4 0M288 264l-4 0" stroke="#d6c39a" stroke-width="1.8"/>
-      <polygon points="176,136 212,126 220,158 184,168" fill="#664829"/><path d="M176 136l4 3M190 132l2 4M204 128l2 4M212 126l-3 4M220 158l-4-3M202 163l-2-4M184 168l3-4" stroke="#d6c39a" stroke-width="1.6"/>
-      <path d="M124 262q40-22 76-12M104 310q44 6 84-4M226 216q24-14 48-6M214 318q30-4 60-16" fill="none" stroke="#2b1c10" stroke-width="3.6" opacity=".6"/>
-      <g id="hatBrows"><path d="M146 186q24-20 48-4" fill="none" stroke="#1f140b" stroke-width="7" stroke-linecap="round"/><path d="M222 178q22-12 44 8" fill="none" stroke="#1f140b" stroke-width="7" stroke-linecap="round"/><path d="M158 204q14-8 28-2M232 198q14-6 26 2" fill="none" stroke="#120b06" stroke-width="5" stroke-linecap="round" opacity=".8"/></g>
-      <path id="hatMouth" d="M140 252q28 16 60 12t62-22q-8 22-30 32t-50 6q-24-6-42-28z" fill="#150c06"/><path d="M140 252q30 14 60 10t62-20" fill="none" stroke="#8d6f49" stroke-width="2.4" opacity=".5"/>
+  const stitch = '#b8a57c', crease = '#000', rim = '#6d7288';
+  $('#hat').innerHTML = `<svg viewBox="0 0 400 400"><defs>
+    <linearGradient id="gHat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4b4d5a"/><stop offset=".5" stop-color="#1e1f26"/><stop offset="1" stop-color="#08080b"/></linearGradient>
+    <linearGradient id="gBrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34353f"/><stop offset="1" stop-color="#050507"/></linearGradient>
+    <radialGradient id="gHatGlow"><stop offset="0" stop-color="#ffd9a0" stop-opacity=".55"/><stop offset=".55" stop-color="#ffc98a" stop-opacity=".2"/><stop offset="1" stop-color="#ffc98a" stop-opacity="0"/></radialGradient></defs>
+    <ellipse cx="200" cy="205" rx="225" ry="225" fill="url(#gHatGlow)"/>
+    <ellipse cx="200" cy="340" rx="182" ry="42" fill="url(#gBrim)"/><path d="M26 342q60 34 174 34t174-34" fill="none" stroke="#000" stroke-width="4"/><path d="M40 330q40-20 66-22M294 308q30 2 66 22" fill="none" stroke="${rim}" stroke-width="2.6" opacity=".75"/>
+    <g id="hatBody"><path d="M88 332C104 262 128 206 150 150c7-18 24-40 52-46 14-3 36-2 50 4l26 136 28 84q-110 26-218 4z" fill="url(#gHat)"/><path d="M92 322C108 258 132 204 154 150c6-16 20-34 44-42" fill="none" stroke="${rim}" stroke-width="2.4" opacity=".8"/>
+      <g id="hatTip"><path d="M150 152C164 94 196 62 244 44c20-8 44-8 62 2-16 2-30 12-34 24-3 12 4 24 2 38-2 12-14 20-26 22-34 6-68 12-98 22z" fill="url(#gHat)"/><path d="M156 142C170 94 200 68 246 50c16-6 34-7 48-3" fill="none" stroke="${rim}" stroke-width="2.2" opacity=".85"/><path d="M196 92q34-10 64 2M178 122q40-12 86-2" fill="none" stroke="${crease}" stroke-width="3.2" opacity=".8"/>
+        <polygon points="236,66 262,58 268,84 242,92" fill="#2e2f38"/><path d="M236 66l3 3M244 63l2 4M254 60l2 4M262 58l-3 3M268 84l-3-3M242 92l2-4M252 90l1-4" stroke="${stitch}" stroke-width="1.6"/></g>
+      <polygon points="112,288 158,276 170,316 118,326" fill="#2c2d35"/><path d="M112 288l5 3M122 285l3 4M134 282l3 4M146 279l3 4M158 276l-3 5M170 316l-4-3M155 319l-2-4M138 322l-2-4M118 326l3-4M114 306l4-1" stroke="${stitch}" stroke-width="1.8"/>
+      <polygon points="242,246 284,240 292,288 248,294" fill="#34353f"/><path d="M242 246l4 4M254 244l2 4M270 241l2 4M284 240l-3 4M292 288l-4-3M270 291l-2-4M248 294l3-4M244 270l4 0M288 264l-4 0" stroke="${stitch}" stroke-width="1.8"/>
+      <polygon points="176,136 212,126 220,158 184,168" fill="#2a2b33"/><path d="M176 136l4 3M190 132l2 4M204 128l2 4M212 126l-3 4M220 158l-4-3M202 163l-2-4M184 168l3-4" stroke="${stitch}" stroke-width="1.6"/>
+      <path d="M124 262q40-22 76-12M104 310q44 6 84-4M226 216q24-14 48-6M214 318q30-4 60-16" fill="none" stroke="${crease}" stroke-width="3.6" opacity=".75"/>
+      <g id="hatBrows"><path d="M146 186q24-20 48-4" fill="none" stroke="#000" stroke-width="8" stroke-linecap="round"/><path d="M146 190q24-20 48-4" fill="none" stroke="${rim}" stroke-width="2" stroke-linecap="round" opacity=".8"/><path d="M222 178q22-12 44 8" fill="none" stroke="#000" stroke-width="8" stroke-linecap="round"/><path d="M222 182q22-12 44 8" fill="none" stroke="${rim}" stroke-width="2" stroke-linecap="round" opacity=".8"/><path d="M158 204q14-8 28-2M232 198q14-6 26 2" fill="none" stroke="#000" stroke-width="5" stroke-linecap="round"/></g>
+      <path id="hatMouth" d="M140 252q28 16 60 12t62-22q-8 22-30 32t-50 6q-24-6-42-28z" fill="#000"/><path d="M140 252q30 14 60 10t62-20" fill="none" stroke="${rim}" stroke-width="2.4" opacity=".85"/><path d="M146 262q24 26 56 22t52-34" fill="none" stroke="${rim}" stroke-width="1.6" opacity=".5"/>
     </g></svg>`;
 }
+// The tallest note this screen can show, measured on a hidden copy, so the Hat keeps one place while notes change.
+function tallestNote() {
+  const pool = POOL.slice().sort((a, b) => b.o.reduce((n, o) => n + pickLang(o.u, o.e).length, 0) - a.o.reduce((n, o) => n + pickLang(o.u, o.e).length, 0)).slice(0, 4);
+  const c = note.cloneNode(true); c.style.visibility = 'hidden'; note.after(c); let max = 0;
+  for (const q of pool) { c.querySelector('.hand').textContent = pickLang(q.ua, q.en); const b = c.querySelector('.nbtns'); b.className = 'nbtns eq'; b.innerHTML = q.o.map(o => `<button class="btn ghost">${pickLang(o.u, o.e)}</button>`).join(''); max = Math.max(max, c.offsetHeight); }
+  c.remove(); return max;
+}
 function placeHat() {
-  const h = $('#hat'); if (!h || $('#hall').hidden) return;
-  const top = $('.topbar').getBoundingClientRect().bottom + 2, noteY = noteTop(), room = noteY + 28 - top;
-  const size = Math.min(room, 330, W * .7);
-  if (size < 90) { h.style.opacity = 0; return; }
-  h.style.opacity = 1; h.style.width = size * .95 + 'px'; h.style.height = size + 'px'; h.style.marginLeft = -size * .475 + 'px'; h.style.bottom = (H - noteY - 28) + 'px';
+  const h = $('#hat'); if ($('#hall').hidden) return;
+  const barB = $('.topbar').getBoundingClientRect().bottom + 2, base = H - note.offsetHeight - note.offsetTop, line = tallestNote() + base + 6, room = H - line - barB;
+  const size = Math.min(room, 340, W * .7);
+  h.classList.toggle('none', size < 90); h.style.width = h.style.height = size + 'px'; h.style.marginLeft = -size / 2 + 'px'; h.style.bottom = line + 'px';
+  $('#hallDim').style.setProperty('--hy', (H - line - size * .5) + 'px');
 }
 let talkT = 0;
 function hatTalk(ms = 1200) { const h = $('#hat'); h.classList.add('talk'); clearTimeout(talkT); talkT = setTimeout(() => h.classList.remove('talk'), reduceMotion ? 0 : ms); if (A.on) { tone(150, .32, { type: 'triangle', vol: .05, glide: 110 }); tone(118, .3, { type: 'triangle', vol: .04, when: .24, glide: 92 }); } }
@@ -257,6 +266,7 @@ function applyLang() {
   sndBtn.setAttribute('aria-label', T(A.on ? 'sndOff' : 'sndOn'));
   setViewBoxes();
   if (st.noteFn) renderNote();
+  placeHat();
 }
 document.querySelectorAll('#lang button').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); lang = b.dataset.l; try { localStorage.setItem('wand-lang', lang); } catch (_) { } applyLang(); }));
 
@@ -279,8 +289,9 @@ async function enterHall() {
     fl.style.opacity = clamp((t - .5) / .42); drawSnow(performance.now(), 1 - z);
   });
   // the snow keeps falling inside
-  $('#haMid').after($('#snowBack')); $('#haFront').after($('#snowFront')); $('#snowFront').after($('#hat'));
+  $('#haMid').after($('#snowBack')); $('#haFront').after($('#snowFront')); $('#haFront').after($('#hallDim')); $('#hallDim').after($('#snowFront')); $('#snowFront').after($('#hat'));
   $('#castle').hidden = true; hall.style.opacity = 1; placeHat();
+  void $('#hat').offsetWidth; $('#hat').classList.add('in'); $('#hallDim').classList.add('in');
   await run(reduceMotion ? 400 : 1300, t => { const e = easeOut(t); if (!reduceMotion) inn.forEach((id, i) => { layers[id].s = 1 + (.3 + i * .1) * (1 - e); }); fl.style.opacity = 1 - easeOut(clamp(t / .75)); });
   startCeremony();
 }
@@ -293,7 +304,6 @@ $('#cta').addEventListener('click', e => { e.stopPropagation(); enterHall(); });
 function onResize() { W = innerWidth; H = innerHeight; MIN = Math.min(W, H); setViewBoxes(); initSnow(); placeHat(); }
 let resizeT = 0; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(onResize, 120); });
 buildSky(); buildFar(); buildMain(); buildFg(); buildHat(); setViewBoxes(); initSnow(); applyLang();
-if (window.ResizeObserver) new ResizeObserver(placeHat).observe(noteIn);
 function frame(t) {
   requestAnimationFrame(frame); // first, so an error in one frame can't stop the page
   now = t; updatePar(t);
