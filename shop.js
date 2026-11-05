@@ -974,8 +974,6 @@ function showResult() {
     show3D(w);
   });
 }
-// When the card can't fit and scrolls, the top buttons step aside instead of covering it.
-$('#result').addEventListener('scroll', e => { $('.topbar').classList.toggle('away', e.target.scrollTop > 8); }, { passive: true });
 $('#bAgain').addEventListener('click', () => {
   $('.topbar').classList.remove('away');
   const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700); hide3D();
@@ -1047,40 +1045,19 @@ function tick3D(t) {
 }
 
 /* ================= share card ================= */
-const siteUrl = () => location.origin + location.pathname;
-function wrapText(c, text, x, y, maxW, lh) { const words = text.split(' '); let line = '', yy = y; for (const w of words) { const t = line ? line + ' ' + w : w; if (c.measureText(t).width > maxW && line) { c.fillText(line, x, yy); line = w; yy += lh; } else line = t; } if (line) c.fillText(line, x, yy); return yy + lh; }
 async function makeCard() {
   try { await document.fonts.ready; } catch (_) { }
   const w = st.winner, CW = 1080, CH = 1350, c = document.createElement('canvas'); c.width = CW; c.height = CH; const x = c.getContext('2d');
-  let g = x.createRadialGradient(CW / 2, 300, 50, CW / 2, 600, 1100); g.addColorStop(0, '#2e1b10'); g.addColorStop(1, '#0b0604'); x.fillStyle = g; x.fillRect(0, 0, CW, CH);
-  x.strokeStyle = 'rgba(217,180,106,.75)'; x.lineWidth = 3; x.strokeRect(40, 40, CW - 80, CH - 80); x.strokeStyle = 'rgba(217,180,106,.3)'; x.lineWidth = 1.5; x.strokeRect(56, 56, CW - 112, CH - 112);
-  const serif = "'Cormorant Garamond', Georgia, serif";
+  cardFrame(x, CW, CH);
   x.textAlign = 'center'; x.fillStyle = '#c79a55'; x.font = `700 34px ${serif}`; x.fillText(T('cardK').toUpperCase().split('').join(' '), CW / 2, 170);
   const tg = x.createLinearGradient(0, 190, 0, 420); tg.addColorStop(0, '#fff2cc'); tg.addColorStop(1, '#c9944a'); x.fillStyle = tg; x.font = `700 84px ${serif}`;
   wrapText(x, L(w.name), CW / 2, 290, 900, 92);
   drawWand(x, CW / 2, 650, 880 * (.8 + .2 * (w.lenN - 9.5) / 5.5), -.05, w, .6);
   x.fillStyle = '#ecdcb8'; x.font = `italic 500 44px ${serif}`; wrapText(x, L(w.lore), CW / 2, 910, 860, 56);
-  // the default Vercel address is long, so the font shrinks to keep it inside the frame
-  x.fillStyle = '#e8c27a'; let hostPx = 38; do { x.font = `600 ${hostPx}px ${serif}`; } while (x.measureText(location.host).width > 900 && --hostPx > 18); x.fillText(location.host, CW / 2, 1230);
+  cardHost(x, CW);
   return new Promise(r => c.toBlob(r, 'image/png'));
 }
-// Made ahead of the click: browsers only allow the share sheet right after a tap, with no long wait before it.
-let cardBlob = null;
-function refreshCard() { cardBlob = null; const job = makeCard().then(b => { if (refreshCard.job === job) cardBlob = b; return b; }); refreshCard.job = job; return job; }
-const cardFile = async () => new File([cardBlob || await refreshCard.job], lang === 'en' ? 'my-wand.png' : 'moya-palychka.png', { type: 'image/png' });
-function canShareFiles() {
-  try { return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [new File([new Blob(['x'], { type: 'image/png' })], 'x.png', { type: 'image/png' })] })); } catch (_) { return false; }
-}
-function setShareMode(sheet) { $('#bShare').hidden = !sheet; $('#bDown').hidden = sheet; }
-$('#bShare').addEventListener('click', async () => {
-  try { await navigator.share({ files: [await cardFile()], text: T('invite'), url: siteUrl() }); }
-  catch (e) { if (e && e.name !== 'AbortError') setShareMode(false); } // a cancelled sheet stays silent; anything else offers the download
-});
-$('#bDown').addEventListener('click', async () => {
-  const file = await cardFile(), url = URL.createObjectURL(file);
-  if (IN_APP) { $('#rSavedImg').src = url; $('#rSaved').hidden = false; return; } // these webviews usually block downloads, but pressing on an image works
-  const a = document.createElement('a'); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
-});
+const cardFileName = () => lang === 'en' ? 'my-wand.png' : 'moya-palychka.png';
 
 /* ================= language ================= */
 function applyLang() {

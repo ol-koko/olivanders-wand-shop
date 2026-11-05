@@ -13,12 +13,20 @@ Object.assign(S, {
   bStart: ['Вдягти капелюха', 'Put the Hat on'],
   thinkH: ['Гм… Дай подумати.', 'Hm… Let me think.'],
   doneK: ['Капелюх вирішив', 'The Hat has decided'],
-  doneI: ['Скоро я ще спитаю, куди хочеться тобі. А поки так.', 'Soon I’ll ask where you’d like to go, too. For now, this.'],
+  share: ['Поділитися', 'Share'],
+  download: ['Завантажити картинку', 'Download image'],
+  saveHold: ['Утримуй картинку, щоб зберегти її.', 'Press and hold the image to save it.'],
+  invite: ['Капелюх вирішив. А куди потрапиш ти?', 'The Hat has decided. Where will you end up?'],
+  wandIs: ['Твоя паличка: {w}', 'Your wand: {w}'],
+  toShop: ['Ще немає палички? До крамниці', 'No wand yet? To the shop'],
+  gLine: ['Тут спершу роблять, а потім думають, що це було.', 'Here people act first and work out what happened later.'],
+  sLine: ['Тут знають, чого хочуть, і вже знають, як це дістати.', 'Here they know what they want, and how to get it.'],
+  rLine: ['Тут запитання цікавіші за відповіді.', 'Here the questions are better than the answers.'],
+  hLine: ['Тут тебе нагодують, вислухають і нікому не скажуть.', 'Here they’ll feed you, hear you out and tell no one.'],
   bAgain: ['Ще раз', 'Once more'],
-  bShop: ['До крамниці', 'To the wand shop'],
 });
 
-const st = { phase: 'castle', cap: null, noteFn: null, input: 'pointer', questions: [], step: 0, answers: [], picking: false, wand: null, house: null };
+const st = { phase: 'castle', cap: null, noteFn: null, input: 'pointer', questions: [], step: 0, answers: [], picking: false, wand: null, wandId: null, house: null, wish: null, avoid: null, avoiding: false, deciding: false };
 const { POOL, WISH: HAT, SHARED } = SortingQuestions;
 const pickLang = (ua, en) => lang === 'en' ? en : ua;
 
@@ -209,10 +217,23 @@ function buildHat() {
     </g></svg>`;
 }
 // The tallest note this screen can show, measured on a hidden copy, so the Hat keeps one place while notes change.
+const HOUSES = {
+  G: { bg: '#7a1c1c', fg: '#e8c27a', d: 'M50 14 60 22 72 18 74 30 86 34 80 46 88 56 76 62 74 76 62 74 50 84 38 74 26 76 24 62 12 56 20 46 14 34 26 30 28 18 40 22ZM38 44h7v6h-7zM55 44h7v6h-7zM44 58h12l-6 8z' },
+  S: { bg: '#174a30', fg: '#cfd6d2', d: 'M72 18C44 10 22 20 26 36c4 16 44 12 50 30 5 16-20 24-48 14l-2 6c32 12 62 2 58-20C80 44 40 46 36 34c-3-10 14-16 34-10zM78 12a10 9 0 1 1 0 18 10 9 0 0 1 0-18zM80 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM86 16l8-4-2 6 6 1-10 3z' },
+  R: { bg: '#1c2f63', fg: '#c9a36a', d: 'M50 24 58 38 88 28 76 50 90 52 68 62 60 58 56 82 50 72 44 82 40 58 32 62 10 52 24 50 12 28 42 38Z' },
+  H: { bg: '#d8a72e', fg: '#1a1508', d: 'M50 18C72 18 84 40 78 58c-5 16-18 26-28 28-10-2-23-12-28-28C16 40 28 18 50 18ZM42 24l-6 30 8-2 4-28zM58 24l6 30-8-2-4-28z' },
+};
+const houseName = h => pickLang(HAT.houses[h][0], HAT.houses[h][1]);
+const bannerSvg = h => `<svg viewBox="0 0 120 150" aria-hidden="true"><path d="M6 2h108v130l-54-22-54 22z" fill="${HOUSES[h].bg}"/><path d="M6 2h108v8H6z" fill="#000" opacity=".3"/><g transform="translate(14 14) scale(.92)"><path fill-rule="evenodd" d="${HOUSES[h].d}" fill="${HOUSES[h].fg}"/></g></svg>`;
+const wishBtns = () => ['G', 'S', 'R', 'H'].map(h => ({ cls: 'ban' + (st.wish === h ? ' want' : '') + (st.avoid === h ? ' nope' : ''), html: `${bannerSvg(h)}<span>${houseName(h)}</span>`, fn: () => tapHouse(h) })).concat([
+  { cls: 'wide', label: pickLang(...(st.wish ? HAT.yes.go : HAT.yes.skip)), fn: decide },
+  { cls: 'wide', ghost: true, label: st.avoiding ? pickLang(...HAT.no.back) : pickLang(HAT.no.ua, HAT.no.en), fn: () => { st.avoiding = !st.avoiding; showWish(); } },
+]);
 function tallestNote() {
   const pool = POOL.slice().sort((a, b) => b.o.reduce((n, o) => n + pickLang(o.u, o.e).length, 0) - a.o.reduce((n, o) => n + pickLang(o.u, o.e).length, 0)).slice(0, 4);
   const c = note.cloneNode(true); c.style.visibility = 'hidden'; note.after(c); let max = 0;
   for (const q of pool) { c.querySelector('.hand').textContent = pickLang(q.ua, q.en); const b = c.querySelector('.nbtns'); b.className = 'nbtns eq'; b.innerHTML = q.o.map(o => `<button class="btn ghost">${pickLang(o.u, o.e)}</button>`).join(''); max = Math.max(max, c.offsetHeight); }
+  { const b = c.querySelector('.nbtns'), inst = c.querySelector('.instr'); c.querySelector('.hand').textContent = pickLang(HAT.yes.ua, HAT.yes.en); inst.textContent = pickLang(...HAT.no.hint); b.className = 'nbtns eq wish'; b.innerHTML = wishBtns().map(x => `<button class="btn ${x.cls}${x.ghost ? ' ghost' : ''}">${x.html || x.label}</button>`).join(''); max = Math.max(max, c.offsetHeight); }
   c.remove(); return max;
 }
 function placeHat() {
@@ -227,7 +248,7 @@ function hatTalk(ms = 1200) { const h = $('#hat'); h.classList.add('talk'); clea
 
 /* ================= the ceremony ================= */
 function recall(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (_) { return null; } }
-function loadWand() { const w = recall('wand-last'); return w && w.traits && Date.now() - w.at < 864e5 ? SortingLogic.wandImpression(w.traits) : null; }
+function loadWand() { const w = recall('wand-last'), ok = w && w.traits && Date.now() - w.at < 864e5; st.wandId = ok ? w.id : null; return ok ? SortingLogic.wandImpression(w.traits) : null; }
 function startCeremony() {
   st.phase = 'hall'; st.step = 0; st.answers = []; st.picking = false; st.house = null; st.wand = loadWand();
   const line = st.wand ? pick(HAT.wand) : null;
@@ -237,7 +258,7 @@ function startCeremony() {
 function beginQuestions() {
   const seen = recall('hat-seen'), p = SortingLogic.pickQuestions(POOL, Array.isArray(seen) ? seen : []);
   try { localStorage.setItem('hat-seen', JSON.stringify(p.seen)); } catch (_) { }
-  st.questions = p.questions.map(q => ({ ...q, o: SortingLogic.shuffled(q.o) })); st.step = 0; st.answers = []; st.house = null; ask();
+  st.questions = p.questions.map(q => ({ ...q, o: SortingLogic.shuffled(q.o) })); st.step = 0; st.answers = []; st.house = null; st.wish = st.avoid = null; st.avoiding = st.deciding = false; ask();
 }
 function ask() {
   const q = st.questions[st.step]; st.picking = true;
@@ -250,12 +271,62 @@ async function answer(q, o) {
   setNote(() => ({ kicker: T('hatK'), hand: pickLang(r[0], r[1]) })); hatTalk(1000);
   await wait(1900);
   if (++st.step < st.questions.length) return ask();
-  setNote(() => ({ kicker: T('hatK'), hand: T('thinkH') })); hatTalk(1400);
-  await wait(reduceMotion ? 500 : 1900);
-  st.house = SortingLogic.sortHouse({ answers: st.answers, wand: st.wand });
-  const name = HAT.houses[st.house];
-  setNote(() => ({ kicker: T('doneK'), hand: pickLang(name[0], name[1]) + '!', instr: T('doneI'), btns: [{ label: T('bAgain'), fn: beginQuestions }, { label: T('bShop'), ghost: true, fn: () => { location.href = '/'; } }] }));
+  showWish(true);
+}
+function showWish(first) {
+  setNote(() => ({ kicker: T('hatK'), hand: pickLang(HAT.yes.ua, HAT.yes.en), instr: st.avoiding ? pickLang(...HAT.no.hint) : '', cls: 'wish', btns: wishBtns() }), !first);
+  if (first) hatTalk(900);
+}
+function tapHouse(h) {
+  if (st.avoiding) { st.avoid = st.avoid === h ? null : h; if (st.wish === h) st.wish = null; }
+  else { st.wish = st.wish === h ? null : h; if (st.avoid === h) st.avoid = null; }
+  showWish();
+}
+async function decide() {
+  if (st.deciding) return; st.deciding = true;
+  const open = !st.wish && !st.avoid, first = open ? pick(HAT.decide) : null;
+  setNote(() => ({ kicker: T('hatK'), hand: first ? pickLang(first[0], first[1]) : T('thinkH') })); hatTalk(1400);
+  await wait(reduceMotion ? 500 : 2000);
+  st.house = SortingLogic.sortHouse({ answers: st.answers, wand: st.wand, wish: st.wish, avoid: st.avoid });
+  const said = st.wish ? (st.house === st.wish ? HAT.got : HAT.denied) : st.avoid ? (st.house === st.avoid ? HAT.overruled : HAT.avoided) : null, line = said ? pick(said) : null;
+  setNote(() => ({ kicker: T('doneK'), hand: houseName(st.house) + '!', instr: line ? pickLang(line[0], line[1]) : '' }));
   hatTalk(1500); if (A.on) SFX.reveal();
+  postRow('sorting_results', { house: st.house, wish: st.wish, unwanted: st.avoid, wand_prior: !!st.wand, device_type: deviceType(), language: lang });
+  await wait(reduceMotion ? 1200 : 2600);
+  showCard();
+}
+
+/* ================= result card ================= */
+function fillCard() {
+  const h = st.house; if (!h) return;
+  $('#rKicker').textContent = T('doneK'); $('#rName').textContent = houseName(h); $('#rLore').textContent = T(h.toLowerCase() + 'Line');
+  $('#rStage').innerHTML = bannerSvg(h);
+  const w = st.wandId && WANDS.find(x => x.id === st.wandId), sp = $('#rSpecs'), to = $('#rToShop');
+  sp.hidden = !w; if (w) sp.textContent = T('wandIs', { w: L(w.name) }); to.hidden = !!w; to.textContent = T('toShop');
+  $('#bShare').textContent = T('share'); $('#bDown').textContent = T('download'); $('#bAgain').textContent = T('bAgain'); $('#rSavedCap').textContent = T('saveHold');
+  refreshCard();
+}
+function showCard() {
+  fillCard(); setShareMode(canShareFiles());
+  const res = $('#result'); res.hidden = false; res.scrollTop = 0; note.classList.remove('show'); st.noteFn = null;
+  requestAnimationFrame(() => res.classList.add('show'));
+}
+$('#bAgain').addEventListener('click', () => {
+  $('.topbar').classList.remove('away'); const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
+  $('#rSaved').hidden = true; setTimeout(beginQuestions, 500);
+});
+const cardFileName = () => lang === 'en' ? 'my-house.png' : 'miy-fakultet.png';
+async function makeCard() {
+  try { await document.fonts.ready; } catch (_) { }
+  const h = st.house, CW = 1080, CH = 1350, c = document.createElement('canvas'); c.width = CW; c.height = CH; const x = c.getContext('2d'), H0 = HOUSES[h];
+  cardFrame(x, CW, CH);
+  x.textAlign = 'center'; x.fillStyle = '#c79a55'; x.font = `700 34px ${serif}`; x.fillText(T('doneK').toUpperCase().split('').join(' '), CW / 2, 170);
+  const tg = x.createLinearGradient(0, 190, 0, 330); tg.addColorStop(0, '#fff2cc'); tg.addColorStop(1, '#c9944a'); x.fillStyle = tg; x.font = `700 92px ${serif}`; x.fillText(houseName(h), CW / 2, 290);
+  x.save(); x.translate(CW / 2 - 180, 350); x.scale(3, 3); x.fillStyle = H0.bg; x.fill(new Path2D('M6 2h108v130l-54-22-54 22z')); x.translate(14, 14); x.scale(.92, .92); x.fillStyle = H0.fg; x.fill(new Path2D(H0.d), 'evenodd'); x.restore();
+  x.fillStyle = '#ecdcb8'; x.font = `italic 500 44px ${serif}`; let y = wrapText(x, T(h.toLowerCase() + 'Line'), CW / 2, 880, 860, 56);
+  const w = st.wandId && WANDS.find(v => v.id === st.wandId); if (w) { x.fillStyle = '#d6c3a0'; x.font = `500 36px ${serif}`; wrapText(x, T('wandIs', { w: L(w.name) }), CW / 2, y + 26, 860, 46); }
+  cardHost(x, CW);
+  return new Promise(r => c.toBlob(r, 'image/png'));
 }
 
 /* ================= language ================= */
@@ -267,6 +338,7 @@ function applyLang() {
   setViewBoxes();
   if (st.noteFn) renderNote();
   placeHat();
+  if (!$('#result').hidden) fillCard();
 }
 document.querySelectorAll('#lang button').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); lang = b.dataset.l; try { localStorage.setItem('wand-lang', lang); } catch (_) { } applyLang(); }));
 
