@@ -217,16 +217,8 @@ function buildHat() {
     </g></svg>`;
 }
 // The tallest note this screen can show, measured on a hidden copy, so the Hat keeps one place while notes change.
-const HOUSES = {
-  G: { bg: '#8e1b1f', rim: '#d9b46a', fg: '#e9c675', parts: [["M38 72C22 74 12 62 18 44 20 36 28 36 30 44 26 54 32 62 44 62Z", "fg"], ["M50 44C42 52 36 62 38 72L30 92H43L48 77H58L60 92H73L68 70C68 60 66 52 62 46Z", "fg"], ["M60 50 82 34C86 32 90 36 88 40L68 60ZM58 60 80 54C84 54 86 60 82 62L62 72Z", "fg"], ["M56 8 62 14 70 11 71 19 79 21 75 28 81 34 73 37 73 45 65 43 60 50 54 44 46 47 46 39 38 37 42 30 37 24 45 21 46 13 53 15Z", "fg"], ["M57 20C65 20 69 26 69 32 69 38 64 42 57 42 50 42 46 38 46 32 46 26 50 20 57 20Z", "bg"], ["M52 28a2.4 2.4 0 1 0 .1 0ZM63 28a2.4 2.4 0 1 0 .1 0ZM54 33h7l-3.5 4Z", "fg"]] },
-  S: { bg: '#14502f', rim: '#cfd6d2', fg: '#dfe5e2', parts: [["M66 10C78 8 86 16 84 24 82 30 76 32 70 31 58 28 42 28 36 36 30 46 46 50 58 54 74 60 82 70 72 80 62 90 36 90 22 82L18 74C30 80 52 84 62 76 68 70 56 64 44 60 28 54 18 46 24 32 30 18 52 14 66 10ZM72 15a2.4 2.4 0 1 0 .1 0ZM84 22 96 18 90 23 96 28 84 26Z", "fg"]] },
-  R: { bg: '#1b3370', rim: '#c39a5e', fg: '#c9a36a', parts: [["M8 74 30 58C34 44 48 34 62 34L66 28C72 22 80 24 84 28L98 36 83 39C82 48 74 60 62 66L66 78 73 83H60L54 68 46 70 50 80 57 85H44L38 70 8 80Z", "fg"], ["M34 54C44 45 56 42 66 46 60 56 48 60 32 61ZM74 27a2.6 2.6 0 1 0 .1 0Z", "bg"]] },
-  H: { bg: '#e0ae2c', rim: '#1b1508', fg: '#1b1508', parts: [["M6 64C10 46 28 36 48 38 58 28 76 26 86 36L96 50C94 56 88 58 82 58L76 60 78 80H68L64 66 40 68 42 82H32L26 66C16 70 6 72 6 64ZM70 33 88 47 84 49 66 36ZM58 40 74 54 70 56 54 42ZM76 44a2 2 0 1 0 .1 0Z", "fg"]] },
-};
-const SHIELD = 'M8 6H112V78C112 112 84 132 60 144 36 132 8 112 8 78Z', SHIELD_IN = 'M15 13H105V78C105 106 80 124 60 135 40 124 15 106 15 78Z';
 const houseName = h => pickLang(HAT.houses[h][0], HAT.houses[h][1]);
-const bannerSvg = h => { const o = HOUSES[h]; return `<svg viewBox="0 0 120 150" aria-hidden="true"><path d="${SHIELD}" fill="${o.bg}" stroke="${o.rim}" stroke-width="5"/><path d="${SHIELD_IN}" fill="none" stroke="${o.rim}" stroke-width="1.2" opacity=".6"/><g transform="translate(14 28) scale(.92)">${o.parts.map(([d, c]) => `<path fill-rule="evenodd" d="${d}" fill="${c === 'fg' ? o.fg : o.bg}"/>`).join('')}</g></svg>`; };
-const wishBtns = () => ['G', 'S', 'R', 'H'].map(h => ({ cls: 'ban' + (st.wish === h ? ' want' : '') + (st.avoid === h ? ' nope' : ''), html: `${bannerSvg(h)}<span>${houseName(h)}</span>`, fn: () => tapHouse(h) })).concat([
+const wishBtns = () => ['G', 'S', 'R', 'H'].map(h => ({ cls: 'ban' + (st.wish === h ? ' want' : '') + (st.avoid === h ? ' nope' : ''), html: `${Crests.svg(h)}<span>${houseName(h)}</span>`, fn: () => tapHouse(h) })).concat([
   { cls: 'wide', label: pickLang(...(st.wish ? HAT.yes.go : HAT.yes.skip)), fn: decide },
   { cls: 'wide', ghost: true, label: st.avoiding ? pickLang(...HAT.no.back) : pickLang(HAT.no.ua, HAT.no.en), fn: () => { st.avoiding = !st.avoiding; showWish(); } },
 ]);
@@ -301,7 +293,7 @@ async function decide() {
 function fillCard() {
   const h = st.house; if (!h) return;
   $('#rKicker').textContent = T('doneK'); $('#rName').textContent = houseName(h); $('#rLore').textContent = T(h.toLowerCase() + 'Line');
-  $('#rStage').innerHTML = bannerSvg(h);
+  $('#rStage').innerHTML = Crests.svg(h, houseName(h));
   const w = st.wandId && WANDS.find(x => x.id === st.wandId), sp = $('#rSpecs'), to = $('#rToShop');
   sp.hidden = !w; if (w) sp.textContent = T('wandIs', { w: L(w.name) }); to.hidden = !!w; to.textContent = T('toShop');
   $('#bShare').textContent = T('share'); $('#bDown').textContent = T('download'); $('#bAgain').textContent = T('bAgain'); $('#rSavedCap').textContent = T('saveHold');
@@ -319,11 +311,11 @@ $('#bAgain').addEventListener('click', () => {
 const cardFileName = () => lang === 'en' ? 'my-house.png' : 'miy-fakultet.png';
 async function makeCard() {
   try { await document.fonts.ready; } catch (_) { }
-  const h = st.house, CW = 1080, CH = 1350, c = document.createElement('canvas'); c.width = CW; c.height = CH; const x = c.getContext('2d'), H0 = HOUSES[h];
+  const h = st.house, CW = 1080, CH = 1350, c = document.createElement('canvas'); c.width = CW; c.height = CH; const x = c.getContext('2d');
   cardFrame(x, CW, CH);
   x.textAlign = 'center'; x.fillStyle = '#c79a55'; x.font = `700 34px ${serif}`; x.fillText(T('doneK').toUpperCase().split('').join(' '), CW / 2, 170);
   const tg = x.createLinearGradient(0, 190, 0, 330); tg.addColorStop(0, '#fff2cc'); tg.addColorStop(1, '#c9944a'); x.fillStyle = tg; x.font = `700 92px ${serif}`; x.fillText(houseName(h), CW / 2, 290);
-  x.save(); x.translate(CW / 2 - 180, 350); x.scale(3, 3); const sh = new Path2D(SHIELD); x.fillStyle = H0.bg; x.fill(sh); x.strokeStyle = H0.rim; x.lineWidth = 5; x.stroke(sh); x.lineWidth = 1.2; x.globalAlpha = .6; x.stroke(new Path2D(SHIELD_IN)); x.globalAlpha = 1; x.translate(14, 28); x.scale(.92, .92); for (const [d, col] of H0.parts) { x.fillStyle = col === 'fg' ? H0.fg : H0.bg; x.fill(new Path2D(d), 'evenodd'); } x.restore();
+  const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(Crests.svg(h)); await img.decode(); x.drawImage(img, CW / 2 - 240, 335, 480, 524);
   x.fillStyle = '#ecdcb8'; x.font = `italic 500 44px ${serif}`; let y = wrapText(x, T(h.toLowerCase() + 'Line'), CW / 2, 880, 860, 56);
   const w = st.wandId && WANDS.find(v => v.id === st.wandId); if (w) { x.fillStyle = '#d6c3a0'; x.font = `500 36px ${serif}`; wrapText(x, T('wandIs', { w: L(w.name) }), CW / 2, y + 26, 860, 46); }
   cardHost(x, CW);
