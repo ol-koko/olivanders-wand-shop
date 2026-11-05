@@ -1401,11 +1401,22 @@ async function ritual(lastWave) {
     r = await captureWave(cand);
     st.obs.push(r.m); st.traits = mergeTraits();
     const best = bestWand(st.traits);
-    if (isChosen(cand, best, st.attempt)) { rememberWin(cand.id); stopCamera(); st.stroke = r.pts; await success(cand); return; }
+    if (isChosen(cand, best, st.attempt)) { rememberWin(cand.id); logResult(cand, st.attempt, st.traits); stopCamera(); st.stroke = r.pts; await success(cand); return; }
     st.tried.push(cand);
     await REACT[pickReact(isNearMiss(cand, best, st.traits))](cand);
     await wait(500);
   }
+}
+// Anonymous results for later recalibration, from the live site only. The key can only insert. Nothing waits for this and a failure stays silent.
+const LOG = { host: 'olivanders-wand-shop.vercel.app', url: 'https://qozvbqhdavsazopdwrys.supabase.co/rest/v1/wand_results', key: 'sb_publishable__F3xGYcGMqsHdp-lHQtMbA_YgLToaBS' };
+function deviceType() { return !matchMedia('(pointer:coarse)').matches ? 'desktop' : Math.min(screen.width, screen.height) < 600 ? 'phone' : 'tablet'; }
+function logResult(w, attempts, tr) {
+  if (location.hostname !== LOG.host) return;
+  try {
+    const row = { wand_id: w.id, attempts, input_mode: inputMode(), language: lang, device_type: deviceType() };
+    for (const k of ['speed', 'amp', 'sharp', 'flow', 'curl']) row[k] = +clamp(tr[k]).toFixed(3);
+    fetch(LOG.url, { method: 'POST', keepalive: true, credentials: 'omit', headers: { apikey: LOG.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(row) }).catch(() => { });
+  } catch (_) { }
 }
 function recentWins() { try { const a = JSON.parse(localStorage.getItem('wand-recent')); return Array.isArray(a) ? a : []; } catch (_) { return []; } }
 function rememberWin(id) { try { localStorage.setItem('wand-recent', JSON.stringify([id, ...recentWins()].slice(0, RECENT.length))); } catch (_) { } }
