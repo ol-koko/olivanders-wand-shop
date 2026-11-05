@@ -10,7 +10,7 @@ Object.assign(S, {
   hatK: ['Капелюх', 'The Hat'],
   introH: ['Сідай. Я ще нікого не з’їв.', 'Sit down. I haven’t eaten anyone yet.'],
   introI: ['Кілька запитань, і я знатиму, куди тебе.', 'A few questions and I’ll know where you belong.'],
-  bStart: ['Вдягти', 'Put it on'],
+  bStart: ['Вдягти капелюха', 'Put the Hat on'],
   thinkH: ['Гм… Дай подумати.', 'Hm… Let me think.'],
   doneK: ['Капелюх вирішив', 'The Hat has decided'],
   doneI: ['Скоро я ще спитаю, куди хочеться тобі. А поки так.', 'Soon I’ll ask where you’d like to go, too. For now, this.'],
@@ -223,7 +223,7 @@ function placeHat() {
   $('#hallDim').style.setProperty('--hy', (H - line - size * .5) + 'px');
 }
 let talkT = 0;
-function hatTalk(ms = 1200) { const h = $('#hat'); h.classList.add('talk'); clearTimeout(talkT); talkT = setTimeout(() => h.classList.remove('talk'), reduceMotion ? 0 : ms); if (A.on) { tone(150, .32, { type: 'triangle', vol: .05, glide: 110 }); tone(118, .3, { type: 'triangle', vol: .04, when: .24, glide: 92 }); } }
+function hatTalk(ms = 1200) { const h = $('#hat'); h.classList.add('talk'); clearTimeout(talkT); talkT = setTimeout(() => h.classList.remove('talk'), reduceMotion ? 0 : ms); if (A.on) noise(.05, { vol: .035, freq: 1500, q: .6 }); } // a soft tap of cloth, neutral: the low tones in core.js mean a wand said no
 
 /* ================= the ceremony ================= */
 function recall(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (_) { return null; } }

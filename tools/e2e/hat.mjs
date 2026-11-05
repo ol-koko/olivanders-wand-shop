@@ -12,7 +12,7 @@ async function game(page, onQ) { const asked = []; await page.waitForFunction(()
 console.log('== a full game');
 for (const [w, h] of [[390, 844], [1440, 900]]) {
   const reqs = [], { browser, page, errors } = await open(url + 'sorting', { viewport: { width: w, height: h }, mobile: w < 768, route: async p => p.on('request', r => reqs.push(r.url())) });
-  await enterHall(page); check((await buttons(page))[0] === 'Вдягти', `${w}: the Hat opens with one button`);
+  await enterHall(page); check((await buttons(page))[0] === 'Вдягти капелюха', `${w}: the Hat opens with one button`);
   const spot = () => page.evaluate(() => { const h = document.querySelector('#hat'); return h.style.bottom + ' ' + h.style.width; }), spot0 = await spot(); await press(page);
   const a = await game(page, async () => { if (await spot() !== spot0) check(false, `${w}: the Hat moved between notes`); });
   check(await spot() === spot0, `${w}: the Hat keeps its place through every note: ${spot0}`);
