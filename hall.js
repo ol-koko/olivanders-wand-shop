@@ -3,8 +3,8 @@
 
 /* ================= strings ================= */
 Object.assign(S, {
-  title: ['Церемонія сортування', 'The Sorting Ceremony'],
-  sub: ['Капелюх уже чекає. Він давно нічого не вирішував', 'The Hat is waiting. It hasn’t decided anything in a while'],
+  title: ['Церемонія Розподілу', 'The Sorting Ceremony'],
+  sub: ['Який твій факультет у Гоґвортсі?\nСортувальний Капелюх уже чекає на тебе.', 'Which Hogwarts house are you in?\nThe Sorting Hat is waiting for you.'],
   cta: ['Увійти до Великої зали', 'Enter the Great Hall'],
   castleA: ['Нічний замок над озером', 'A castle above a lake at night'],
   hatK: ['Сортувальний Капелюх', 'The Sorting Hat'],
