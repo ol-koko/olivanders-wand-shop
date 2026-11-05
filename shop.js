@@ -911,7 +911,7 @@ function logResult(w, attempts, tr) {
   } catch (_) { }
 }
 function recentWins() { try { const a = JSON.parse(localStorage.getItem('wand-recent')); return Array.isArray(a) ? a : []; } catch (_) { return []; } }
-function rememberWin(id) { try { localStorage.setItem('wand-recent', JSON.stringify([id, ...recentWins()].slice(0, RECENT.length))); } catch (_) { } }
+function rememberWin(id) { try { localStorage.setItem('wand-recent', JSON.stringify([id, ...recentWins()].slice(0, RECENT.length))); localStorage.setItem('wand-last', JSON.stringify({ id, traits: st.traits, at: Date.now() })); } catch (_) { } } // wand-last stays in the browser: the Sorting Hat's first impression
 // No reaction repeats within the last 4, the near-miss fizzle included.
 function pickReact(near) {
   const recent = st.lastReacts;

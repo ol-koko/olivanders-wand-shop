@@ -13,6 +13,8 @@ for (const [name, opts] of [['phone', { viewport: { width: 390, height: 844 }, m
   check(done, 'a full game reaches the card');
   const winner = await page.evaluate(() => __wand.st.winner && __wand.st.winner.id), stored = await page.evaluate(() => JSON.parse(localStorage.getItem('wand-recent')));
   check(stored[0] === winner && stored.length === 5, `the winner goes first: ${stored.join(', ')}`);
+  const last = await page.evaluate(() => JSON.parse(localStorage.getItem('wand-last')));
+  check(last && last.id === winner && last.traits && last.at, 'the last wand and its traits are kept for the Hat');
   check(!errors.length, 'no page errors ' + errors.join(' | '));
 }
 await closeAll(); srv.close();
