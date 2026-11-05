@@ -90,7 +90,6 @@ const st = {
 };
 
 /* ---------------- street ---------------- */
-function svgEl(tag, attrs, parent) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
 function buildSky() {
   const s = $('#svgSky'); const R = rng(3);
   s.innerHTML = `<defs><linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#03060f"/><stop offset=".35" stop-color="#0b1532"/><stop offset=".62" stop-color="#1b2a55"/><stop offset=".82" stop-color="#34406b"/></linearGradient>
@@ -196,24 +195,6 @@ function setViewBoxes() {
   const vb = `${vbX.toFixed(1)} ${vbY.toFixed(1)} ${vbW.toFixed(1)} ${vbH.toFixed(1)}`;
   ['#svgSky', '#svgTown', '#svgShop', '#svgFg'].forEach(s => $(s).setAttribute('viewBox', vb));
   $('#moonG').setAttribute('transform', a > .9 ? `translate(${Math.min(-210, 200 - 400 * vbH / H).toFixed(1)} 0)` : ''); // on wide screens keep the moon clear of the title
-}
-// snow
-const snow = { back: [], front: [], cb: $('#snowBack'), cf: $('#snowFront'), xb: null, xf: null };
-function initSnow() {
-  snow.xb = sizeCanvas(snow.cb, W, H, 1); snow.xf = sizeCanvas(snow.cf, W, H, 1);
-  const n = Math.round(W * H / 9000);
-  snow.back = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, r: .6 + Math.random() * 1.3, v: .25 + Math.random() * .5, p: Math.random() * 6 }));
-  snow.front = Array.from({ length: Math.round(n / 3.5) }, () => ({ x: Math.random() * W, y: Math.random() * H, r: 1.8 + Math.random() * 2.6, v: .7 + Math.random() * 1, p: Math.random() * 6 }));
-}
-function drawSnow(t, alpha = 1) {
-  for (const [arr, x, c] of [[snow.back, snow.xb, '#dfe7ff'], [snow.front, snow.xf, '#ffffff']]) {
-    x.clearRect(0, 0, W, H); x.fillStyle = c; x.globalAlpha = alpha * (arr === snow.front ? .85 : .7);
-    for (const f of arr) {
-      f.y += f.v; f.x += Math.sin(t * .0008 + f.p) * .35 - par.x * .05;
-      if (f.y > H + 6) { f.y = -6; f.x = Math.random() * W; } if (f.x < -6) f.x = W + 6; if (f.x > W + 6) f.x = -6;
-      x.beginPath(); x.arc(f.x, f.y, f.r, 0, 6.283); x.fill();
-    }
-  }
 }
 
 /* ---------------- interior ---------------- */
@@ -1172,13 +1153,7 @@ async function chooseCam() {
 function buildInterior() { drawBack(); drawMid(); drawFront(); initFX(); }
 // A tap enters the shop. A drag moves the scene instead, like the mouse on desktop, and eases back to the drift on release.
 const street = $('#street');
-street.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') Object.assign(touch, { on: true, moved: false, x: e.clientX, y: e.clientY }); });
-street.addEventListener('pointermove', e => {
-  if (!touch.on) return;
-  if (Math.hypot(e.clientX - touch.x, e.clientY - touch.y) > 10) touch.moved = true;
-  if (!reduceMotion) { par.tx = clamp(e.clientX / W * 2 - 1, -1, 1); par.ty = clamp(e.clientY / H * 2 - 1, -1, 1); }
-});
-const endTouch = () => { touch.on = false; }; street.addEventListener('pointerup', endTouch); street.addEventListener('pointercancel', endTouch);
+dragDepth(street);
 street.addEventListener('click', () => { if (touch.moved) { touch.moved = false; return; } enterShop(); });
 addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && st.phase === 'street') enterShop(); });
 

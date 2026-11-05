@@ -17,10 +17,11 @@ const HOOK = '\nwindow.__wand = { st, WANDS, wandDist, REACT, cam, pickReact, sh
 export function serve() {
   return new Promise(resolve => {
     const srv = http.createServer((req, res) => {
-      const p = decodeURIComponent(new URL(req.url, 'http://x').pathname), file = path.join(ROOT, p === '/' ? 'index.html' : p);
+      const p = decodeURIComponent(new URL(req.url, 'http://x').pathname), file = (f => fs.existsSync(f) && fs.statSync(f).isDirectory() ? path.join(f, 'index.html') : f)(path.join(ROOT, p));
       if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end(); }
       let body = fs.readFileSync(file);
       if (file.endsWith('shop.js')) body = body.toString('utf8') + HOOK;
+      if (file.endsWith('hall.js')) body = body.toString('utf8') + '\nwindow.__hall = { st, par, layers };\n';
       res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' }); res.end(body);
     }).listen(0, '127.0.0.1', () => resolve({ srv, url: `http://localhost:${srv.address().port}/` }));
   });

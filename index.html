@@ -31,14 +31,6 @@
 <style>
 /* street */
 #street{cursor:pointer;touch-action:none}
-.st-title{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + max(62px, min(7vh, 56px)));text-align:center;pointer-events:none;transition:opacity .6s,transform .8s;padding:0 18px}
-.st-title h1{font-weight:600;font-size:clamp(30px,min(8.6vw,11vh),72px);line-height:1;letter-spacing:.01em;background:linear-gradient(180deg,#fff4d2 10%,#e8c27a 55%,#b4823e);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(255,200,120,.35)) drop-shadow(0 2px 2px rgba(0,0,0,.6))}
-.st-title p{margin:min(12px,1.6vh) auto 0;max-width:560px;font-style:italic;font-size:clamp(14px,min(4vw,3.4vh),23px);line-height:1.3;color:#e2d6bd;text-shadow:0 1px 8px rgba(0,0,0,.9)}
-#cta{position:absolute;left:0;right:0;margin:0 auto;width:fit-content;bottom:calc(env(safe-area-inset-bottom) + max(5.5vh, 50px));padding:13px 30px;border-radius:999px;background:linear-gradient(180deg,#f4d895,#c99a4e);border:1px solid #fff0c4;color:#2a170b;font:inherit;font-size:clamp(19px,4.6vw,22px);font-weight:700;letter-spacing:.01em;white-space:nowrap;cursor:pointer;box-shadow:0 8px 30px rgba(0,0,0,.55),0 0 26px rgba(255,200,110,.35);animation:ctap 2.6s ease-in-out infinite;transition:opacity .5s}
-.st-fan{position:absolute;left:0;right:0;bottom:0;text-align:center;font-style:italic;font-size:12px;line-height:1.2;padding:10px 12px calc(env(safe-area-inset-bottom) + 6px);font-weight:600;text-wrap:balance;color:#232b45;background:linear-gradient(180deg,rgba(236,241,250,0),rgba(236,241,250,.95) 12px);pointer-events:none;transition:opacity .5s}
-@keyframes ctap{50%{box-shadow:0 8px 30px rgba(0,0,0,.55),0 0 44px rgba(255,200,110,.65);transform:translateY(-3px)}}
-.tw{animation:tw 2.2s ease-in-out infinite}
-@keyframes tw{50%{opacity:.25}}
 .leak{animation:leak 3s ease-in-out infinite}
 @keyframes leak{50%{opacity:.55}}
 
@@ -61,7 +53,6 @@
 #fx{z-index:5}
 #stage{position:absolute;inset:0;z-index:8;touch-action:none;pointer-events:none}
 #stage.on{pointer-events:auto;cursor:crosshair}
-#flash{position:absolute;inset:0;z-index:30;pointer-events:none;opacity:0;background:radial-gradient(circle at var(--fx,50%) var(--fy,60%),#fff6dc 0%,#ffd28a 22%,#c87a30 55%,#3a1a08 100%)}
 
 /* big box */
 #bigbox{position:fixed;z-index:12;border-radius:4px;--c:#553;pointer-events:none}

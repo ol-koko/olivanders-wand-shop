@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Sorting Ceremony</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#07060a">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;0,600;0,700;1,400;1,500;1,600&family=Marck+Script&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/core.css">
+<style>
+#castle{touch-action:none}
+#hall{opacity:0}
+#hall svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="castle" class="scene">
+    <div class="pl" id="caSky" data-d=".12"><svg id="svgCaSky" preserveAspectRatio="none"></svg></div>
+    <canvas id="snowBack" class="full"></canvas>
+    <div class="pl" id="caFar" data-d=".35"><svg id="svgCaFar" preserveAspectRatio="none"></svg></div>
+    <div class="pl" id="caMain" data-d=".7"><svg id="svgCaMain" preserveAspectRatio="none"></svg></div>
+    <div class="pl" id="caFg" data-d="1.05"><svg id="svgCaFg" preserveAspectRatio="none"></svg></div>
+    <canvas id="snowFront" class="full"></canvas>
+    <div class="st-title" id="stTitle"><h1 id="stT"></h1><p id="stS"></p></div>
+    <button id="cta" type="button"></button>
+    <p class="st-fan" id="stFan"></p>
+  </section>
+
+  <section id="hall" class="scene" hidden>
+    <div class="pl" id="haBack" data-d=".3"><svg id="svgHaBack" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice"></svg></div>
+    <div class="pl" id="haMid" data-d=".7"><svg id="svgHaMid" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice"></svg></div>
+  </section>
+
+  <div id="flash"></div>
+
+  <div id="note" role="status" aria-live="polite"><div class="note-in" id="noteIn">
+    <canvas id="noteBg" aria-hidden="true"></canvas>
+    <div class="kicker" id="nKicker"></div>
+    <div class="nspec" id="nSpec"></div>
+    <div class="hand" id="nHand"></div>
+    <div class="instr" id="nInstr"></div>
+    <div class="status" id="nStatus"></div>
+    <div class="nbtns" id="nBtns"></div>
+  </div></div>
+
+  <div class="topbar"><div id="lang" role="group" aria-label="Language"><button data-l="ua">UA</button><button data-l="en">EN</button></div><button id="snd" aria-label="Sound"></button></div>
+</div>
+<script src="/logic.js"></script>
+<script src="/core.js"></script>
+<script src="/hall.js"></script>
+</body>
+</html>

@@ -163,6 +163,37 @@ function setStatus(s) { $('#nStatus').textContent = s || ''; }
 function nudgeNote() { noteIn.classList.remove('nudge'); void noteIn.offsetWidth; noteIn.classList.add('nudge'); }
 function noteTop() { return note.classList.contains('show') ? note.getBoundingClientRect().top : H; }
 
+/* ================= entry screens ================= */
+function svgEl(tag, attrs, parent) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+// snow
+const snow = { back: [], front: [], cb: $('#snowBack'), cf: $('#snowFront'), xb: null, xf: null };
+function initSnow() {
+  snow.xb = sizeCanvas(snow.cb, W, H, 1); snow.xf = sizeCanvas(snow.cf, W, H, 1);
+  const n = Math.round(W * H / 9000);
+  snow.back = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, r: .6 + Math.random() * 1.3, v: .25 + Math.random() * .5, p: Math.random() * 6 }));
+  snow.front = Array.from({ length: Math.round(n / 3.5) }, () => ({ x: Math.random() * W, y: Math.random() * H, r: 1.8 + Math.random() * 2.6, v: .7 + Math.random() * 1, p: Math.random() * 6 }));
+}
+function drawSnow(t, alpha = 1) {
+  for (const [arr, x, c] of [[snow.back, snow.xb, '#dfe7ff'], [snow.front, snow.xf, '#ffffff']]) {
+    x.clearRect(0, 0, W, H); x.fillStyle = c; x.globalAlpha = alpha * (arr === snow.front ? .85 : .7);
+    for (const f of arr) {
+      f.y += f.v; f.x += Math.sin(t * .0008 + f.p) * .35 - par.x * .05;
+      if (f.y > H + 6) { f.y = -6; f.x = Math.random() * W; } if (f.x < -6) f.x = W + 6; if (f.x > W + 6) f.x = -6;
+      x.beginPath(); x.arc(f.x, f.y, f.r, 0, 6.283); x.fill();
+    }
+  }
+}
+// A drag over a scene moves its depth, like the mouse on desktop, and eases back to the drift on release.
+function dragDepth(el) {
+  el.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') Object.assign(touch, { on: true, moved: false, x: e.clientX, y: e.clientY }); });
+  el.addEventListener('pointermove', e => {
+    if (!touch.on) return;
+    if (Math.hypot(e.clientX - touch.x, e.clientY - touch.y) > 10) touch.moved = true;
+    if (!reduceMotion) { par.tx = clamp(e.clientX / W * 2 - 1, -1, 1); par.ty = clamp(e.clientY / H * 2 - 1, -1, 1); }
+  });
+  const end = () => { touch.on = false; }; el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+}
+
 /* ================= logging ================= */
 // Anonymous results for later recalibration, from the live site only. The key can only insert. Nothing waits for this and a failure stays silent.
 const LOG = { host: 'olivanders-wand-shop.vercel.app', url: 'https://qozvbqhdavsazopdwrys.supabase.co/rest/v1/', key: 'sb_publishable__F3xGYcGMqsHdp-lHQtMbA_YgLToaBS' };
