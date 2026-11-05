@@ -118,9 +118,9 @@ q('w11', 3, 'Старе дзеркало покаже щось одне.', 'An o
   [['Не засиджуйся біля нього.', 'Don’t stay by it too long.'], ['Дзеркала брешуть рідше, ніж люди. І частіше, ніж я.', 'Mirrors lie less than people. And more than me.']]),
 ],
 WISH: {
-  yes: { ua: 'І останнє. Чи є дім, куди ти дуже хочеш?', en: 'One last thing. Is there a house you really want?', skip: ['Хай вирішує Капелюх', 'Let the Hat decide'] },
-  no: { ua: 'А куди точно не хочеш?', en: 'And any house you definitely don’t want?', skip: ['Пропустити', 'Skip'] },
-  houses: { G: ['Ґрифіндор', 'Gryffindor'], S: ['Слизерин', 'Slytherin'], R: ['Рейвенклов', 'Ravenclaw'], H: ['Гафелпаф', 'Hufflepuff'] },
+  yes: { ua: 'І останнє. Чи є факультет, куди ти дуже хочеш?', en: 'One last thing. Is there a house you really want?', skip: ['Хай вирішує Капелюх', 'Let the Hat decide'], go: ['Готово, вирішуй', 'Done, decide'] },
+  no: { ua: 'А куди точно не хочу', en: 'A house I don’t want', hint: ['Торкнися факультету, куди не хочеш. Можна пропустити.', 'Tap the house you don’t want. You can skip this.'], back: ['Назад до бажання', 'Back to my wish'] },
+  houses: { G: ['Ґрифіндор', 'Gryffindor'], S: ['Слизерин', 'Slytherin'], R: ['Когтевран', 'Ravenclaw'], H: ['Пуффендуй', 'Hufflepuff'] },
   got: [['Я тебе почув. І не сперечатимусь.', 'I heard you. And I won’t argue.'], ['Гаразд. Ти просиш, і воно справді в тобі є.', 'All right. You asked, and it really is in you.']],
   denied: [['Я тебе почув. Але ні.', 'I heard you… but no.'], ['Гарна спроба. Я капелюх, а не офіціант.', 'Nice try. I’m a hat, not a waiter.'], ['Ти цього хочеш. Але потрібне тобі інше.', 'It’s what you want. It’s not what you need.']],
   avoided: [['Добре, туди не піде. Цього разу.', 'Fine, not there. This time.']],

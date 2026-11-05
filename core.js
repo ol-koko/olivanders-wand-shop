@@ -152,8 +152,8 @@ function renderNote() {
   $('#nKicker').textContent = n.kicker || ''; $('#nSpec').textContent = n.spec || ''; $('#nHand').textContent = n.hand || ''; $('#nInstr').innerHTML = n.instr || '';
   const bx = $('#nBtns'); bx.innerHTML = '';
   const btns = (n.btns || []).slice(); if (st.camHelp && st.input === 'cam') btns.push({ label: T('bInstead'), ghost: true, fn: () => toPointer() });
-  bx.classList.toggle('eq', btns.length > 1);
-  btns.forEach(b => { const e = document.createElement('button'); e.className = 'btn' + (b.ghost ? ' ghost' : ''); e.textContent = b.label; e.onclick = ev => { ev.stopPropagation(); b.fn(); }; bx.appendChild(e); });
+  bx.className = 'nbtns' + (btns.length > 1 ? ' eq' : '') + (n.cls ? ' ' + n.cls : '');
+  btns.forEach(b => { const e = document.createElement('button'); e.className = 'btn' + (b.ghost ? ' ghost' : '') + (b.cls ? ' ' + b.cls : ''); if (b.html) e.innerHTML = b.html; else e.textContent = b.label; e.onclick = ev => { ev.stopPropagation(); b.fn(); }; bx.appendChild(e); });
 }
 function setNote(fn, instant = false) {
   st.noteFn = fn; $('#nStatus').textContent = ''; note.classList.add('show'); clearTimeout(noteTimer);
@@ -193,6 +193,37 @@ function dragDepth(el) {
   });
   const end = () => { touch.on = false; }; el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
 }
+
+/* ================= result card ================= */
+// Each page's script declares makeCard() and cardFileName().
+// When the card can't fit and scrolls, the top buttons step aside instead of covering it.
+$('#result').addEventListener('scroll', e => { $('.topbar').classList.toggle('away', e.target.scrollTop > 8); }, { passive: true });
+const siteUrl = () => location.origin + location.pathname;
+function wrapText(c, text, x, y, maxW, lh) { const words = text.split(' '); let line = '', yy = y; for (const w of words) { const t = line ? line + ' ' + w : w; if (c.measureText(t).width > maxW && line) { c.fillText(line, x, yy); line = w; yy += lh; } else line = t; } if (line) c.fillText(line, x, yy); return yy + lh; }
+const serif = "'Cormorant Garamond', Georgia, serif";
+function cardFrame(x, CW, CH) {
+  const g = x.createRadialGradient(CW / 2, 300, 50, CW / 2, 600, 1100); g.addColorStop(0, '#2e1b10'); g.addColorStop(1, '#0b0604'); x.fillStyle = g; x.fillRect(0, 0, CW, CH);
+  x.strokeStyle = 'rgba(217,180,106,.75)'; x.lineWidth = 3; x.strokeRect(40, 40, CW - 80, CH - 80); x.strokeStyle = 'rgba(217,180,106,.3)'; x.lineWidth = 1.5; x.strokeRect(56, 56, CW - 112, CH - 112);
+}
+// the default Vercel address is long, so the font shrinks to keep it inside the frame
+function cardHost(x, CW) { x.fillStyle = '#e8c27a'; let hostPx = 38; do { x.font = `600 ${hostPx}px ${serif}`; } while (x.measureText(location.host).width > 900 && --hostPx > 18); x.fillText(location.host, CW / 2, 1230); }
+// Made ahead of the click: browsers only allow the share sheet right after a tap, with no long wait before it.
+let cardBlob = null;
+function refreshCard() { cardBlob = null; const job = makeCard().then(b => { if (refreshCard.job === job) cardBlob = b; return b; }); refreshCard.job = job; return job; }
+const cardFile = async () => new File([cardBlob || await refreshCard.job], cardFileName(), { type: 'image/png' });
+function canShareFiles() {
+  try { return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [new File([new Blob(['x'], { type: 'image/png' })], 'x.png', { type: 'image/png' })] })); } catch (_) { return false; }
+}
+function setShareMode(sheet) { $('#bShare').hidden = !sheet; $('#bDown').hidden = sheet; }
+$('#bShare').addEventListener('click', async () => {
+  try { await navigator.share({ files: [await cardFile()], text: T('invite'), url: siteUrl() }); }
+  catch (e) { if (e && e.name !== 'AbortError') setShareMode(false); } // a cancelled sheet stays silent; anything else offers the download
+});
+$('#bDown').addEventListener('click', async () => {
+  const file = await cardFile(), url = URL.createObjectURL(file);
+  if (IN_APP) { $('#rSavedImg').src = url; $('#rSaved').hidden = false; return; } // these webviews usually block downloads, but pressing on an image works
+  const a = document.createElement('a'); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
+});
 
 /* ================= logging ================= */
 // Anonymous results for later recalibration, from the live site only. The key can only insert. Nothing waits for this and a failure stays silent.

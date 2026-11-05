@@ -7,7 +7,10 @@ const inHall = page => page.waitForFunction(() => __hall.st.phase === 'hall' && 
 const enterHall = async page => { await page.evaluate(() => document.querySelector('#cta').click()); await inHall(page); };
 const buttons = page => page.$$eval('#nBtns button', b => b.map(x => x.textContent));
 const press = (page, i = 0) => page.evaluate(n => document.querySelectorAll('#nBtns button')[n].click(), i);
-async function game(page, onQ) { const asked = []; await page.waitForFunction(() => document.querySelectorAll('#nBtns button').length >= 2 && __hall.st.picking, null, { timeout: 15000 }); for (let i = 0; i < 3; i++) { await page.waitForFunction(n => __hall.st.picking && __hall.st.step === n && document.querySelector('#nHand').textContent, i, { timeout: 15000 }); await sleep(450); const s = await page.evaluate(() => { const q = __hall.st.questions[__hall.st.step]; return { id: q.id, cat: q.cat, order: q.o.map(o => o.u), hand: document.querySelector('#nHand').textContent, btns: [...document.querySelectorAll('#nBtns button')].map(b => b.textContent) }; }); asked.push(s); if (onQ) await onQ(s); await press(page, Math.floor(Math.random() * s.btns.length)); } await page.waitForFunction(() => __hall.st.house && document.querySelectorAll('#nBtns button').length === 2, null, { timeout: 15000 }); return asked; }
+async function game(page, onQ) { const asked = []; await page.waitForFunction(() => document.querySelectorAll('#nBtns button').length >= 2 && __hall.st.picking, null, { timeout: 15000 }); for (let i = 0; i < 3; i++) { await page.waitForFunction(n => __hall.st.picking && __hall.st.step === n && document.querySelector('#nHand').textContent, i, { timeout: 15000 }); await sleep(450); const s = await page.evaluate(() => { const q = __hall.st.questions[__hall.st.step]; return { id: q.id, cat: q.cat, order: q.o.map(o => o.u), hand: document.querySelector('#nHand').textContent, btns: [...document.querySelectorAll('#nBtns button')].map(b => b.textContent) }; }); asked.push(s); if (onQ) await onQ(s); await press(page, Math.floor(Math.random() * s.btns.length)); } await page.waitForFunction(() => document.querySelector('#nBtns').classList.contains('wish'), null, { timeout: 15000 }); return asked; }
+const wishPick = (page, i) => page.evaluate(n => document.querySelectorAll('#nBtns .ban')[n].click(), i);
+const wide = (page, i) => page.evaluate(n => document.querySelectorAll('#nBtns .wide')[n].click(), i);
+const toCard = page => page.waitForFunction(() => document.querySelector('#result').classList.contains('show'), null, { timeout: 15000 });
 
 console.log('== a full game');
 for (const [w, h] of [[390, 844], [1440, 900]]) {
@@ -18,14 +21,21 @@ for (const [w, h] of [[390, 844], [1440, 900]]) {
   check(await spot() === spot0, `${w}: the Hat keeps its place through every note: ${spot0}`);
   check(a.map(q => q.cat).join() === '1,2,3', `${w}: one question per category, then the result: ${a.map(q => q.id).join(' ')}`);
   check(a.every(q => q.btns.join() === q.order.join() && q.btns.length >= 2 && q.btns.length <= 4), `${w}: the buttons are the shuffled options`);
-  const r = await page.evaluate(() => ({ house: __hall.st.house, hand: document.querySelector('#nHand').textContent, seen: JSON.parse(localStorage.getItem('hat-seen')), page: document.body.innerText }));
-  check('GSRH'.includes(r.house) && /!$/.test(r.hand), `${w}: the Hat names a house: ${r.hand}`);
+  check(await page.$$eval('#nBtns .ban', b => b.length) === 4, `${w}: the wish screen shows 4 banners`);
+  check((await page.$$eval('#nBtns .wide', b => b.map(x => x.textContent)))[0] === 'Хай вирішує Капелюх', `${w}: letting the Hat decide is offered`);
+  await wishPick(page, 1); check(await page.evaluate(() => __hall.st.wish === 'S' && document.querySelectorAll('#nBtns .ban')[1].classList.contains('want') && document.querySelectorAll('#nBtns .wide')[0].textContent === 'Готово, вирішуй'), `${w}: a banner can be picked`);
+  await wide(page, 1); await wishPick(page, 0); check(await page.evaluate(() => __hall.st.avoid === 'G' && __hall.st.wish === 'S' && document.querySelectorAll('#nBtns .ban')[0].classList.contains('nope') && /не хочеш/.test(document.querySelector('#nInstr').textContent)), `${w}: an unwanted house is an action on the same screen`);
+  await wishPick(page, 1); check(await page.evaluate(() => __hall.st.avoid === 'S' && __hall.st.wish === null), `${w}: one house can't be both`);
+  await wide(page, 1); await wishPick(page, 2); await wide(page, 0); await toCard(page); await sleep(300);
+  const r = await page.evaluate(() => ({ house: __hall.st.house, wish: __hall.st.wish, avoid: __hall.st.avoid, name: document.querySelector('#rName').textContent, lore: document.querySelector('#rLore').textContent, seen: JSON.parse(localStorage.getItem('hat-seen')), page: document.body.innerText, fit: document.querySelector('.rcard').getBoundingClientRect().right <= innerWidth, share: !document.querySelector('#bShare').hidden || !document.querySelector('#bDown').hidden, credit: /Kokozei/.test(document.querySelector('#rCredit').textContent) }));
+  check('GSRH'.includes(r.house) && r.wish === 'R' && r.avoid === 'S', `${w}: the Hat sorts with the wish: ${r.name}`);
+  check(r.name && r.lore && r.fit && r.share && r.credit, `${w}: the card shows the house, a line, sharing and the credit`);
   check(a.every(q => r.seen.includes(q.id)), `${w}: asked questions are stored`);
   check(!/\d\s*\/\s*\d|запитання \d|question \d/i.test(r.page), `${w}: no counter on screen`);
-  await press(page); const b = await game(page); check(!b.some(q => a.some(x => x.id === q.id)), `${w}: Once more asks new questions: ${b.map(q => q.id).join(' ')}`);
-  const shops = await buttons(page); check(shops[1] === 'До крамниці', `${w}: the result can lead back to the shop`);
-  await Promise.all([page.waitForURL(u => new URL(u).pathname === '/'), press(page, 1)]); check(await page.evaluate(() => !!document.querySelector('#cta')), `${w}: and the shop opens`);
-  check(!reqs.some(u => /supabase/.test(u)), `${w}: nothing is logged`); check(!errors.length, 'no page errors ' + errors.join(' | '));
+  const img = await page.evaluate(async () => { const b = await __hall.makeCard(), i = await createImageBitmap(b); return [i.width, i.height]; }); check(img[0] === 1080 && img[1] === 1350, `${w}: the share image is ${img.join('×')}`);
+  await page.evaluate(() => document.querySelector('#bAgain').click()); const b = await game(page); check(!b.some(q => a.some(x => x.id === q.id)), `${w}: Once more asks new questions: ${b.map(q => q.id).join(' ')}`);
+  await wide(page, 0); await toCard(page); check(await page.evaluate(() => !document.querySelector('#rToShop').hidden && document.querySelector('#rToShop').getAttribute('href') === '/'), `${w}: without a wand the card points to the shop`);
+  check(!reqs.some(u => /supabase/.test(u)), `${w}: nothing is logged from this host`); check(!errors.length, 'no page errors ' + errors.join(' | '));
   await browser.close();
 }
 await closeAll();
@@ -38,6 +48,22 @@ for (const [w, h] of [[320, 568], [360, 662], [390, 844], [844, 390], [1440, 900
     check(!bad.length, `${w}×${h} ${l}: all ${36} questions fit ${bad.slice(0, 5).join(', ')}`); }
   check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close();
 }
+await closeAll();
+console.log('== the wish screen fits');
+for (const [w, h] of [[320, 568], [360, 662], [390, 844], [844, 390], [1440, 900]]) {
+  const { browser, page } = await open(url + 'sorting', { viewport: { width: w, height: h }, mobile: w < 1000 }); await enterHall(page);
+  for (const l of ['ua', 'en']) { await page.evaluate(x => document.querySelector(`#lang button[data-l="${x}"]`).click(), l); await page.evaluate(() => { __hall.st.avoiding = true; __hall.showWish(); }); await sleep(120);
+    const g = await page.evaluate(() => { const n = document.querySelector('#note').getBoundingClientRect(), bar = document.querySelector('.topbar').getBoundingClientRect(), overflow = [...document.querySelectorAll('#nBtns .ban span')].some(s => s.scrollWidth > s.parentElement.clientWidth + 1), hat = document.querySelector('#hat').getBoundingClientRect(), shown = getComputedStyle(document.querySelector('#hat')).display !== 'none'; return { top: Math.round(n.top), bar: Math.round(bar.bottom), bot: Math.round(n.bottom), overflow, hat: shown ? Math.round(hat.top) : null }; });
+    check(g.top >= g.bar && g.bot <= h + 1 && !g.overflow && (g.hat === null || g.hat >= g.bar - 14), `${w}×${h} ${l}: fits ${JSON.stringify(g)}`); }
+  await browser.close();
+}
+await closeAll();
+console.log('== logging');
+{ const LIVE = 'https://olivanders-wand-shop.vercel.app/', posts = [];
+  const { browser, page, errors } = await open(LIVE + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, route: async p => { await p.route(u => u.hostname === 'olivanders-wand-shop.vercel.app', async r => { const pth = new URL(r.request().url()).pathname, res = await fetch(url + pth.slice(1)); await r.fulfill({ status: res.status, contentType: res.headers.get('content-type') || 'text/plain', body: Buffer.from(await res.arrayBuffer()) }); }); await p.route(u => u.hostname.endsWith('.supabase.co'), r => { if (r.request().method() === 'POST') posts.push(r.request()); return r.fulfill({ status: 201, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' } }); }); } });
+  await enterHall(page); await press(page); const a = await game(page); await wishPick(page, 3); await wide(page, 1); await wishPick(page, 0); await wide(page, 0); await toCard(page);
+  check(posts.length === 1 && /sorting_results$/.test(posts[0].url()), `one row per game: ${posts.length}`); const row = JSON.parse(posts[0].postData()); console.log('    ' + posts[0].postData());
+  check(Object.keys(row).sort().join() === 'device_type,house,language,unwanted,wand_prior,wish', 'only the agreed fields, no answers'); check(row.wish === 'H' && row.unwanted === 'G' && row.wand_prior === false && 'GSRH'.includes(row.house), 'the values are right'); check(!(await posts[0].allHeaders()).cookie, 'no cookie'); check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close(); }
 await closeAll();
 console.log('== the wand as a first impression');
 { const { browser, page } = await open(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, init: `localStorage.setItem('wand-last', JSON.stringify({ id: 'harry', traits: { speed: .95, amp: .95, sharp: .5, flow: .5, curl: .5 }, at: Date.now() }));` });
