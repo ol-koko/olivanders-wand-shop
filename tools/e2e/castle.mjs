@@ -1,6 +1,6 @@
 // /sorting: the castle, routing, language, depth and the way into the hall.
 //   node tools/e2e/castle.mjs
-import { closeAll, serve, open, sleep, enter } from './lib.mjs';
+import { closeAll, serve, open, sleep } from './lib.mjs';
 const { srv, url } = await serve(), fails = [];
 const check = (ok, what) => { console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) fails.push(what); };
 const box = (page, sel) => page.evaluate(q => { const r = document.querySelector(q).getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; }, sel);
@@ -23,7 +23,7 @@ for (const [w, h] of [[320, 568], [360, 662], [390, 844], [430, 932], [844, 390]
   await page.evaluate(() => document.querySelector('#lang button[data-l="ua"]').click());
   await page.evaluate(() => document.querySelector('#cta').click()); await inHall(page); await page.waitForFunction(() => document.querySelector('#nBtns button'), null, { timeout: 5000 });
   const n = await page.evaluate(() => ({ castle: document.querySelector('#castle').hidden, hall: !document.querySelector('#hall').hidden, btn: document.querySelector('#nBtns button')?.textContent, shown: document.querySelector('#note').classList.contains('show'), over: document.documentElement.scrollWidth <= innerWidth }));
-  check(n.castle && n.hall && n.shown && n.btn === 'До крамниці' && n.over, `${w}×${h}: the flight ends in the hall with a note`);
+  check(n.castle && n.hall && n.shown && n.btn === 'Надіти Капелюх' && n.over, `${w}×${h}: the flight ends in the hall with a note`);
   check(!reqs.some(u => /supabase/.test(u)), `${w}×${h}: nothing is logged`);
   check(!errors.length, 'no page errors ' + errors.join(' | '));
   await browser.close();
@@ -38,8 +38,7 @@ console.log('== routing and language');
   await page.goBack({ waitUntil: 'load' }); check(new URL(page.url()).pathname === '/' && await page.evaluate(() => !!document.querySelector('#cta')), 'back returns to the street');
   await page.goForward({ waitUntil: 'load' }); check(/\/sorting/.test(page.url()), 'forward returns to the castle');
   await page.evaluate(() => document.querySelector('#cta').click()); await inHall(page); await page.waitForFunction(() => document.querySelector('#nBtns button'));
-  await Promise.all([page.waitForURL(u => new URL(u).pathname === '/'), page.evaluate(() => document.querySelector('#nBtns button').click())]); check(true, 'the note leads back to the shop');
-  await enter(page); check(!errors.length, 'the shop still opens, no page errors ' + errors.join(' | ')); await browser.close(); }
+  check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close(); }
 { const { browser, page } = await open(url + 'sorting/', { viewport: { width: 390, height: 844 }, mobile: true, locale: 'en-US' }); check(await page.evaluate(() => document.querySelector('#stT').textContent) === 'The Sorting Ceremony', 'a deep link with a slash works, English for a non-Ukrainian browser'); await browser.close(); }
 console.log('== depth');
 { const { browser, page, errors } = await open(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, init: `window.__asked = 0; if (window.DeviceOrientationEvent) DeviceOrientationEvent.requestPermission = () => { __asked++; return Promise.resolve('granted'); }; if (window.DeviceMotionEvent) DeviceMotionEvent.requestPermission = () => { __asked++; return Promise.resolve('granted'); }; const gum = navigator.mediaDevices && navigator.mediaDevices.getUserMedia; if (gum) navigator.mediaDevices.getUserMedia = () => { __asked++; return Promise.reject(new Error('no')); };` });

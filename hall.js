@@ -7,13 +7,20 @@ Object.assign(S, {
   sub: ['Капелюх уже чекає. Він давно нічого не вирішував', 'The Hat is waiting. It hasn’t decided anything in a while'],
   cta: ['Увійти до Великої зали', 'Enter the Great Hall'],
   castleA: ['Нічний замок над озером', 'A castle above a lake at night'],
-  soonK: ['Велика зала', 'The Great Hall'],
-  soonH: ['Зала ще готується.', 'The Hall isn’t ready yet.'],
-  soonI: ['Свічки вже запалили, а Капелюха ще латають. Заходь трохи згодом.', 'The candles are lit, but the Hat is still being patched. Come back a little later.'],
+  hatK: ['Сортувальний Капелюх', 'The Sorting Hat'],
+  introH: ['Сідай. Я ще нікого не з’їв.', 'Sit down. I haven’t eaten anyone yet.'],
+  introI: ['Кілька запитань, і я знатиму, куди тебе.', 'A few questions and I’ll know where you belong.'],
+  bStart: ['Надіти Капелюх', 'Put the Hat on'],
+  thinkH: ['Гм… Дай подумати.', 'Hm… Let me think.'],
+  doneK: ['Капелюх вирішив', 'The Hat has decided'],
+  doneI: ['Скоро я ще спитаю, куди хочеться тобі. А поки так.', 'Soon I’ll ask where you’d like to go, too. For now, this.'],
+  bAgain: ['Ще раз', 'Once more'],
   bShop: ['До крамниці', 'To the wand shop'],
 });
 
-const st = { phase: 'castle', cap: null, noteFn: null, input: 'pointer' };
+const st = { phase: 'castle', cap: null, noteFn: null, input: 'pointer', questions: [], step: 0, answers: [], picking: false, wand: null, house: null };
+const { POOL, WISH: HAT, SHARED } = SortingQuestions;
+const pickLang = (ua, en) => lang === 'en' ? en : ua;
 
 /* ================= castle ================= */
 const CASTLE_TOP = 165; // the highest spire: the view keeps it below the title
@@ -181,6 +188,67 @@ function buildHall() {
     <radialGradient id="gTableGlow"><stop offset="0" stop-color="#ffd38c" stop-opacity=".4"/><stop offset="1" stop-color="#ffd38c" stop-opacity="0"/></radialGradient><linearGradient id="gTable" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5a2c"/><stop offset=".3" stop-color="#5a3518"/><stop offset="1" stop-color="#2c170a"/></linearGradient></defs>${floor}${tables}`;
 }
 
+/* ================= the Hat ================= */
+function buildHat() {
+  $('#hat').innerHTML = `<svg viewBox="0 0 400 420"><defs>
+    <linearGradient id="gHat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a6a43"/><stop offset=".55" stop-color="#5b4128"/><stop offset="1" stop-color="#2f2014"/></linearGradient>
+    <linearGradient id="gBrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a4d30"/><stop offset="1" stop-color="#2a1c11"/></linearGradient></defs>
+    <rect x="176" y="372" width="48" height="60" fill="#2a180c"/><ellipse cx="200" cy="376" rx="118" ry="20" fill="#3d2513"/>
+    <ellipse cx="200" cy="340" rx="182" ry="42" fill="url(#gBrim)"/><path d="M26 342q60 34 174 34t174-34" fill="none" stroke="#1d130b" stroke-width="4"/><path d="M62 322q28 12 56 15M284 336q28-3 56-16" fill="none" stroke="#8d6f49" stroke-width="2.4" opacity=".55"/>
+    <g id="hatBody"><path d="M88 332C104 262 128 206 150 150c7-18 24-40 52-46 14-3 36-2 50 4l26 136 28 84q-110 26-218 4z" fill="url(#gHat)"/>
+      <g id="hatTip"><path d="M150 152C164 94 196 62 244 44c20-8 44-8 62 2-16 2-30 12-34 24-3 12 4 24 2 38-2 12-14 20-26 22-34 6-68 12-98 22z" fill="url(#gHat)"/><path d="M196 92q34-10 64 2M178 122q40-12 86-2" fill="none" stroke="#2b1c10" stroke-width="3.2" opacity=".65"/>
+        <polygon points="236,66 262,58 268,84 242,92" fill="#6f4f33"/><path d="M236 66l3 3M244 63l2 4M254 60l2 4M262 58l-3 3M268 84l-3-3M242 92l2-4M252 90l1-4" stroke="#d6c39a" stroke-width="1.6"/></g>
+      <polygon points="112,288 158,276 170,316 118,326" fill="#6d4c2e"/><path d="M112 288l5 3M122 285l3 4M134 282l3 4M146 279l3 4M158 276l-3 5M170 316l-4-3M155 319l-2-4M138 322l-2-4M118 326l3-4M114 306l4-1" stroke="#d6c39a" stroke-width="1.8"/>
+      <polygon points="242,246 284,240 292,288 248,294" fill="#7b5a39"/><path d="M242 246l4 4M254 244l2 4M270 241l2 4M284 240l-3 4M292 288l-4-3M270 291l-2-4M248 294l3-4M244 270l4 0M288 264l-4 0" stroke="#d6c39a" stroke-width="1.8"/>
+      <polygon points="176,136 212,126 220,158 184,168" fill="#664829"/><path d="M176 136l4 3M190 132l2 4M204 128l2 4M212 126l-3 4M220 158l-4-3M202 163l-2-4M184 168l3-4" stroke="#d6c39a" stroke-width="1.6"/>
+      <path d="M124 262q40-22 76-12M104 310q44 6 84-4M226 216q24-14 48-6M214 318q30-4 60-16" fill="none" stroke="#2b1c10" stroke-width="3.6" opacity=".6"/>
+      <g id="hatBrows"><path d="M146 186q24-20 48-4" fill="none" stroke="#1f140b" stroke-width="7" stroke-linecap="round"/><path d="M222 178q22-12 44 8" fill="none" stroke="#1f140b" stroke-width="7" stroke-linecap="round"/><path d="M158 204q14-8 28-2M232 198q14-6 26 2" fill="none" stroke="#120b06" stroke-width="5" stroke-linecap="round" opacity=".8"/></g>
+      <path id="hatMouth" d="M140 252q28 16 60 12t62-22q-8 22-30 32t-50 6q-24-6-42-28z" fill="#150c06"/><path d="M140 252q30 14 60 10t62-20" fill="none" stroke="#8d6f49" stroke-width="2.4" opacity=".5"/>
+    </g></svg>`;
+}
+function placeHat() {
+  const h = $('#hat'); if (!h || $('#hall').hidden) return;
+  const top = $('.topbar').getBoundingClientRect().bottom + 2, noteY = noteTop(), room = noteY + 28 - top;
+  const size = Math.min(room, 330, W * .7);
+  if (size < 90) { h.style.opacity = 0; return; }
+  h.style.opacity = 1; h.style.width = size * .95 + 'px'; h.style.height = size + 'px'; h.style.marginLeft = -size * .475 + 'px'; h.style.bottom = (H - noteY - 28) + 'px';
+}
+let talkT = 0;
+function hatTalk(ms = 1200) { const h = $('#hat'); h.classList.add('talk'); clearTimeout(talkT); talkT = setTimeout(() => h.classList.remove('talk'), reduceMotion ? 0 : ms); if (A.on) { tone(150, .32, { type: 'triangle', vol: .05, glide: 110 }); tone(118, .3, { type: 'triangle', vol: .04, when: .24, glide: 92 }); } }
+
+/* ================= the ceremony ================= */
+function recall(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (_) { return null; } }
+function loadWand() { const w = recall('wand-last'); return w && w.traits && Date.now() - w.at < 864e5 ? SortingLogic.wandImpression(w.traits) : null; }
+function startCeremony() {
+  st.phase = 'hall'; st.step = 0; st.answers = []; st.picking = false; st.house = null; st.wand = loadWand();
+  const line = st.wand ? pick(HAT.wand) : null;
+  setNote(() => ({ kicker: T('hatK'), hand: T('introH'), instr: line ? pickLang(line[0], line[1]) + ' ' + T('introI') : T('introI'), btns: [{ label: T('bStart'), fn: beginQuestions }] }));
+  hatTalk();
+}
+function beginQuestions() {
+  const seen = recall('hat-seen'), p = SortingLogic.pickQuestions(POOL, Array.isArray(seen) ? seen : []);
+  try { localStorage.setItem('hat-seen', JSON.stringify(p.seen)); } catch (_) { }
+  st.questions = p.questions.map(q => ({ ...q, o: SortingLogic.shuffled(q.o) })); st.step = 0; st.answers = []; st.house = null; ask();
+}
+function ask() {
+  const q = st.questions[st.step]; st.picking = true;
+  setNote(() => ({ kicker: T('hatK'), hand: pickLang(q.ua, q.en), btns: q.o.map(o => ({ label: pickLang(o.u, o.e), ghost: true, fn: () => answer(q, o) })) }));
+  hatTalk(900);
+}
+async function answer(q, o) {
+  if (!st.picking) return; st.picking = false; st.answers.push(o.w);
+  const r = pick(Math.random() < .85 ? q.r : SHARED);
+  setNote(() => ({ kicker: T('hatK'), hand: pickLang(r[0], r[1]) })); hatTalk(1000);
+  await wait(1900);
+  if (++st.step < st.questions.length) return ask();
+  setNote(() => ({ kicker: T('hatK'), hand: T('thinkH') })); hatTalk(1400);
+  await wait(reduceMotion ? 500 : 1900);
+  st.house = SortingLogic.sortHouse({ answers: st.answers, wand: st.wand });
+  const name = HAT.houses[st.house];
+  setNote(() => ({ kicker: T('doneK'), hand: pickLang(name[0], name[1]) + '!', instr: T('doneI'), btns: [{ label: T('bAgain'), fn: beginQuestions }, { label: T('bShop'), ghost: true, fn: () => { location.href = '/'; } }] }));
+  hatTalk(1500); if (A.on) SFX.reveal();
+}
+
 /* ================= language ================= */
 function applyLang() {
   document.documentElement.lang = lang === 'en' ? 'en' : 'uk'; document.title = T('title'); $('#castle').setAttribute('aria-label', T('castleA'));
@@ -211,11 +279,10 @@ async function enterHall() {
     fl.style.opacity = clamp((t - .5) / .42); drawSnow(performance.now(), 1 - z);
   });
   // the snow keeps falling inside
-  $('#haMid').after($('#snowBack')); $('#haFront').after($('#snowFront'));
-  $('#castle').hidden = true; hall.style.opacity = 1;
+  $('#haMid').after($('#snowBack')); $('#haFront').after($('#snowFront')); $('#snowFront').after($('#hat'));
+  $('#castle').hidden = true; hall.style.opacity = 1; placeHat();
   await run(reduceMotion ? 400 : 1300, t => { const e = easeOut(t); if (!reduceMotion) inn.forEach((id, i) => { layers[id].s = 1 + (.3 + i * .1) * (1 - e); }); fl.style.opacity = 1 - easeOut(clamp(t / .75)); });
-  st.phase = 'hall';
-  setNote(() => ({ kicker: T('soonK'), hand: T('soonH'), instr: T('soonI'), btns: [{ label: T('bShop'), fn: () => { location.href = '/'; } }] }));
+  startCeremony();
 }
 const castle = $('#castle');
 dragDepth(castle);
@@ -223,12 +290,14 @@ castle.addEventListener('click', () => { if (touch.moved) { touch.moved = false;
 $('#cta').addEventListener('click', e => { e.stopPropagation(); enterHall(); });
 
 /* ================= boot ================= */
-function onResize() { W = innerWidth; H = innerHeight; MIN = Math.min(W, H); setViewBoxes(); initSnow(); }
+function onResize() { W = innerWidth; H = innerHeight; MIN = Math.min(W, H); setViewBoxes(); initSnow(); placeHat(); }
 let resizeT = 0; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(onResize, 120); });
-buildSky(); buildFar(); buildMain(); buildFg(); setViewBoxes(); initSnow(); applyLang();
+buildSky(); buildFar(); buildMain(); buildFg(); buildHat(); setViewBoxes(); initSnow(); applyLang();
+if (window.ResizeObserver) new ResizeObserver(placeHat).observe(noteIn);
 function frame(t) {
   requestAnimationFrame(frame); // first, so an error in one frame can't stop the page
   now = t; updatePar(t);
+  $('#hat').style.translate = `${(-par.x * MIN * .035).toFixed(1)}px ${(-par.y * MIN * .022).toFixed(1)}px`;
   if (st.phase === 'castle') drawSnow(t); else if ($('#castle').hidden) drawSnow(t, .75);
 }
 requestAnimationFrame(frame);
