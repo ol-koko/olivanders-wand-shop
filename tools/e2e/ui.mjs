@@ -52,6 +52,7 @@ for (const [w, h] of [[320, 568], [360, 640], [360, 662], [390, 844], [412, 780]
   await page.evaluate(() => { document.querySelector('#street').hidden = true; });
   const bad = await page.evaluate(async () => { const { st, WANDS, showResult } = __wand, out = []; st.traits = { speed: .5, amp: .5, sharp: .5, flow: .5, curl: .5 }; st.tried = []; const res = document.querySelector('#result'), bar = document.querySelector('.topbar').getBoundingClientRect();
     for (const l of ['ua', 'en']) { document.querySelector(`#lang button[data-l="${l}"]`).click(); for (const w of WANDS) { st.winner = w; showResult(); await new Promise(r => setTimeout(r, 20)); const kick = document.querySelector('#rKicker').getBoundingClientRect(), over = res.scrollHeight - res.clientHeight; if (over > 1 || kick.top < bar.bottom) out.push(`${w.id} ${l} over ${over}`); } } return out; });
+  for (const l of ['ua', 'en']) { const heights = await page.evaluate(async x => { document.querySelector(`#lang button[data-l="${x}"]`).click(); await new Promise(r => setTimeout(r, 40)); return [...document.querySelectorAll('.r-btns button:not([hidden])')].map(b => b.getBoundingClientRect().height); }, l); check(heights.every(v => v < 50), `${w}×${h} ${l}: the card buttons stay on one line: ${heights.map(Math.round).join('/')}`); }
   check(!bad.length, `${w}×${h}: all 16 cards fit under the top buttons, both languages ${bad.join(', ')}`);
   check(!errors.length, 'no page errors ' + errors.join(' | '));
   await browser.close();
