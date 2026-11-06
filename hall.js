@@ -8,7 +8,7 @@ Object.assign(S, {
   cta: ['Увійти до Великої зали', 'Enter the Great Hall'],
   castleA: ['Нічний замок над озером', 'A castle above a lake at night'],
   hatK: ['Капелюх', 'The Hat'],
-  introH: ['Сідай. Я ще нікого не з\'їв.', 'Sit. I haven’t eaten anyone yet.'],
+  introH: ['Сідай. Я ще нікого не з’їв.', 'Sit. I haven’t eaten anyone yet.'],
   introI: ['Три запитання, і я знатиму.', 'Three questions, then I’ll know.'],
   bStart: ['Вдягти капелюха', 'Put the Hat on'],
   thinkH: ['Гм… Дай подумати.', 'Hmm… Let me think.'],

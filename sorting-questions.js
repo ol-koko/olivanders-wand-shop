@@ -12,7 +12,7 @@ q('t2', 1, 'Що в тебе в кишені?', 'What’s in your pocket?', [
   [['Я ж на твоїй голові. Бачу.', 'I’m on your head. I can see.'], ['Капелюхи в кишенях не тямлять.', 'Hats know nothing about pockets.']]),
 q('t3', 1, 'Який звук тебе заспокоює?', 'Which sound calms you?', [
   ['Дощ по підвіконню', 'Rain on the windowsill', 'R'], ['Чайник, що закипає', 'A kettle coming to the boil', 'H'], ['Вогонь, що потріскує', 'A crackling fire', 'G'], ['Тиша, у якій нікому нічого від тебе не треба', 'Silence where nobody needs anything from you', 'S']],
-  [['Запам\'ятаю цей звук.', 'I’ll remember that sound.'], ['Гм. Тиша тут рідкість.', 'Hmm. Quiet is rare here.']]),
+  [['Запам’ятаю цей звук.', 'I’ll remember that sound.'], ['Гм. Тиша тут рідкість.', 'Hmm. Quiet is rare here.']]),
 q('t4', 1, 'Телефон на трьох відсотках?', 'Phone on three percent?', [
   ['Зарядка завжди зі мною', 'I always carry a charger', 'RH'], ['Знаходжу, в кого позичити', 'I find someone to borrow one from', 'S'], ['Хай сідає, подивимось, що буде', 'Let it die. Let’s see what happens', 'G'], ['Пишу своїм, що зникаю', 'I text my people that I’m vanishing', 'H']],
   [['Не знаю, що таке телефон. Але промовисто.', 'I don’t know phones. Still telling.'], ['Три відсотки. Драматично.', 'Three percent. Dramatic.']]),
@@ -88,11 +88,11 @@ q('w1', 3, 'Обери одне зілля.', 'Pick one potion.', [
   [['Зілля — штука підступна.', 'Potions are tricky things.'], ['Я б теж обрав. Але я капелюх.', 'I’d pick that too. But I’m a hat.']]),
 q('w2', 3, 'Четверо дверей. Обирай.', 'Four doors. Choose.', [
   ['Ті, за якими щось гуде', 'The one that’s humming', 'G'], ['Ті, що спершу ставлять запитання', 'The one that asks you a question first', 'R'], ['Ті, з-під яких пахне випічкою', 'The one that smells of baking', 'H'], ['Ті, що без ручки', 'The one with no handle', 'S']],
-  [['Одні ведуть на кухню. Більше не скажу.', 'One leads to the kitchens. That’s all.'], ['Наступного тижня їх може бути п\'ятеро.', 'Next week, there may be five.']]),
+  [['Одні ведуть на кухню. Більше не скажу.', 'One leads to the kitchens. That’s all.'], ['Наступного тижня їх може бути п’ятеро.', 'Next week, there may be five.']]),
 q('w3', 3, 'Хто поїде з тобою до школи?', 'Who’s coming to school with you?', [
   ['Кіт, який усе вирішує сам', 'A cat with its own plans', 'SR'], ['Сова з поганим характером', 'A bad-tempered owl', 'G'], ['Жаба, яка постійно губиться', 'A toad that keeps getting lost', 'H'], ['Щур із сумнівною репутацією', 'A rat of doubtful reputation', 'GS', ['Тільки перевір, чи це справді щур.', 'Do check it’s really a rat.']]],
   [['Улюбленці багато кажуть про людей.', 'Pets say a lot about people.'], ['У спальнях тісно. Гаразд.', 'Crowded dormitories. Fine.']]),
-q('w4', 3, 'Ліс кличе тебе на ім\'я.', 'The forest calls your name.', [
+q('w4', 3, 'Ліс кличе тебе на ім’я.', 'The forest calls your name.', [
   ['Іду подивитись', 'I go and see', 'G'], ['Питаю, звідки воно знає', 'I ask how it knows', 'R'], ['Кличу когось із собою', 'I fetch someone to come with me', 'H'], ['Відгукуюсь чужим ім’ям', 'I answer to someone else’s name', 'S']],
   [['Туди не можна. Хіба це когось спиняло?', 'Forbidden. Not that it stops anyone.'], ['Ліс такого не чекав.', 'The forest didn’t expect that.']]),
 q('w5', 3, 'Залиш собі одне вміння.', 'Keep one ability.', [
