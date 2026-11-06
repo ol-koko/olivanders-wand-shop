@@ -1,5 +1,6 @@
-// Generates the link preview image and the icons from the game's own drawing.
-//   node tools/make-og.mjs
+// Generates the link preview images and the icons from the game's own drawing.
+//   node tools/make-og.mjs            everything
+//   node tools/make-og.mjs sorting    only the Sorting Ceremony's preview, og-sorting.jpg
 import fs from 'node:fs';
 import path from 'node:path';
 import { closeAll, serve, open, sleep, ROOT } from './e2e/lib.mjs';
@@ -16,13 +17,13 @@ const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <path d="M46 8 L48.4 15.6 L56 18 L48.4 20.4 L46 28 L43.6 20.4 L36 18 L43.6 15.6Z" fill="#fff0c4"/>
 </svg>
 `;
-fs.writeFileSync(path.join(ROOT, 'favicon.svg'), ICON);
-
+const ONLY = process.argv[2], made = [];
 const { srv, url } = await serve();
-{
+if (ONLY !== 'sorting') {
+  fs.writeFileSync(path.join(ROOT, 'favicon.svg'), ICON);
   const { browser, page } = await open(url, { viewport: { width: 1200, height: 630 }, scale: 2, locale: 'en-US' }); // twice the size, so sites that re-compress it keep the detail
   await page.evaluate(() => document.fonts.ready); await sleep(700);
-  await page.addStyleTag({ content: '#cta,.topbar,#stFan{display:none!important}' });
+  await page.addStyleTag({ content: '#cta,.topbar,#stFan,#post{display:none!important}' }); // the signpost stays out, so the wand has the picture to itself
   await page.evaluate(() => {
     document.querySelector('#stS').textContent = 'Which Harry Potter wand are you?';
     const c = document.createElement('canvas'); c.width = 2400; c.height = 1260; c.style.cssText = 'position:absolute;left:0;top:0;width:1200px;height:630px;z-index:9'; document.querySelector('#street').appendChild(c);
@@ -54,12 +55,20 @@ const { srv, url } = await serve();
   await sleep(300);
   await page.screenshot({ path: path.join(ROOT, 'og.jpg'), type: 'jpeg', quality: 90 });
   await browser.close();
+  const ic = (await open('about:blank', { viewport: { width: 180, height: 180 } })).page;
+  await ic.setContent(`<body style="margin:0;background:#0e0705">${ICON.replace('<svg ', '<svg width="180" height="180" ')}</body>`);
+  await ic.screenshot({ path: path.join(ROOT, 'apple-touch-icon.png') });
+  made.push('og.jpg', 'favicon.svg', 'apple-touch-icon.png');
 }
-{
-  const { page } = await open('about:blank', { viewport: { width: 180, height: 180 } });
-  await page.setContent(`<body style="margin:0;background:#0e0705">${ICON.replace('<svg ', '<svg width="180" height="180" ')}</body>`);
-  await page.screenshot({ path: path.join(ROOT, 'apple-touch-icon.png') });
+if (!ONLY || ONLY === 'sorting') { // the castle at night, with the Hall's title
+  const { browser, page } = await open(url + 'sorting', { viewport: { width: 1200, height: 630 }, scale: 2, locale: 'en-US', init: "localStorage.setItem('wand-lang','en')" });
+  await page.evaluate(() => document.fonts.ready); await sleep(900);
+  await page.addStyleTag({ content: '#cta,.topbar,#stFan{display:none!important}' });
+  await page.evaluate(() => { document.querySelector('#stS').textContent = 'Which Hogwarts house are you?'; });
+  await sleep(300);
+  await page.screenshot({ path: path.join(ROOT, 'og-sorting.jpg'), type: 'jpeg', quality: 90 });
+  await browser.close(); made.push('og-sorting.jpg');
 }
 await closeAll(); srv.close();
-for (const f of ['og.jpg', 'favicon.svg', 'apple-touch-icon.png']) console.log(f, Math.round(fs.statSync(path.join(ROOT, f)).size / 1024) + ' KB');
+for (const f of made) console.log(f, Math.round(fs.statSync(path.join(ROOT, f)).size / 1024) + ' KB');
 process.exit(0);
