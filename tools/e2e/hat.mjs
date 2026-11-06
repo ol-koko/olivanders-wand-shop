@@ -2,6 +2,8 @@
 //   node tools/e2e/hat.mjs
 import { closeAll, serve, open, sleep } from './lib.mjs';
 const { srv, url } = await serve(), fails = [];
+// Sound off here: the voice has its own test, and its pauses would make these games slow.
+const quiet = (u, o = {}) => open(u, { ...o, init: `localStorage.setItem('wand-sound', '0');` + (o.init || '') });
 const check = (ok, what) => { console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) fails.push(what); };
 const inHall = page => page.waitForFunction(() => __hall.st.phase === 'hall' && document.querySelector('#nBtns button'), null, { timeout: 25000 });
 const enterHall = async page => { await page.evaluate(() => document.querySelector('#cta').click()); await inHall(page); };
@@ -14,7 +16,7 @@ const toCard = page => page.waitForFunction(() => document.querySelector('#resul
 
 console.log('== a full game');
 for (const [w, h] of [[390, 844], [1440, 900]]) {
-  const reqs = [], { browser, page, errors } = await open(url + 'sorting', { viewport: { width: w, height: h }, mobile: w < 768, route: async p => p.on('request', r => reqs.push(r.url())) });
+  const reqs = [], { browser, page, errors } = await quiet(url + 'sorting', { viewport: { width: w, height: h }, mobile: w < 768, route: async p => p.on('request', r => reqs.push(r.url())) });
   await enterHall(page); check((await buttons(page))[0] === 'Вдягти капелюха', `${w}: the Hat opens with one button`);
   const spot = () => page.evaluate(() => { const h = document.querySelector('#hat'); return h.style.bottom + ' ' + h.style.width; }), spot0 = await spot(); await press(page);
   const a = await game(page, async () => { if (await spot() !== spot0) check(false, `${w}: the Hat moved between notes`); });
@@ -41,7 +43,7 @@ for (const [w, h] of [[390, 844], [1440, 900]]) {
 await closeAll();
 console.log('== every question fits, with the Hat clear of the top buttons');
 for (const [w, h] of [[320, 568], [360, 662], [390, 844], [844, 390], [1440, 900]]) {
-  const { browser, page, errors } = await open(url + 'sorting', { viewport: { width: w, height: h }, mobile: w < 1000 });
+  const { browser, page, errors } = await quiet(url + 'sorting', { viewport: { width: w, height: h }, mobile: w < 1000 });
   await enterHall(page);
   for (const l of ['ua', 'en']) { await page.evaluate(x => document.querySelector(`#lang button[data-l="${x}"]`).click(), l);
     const bad = await page.evaluate(async x => { const { POOL, setNote, placeHat, st } = __hall, out = []; for (const q of POOL) { setNote(() => ({ kicker: 'K', hand: x === 'en' ? q.en : q.ua, btns: q.o.map(o => ({ label: x === 'en' ? o.e : o.u, ghost: true, fn() { } })) }), true); await new Promise(r => requestAnimationFrame(r)); placeHat(); const n = document.querySelector('#note').getBoundingClientRect(), bar = document.querySelector('.topbar').getBoundingClientRect(), hat = document.querySelector('#hat'), hb = hat.getBoundingClientRect(), wide = [...document.querySelectorAll('#nBtns button')].some(b => b.getBoundingClientRect().right > innerWidth + 1); if (n.top < bar.bottom || n.bottom > innerHeight + 1 || wide || (getComputedStyle(hat).display !== 'none' && hb.top < bar.bottom - 14)) out.push(`${q.id} note ${Math.round(n.top)}-${Math.round(n.bottom)} hat ${Math.round(hb.top)}`); } return out; }, l);
@@ -51,7 +53,7 @@ for (const [w, h] of [[320, 568], [360, 662], [390, 844], [844, 390], [1440, 900
 await closeAll();
 console.log('== the wish screen fits');
 for (const [w, h] of [[320, 568], [360, 662], [390, 844], [844, 390], [1440, 900]]) {
-  const { browser, page } = await open(url + 'sorting', { viewport: { width: w, height: h }, mobile: w < 1000 }); await enterHall(page);
+  const { browser, page } = await quiet(url + 'sorting', { viewport: { width: w, height: h }, mobile: w < 1000 }); await enterHall(page);
   for (const l of ['ua', 'en']) { await page.evaluate(x => document.querySelector(`#lang button[data-l="${x}"]`).click(), l); await page.evaluate(() => { __hall.st.avoiding = true; __hall.showWish(); }); await sleep(120);
     const g = await page.evaluate(() => { const n = document.querySelector('#note').getBoundingClientRect(), bar = document.querySelector('.topbar').getBoundingClientRect(), overflow = [...document.querySelectorAll('#nBtns .ban span')].some(s => s.scrollWidth > s.parentElement.clientWidth + 1), hat = document.querySelector('#hat').getBoundingClientRect(), shown = getComputedStyle(document.querySelector('#hat')).display !== 'none'; return { top: Math.round(n.top), bar: Math.round(bar.bottom), bot: Math.round(n.bottom), overflow, hat: shown ? Math.round(hat.top) : null }; });
     check(g.top >= g.bar && g.bot <= h + 1 && !g.overflow && (g.hat === null || g.hat >= g.bar - 14), `${w}×${h} ${l}: fits ${JSON.stringify(g)}`); }
@@ -60,20 +62,20 @@ for (const [w, h] of [[320, 568], [360, 662], [390, 844], [844, 390], [1440, 900
 await closeAll();
 console.log('== logging');
 { const LIVE = 'https://olivanders-wand-shop.vercel.app/', posts = [];
-  const { browser, page, errors } = await open(LIVE + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, route: async p => { await p.route(u => u.hostname === 'olivanders-wand-shop.vercel.app', async r => { const pth = new URL(r.request().url()).pathname, res = await fetch(url + pth.slice(1)); await r.fulfill({ status: res.status, contentType: res.headers.get('content-type') || 'text/plain', body: Buffer.from(await res.arrayBuffer()) }); }); await p.route(u => u.hostname.endsWith('.supabase.co'), r => { if (r.request().method() === 'POST') posts.push(r.request()); return r.fulfill({ status: 201, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' } }); }); } });
+  const { browser, page, errors } = await quiet(LIVE + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, route: async p => { await p.route(u => u.hostname === 'olivanders-wand-shop.vercel.app', async r => { const pth = new URL(r.request().url()).pathname, res = await fetch(url + pth.slice(1)); await r.fulfill({ status: res.status, contentType: res.headers.get('content-type') || 'text/plain', body: Buffer.from(await res.arrayBuffer()) }); }); await p.route(u => u.hostname.endsWith('.supabase.co'), r => { if (r.request().method() === 'POST') posts.push(r.request()); return r.fulfill({ status: 201, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' } }); }); } });
   await enterHall(page); await press(page); const a = await game(page); await wishPick(page, 3); await wide(page, 1); await wishPick(page, 0); await wide(page, 0); await toCard(page);
   check(posts.length === 1 && /sorting_results$/.test(posts[0].url()), `one row per game: ${posts.length}`); const row = JSON.parse(posts[0].postData()); console.log('    ' + posts[0].postData());
   check(Object.keys(row).sort().join() === 'device_type,house,language,unwanted,wand_prior,wish', 'only the agreed fields, no answers'); check(row.wish === 'H' && row.unwanted === 'G' && row.wand_prior === false && 'GSRH'.includes(row.house), 'the values are right'); check(!(await posts[0].allHeaders()).cookie, 'no cookie'); check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close(); }
 await closeAll();
 console.log('== reactions to one specific answer');
-{ const { browser, page } = await open(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true }); await enterHall(page);
+{ const { browser, page } = await quiet(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true }); await enterHall(page);
   const r = await page.evaluate(async () => { const { POOL, st, answer } = __hall, out = []; for (const q of POOL) for (const o of q.o) { const own = !!o.r; for (let i = 0; i < (own ? 3 : 1); i++) { st.questions = [q, q, q]; st.step = 0; st.picking = true; answer(q, o); await new Promise(z => setTimeout(z, 700)); const hand = document.querySelector('#nHand').textContent; out.push({ id: q.id, own, ok: own ? hand === o.r[0] : !q.o.some(x => x.r && x.r[0] === hand) }); } } return out; });
   check(r.filter(x => x.own).length === 12 && r.every(x => x.ok), `the four option lines play right after their option, and never after another: ${r.filter(x => !x.ok).map(x => x.id).join(' ') || 'all right'}`); await browser.close(); }
 await closeAll();
 console.log('== the wand as a first impression');
-{ const { browser, page } = await open(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, init: `localStorage.setItem('wand-last', JSON.stringify({ id: 'harry', traits: { speed: .95, amp: .95, sharp: .5, flow: .5, curl: .5 }, at: Date.now() }));` });
+{ const { browser, page } = await quiet(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, init: `localStorage.setItem('wand-last', JSON.stringify({ id: 'harry', traits: { speed: .95, amp: .95, sharp: .5, flow: .5, curl: .5 }, at: Date.now() }));` });
   await enterHall(page); const r = await page.evaluate(() => ({ wand: __hall.st.wand, instr: document.querySelector('#nInstr').textContent })); check(r.wand === 'G' && /паличка|змах/i.test(r.instr), `a recent wand counts and the Hat mentions it: ${r.wand}, ${r.instr}`); await browser.close(); }
-{ const { browser, page } = await open(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, init: `localStorage.setItem('wand-last', JSON.stringify({ id: 'harry', traits: { speed: .95, amp: .95, sharp: .5, flow: .5, curl: .5 }, at: Date.now() - 2 * 864e5 }));` });
+{ const { browser, page } = await quiet(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, init: `localStorage.setItem('wand-last', JSON.stringify({ id: 'harry', traits: { speed: .95, amp: .95, sharp: .5, flow: .5, curl: .5 }, at: Date.now() - 2 * 864e5 }));` });
   await enterHall(page); check(await page.evaluate(() => __hall.st.wand) === null, 'an old wand no longer counts'); await browser.close(); }
 await closeAll(); srv.close();
 console.log(fails.length ? `\n${fails.length} FAILED:\n- ${fails.join('\n- ')}` : '\nall passed');

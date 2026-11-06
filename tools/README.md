@@ -18,6 +18,7 @@ Then:
     node tools/e2e/logging.mjs         # one anonymous row from the live host only, the game never waits, no real requests
     node tools/e2e/castle.mjs          # /sorting: castle, routing, language, depth, the way into the hall
     node tools/e2e/hat.mjs             # the Hat: full games, every question on small screens, first impression
+    node tools/e2e/voice.mjs           # the Hat's voice: what loads and plays, muted, missing files
     node tools/e2e/card.mjs            # result card and every sharing path, both languages
     node tools/e2e/ui.mjs              # first screens across phone and desktop sizes
     node tools/e2e/sound.mjs           # sound starts on the entry tap, the choice is remembered
@@ -57,3 +58,9 @@ The page saves in the browser as you go, and it isn't linked from the game.
 For a finger on a phone, open the same page at the laptop's network address over the same Wi-Fi. The camera mode needs https or localhost, so on a phone over http only the pointer mode works.
 
 Validation re-measures the saved points with the current code, so old recordings stay usable after a metric change. Recordings hold your movements and stay out of git.
+
+## The Hat's voice
+The English lines live in `scripts/hat-lines-short.md`. With an ElevenLabs key in `.env`:
+
+    node scripts/voice-hat.mjs --dry    # counts characters, no API calls
+    node scripts/voice-hat.mjs          # asks, then records only the missing files into audio/hat

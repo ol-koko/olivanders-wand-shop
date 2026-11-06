@@ -1,5 +1,5 @@
 // The Sorting Hat's question pool. w = house weights, each letter +1: G S R H. Empty = neutral.
-// o: [ua, en, w, reaction only after this option]; r: reactions [ua, en] for any other option
+// o: [ua, en, w, reaction only after this option: [ua, en, voice id]]; r: reactions [ua, en] for any other option
 const SortingQuestions = (() => {
 const q = (id, cat, ua, en, o, r) => ({ id, cat, ua, en, o: o.map(([u, e, w, r]) => r ? { u, e, w, r } : { u, e, w }), r });
 return { POOL: [
@@ -58,13 +58,13 @@ q('s4', 2, 'Усі помиляються. Крім тебе.', 'Everyone’s wr
   ['Кажу вголос', 'I say so', 'G'], ['Показую, де це написано', 'I show them where it’s written', 'R'], ['Мовчу, поки це мені вигідно', 'I keep quiet while it suits me', 'S'], ['Тихо кажу одній людині, щоб не ніяковіла', 'I quietly tell one person, to spare them', 'H']],
   [['А як помиляєшся ти?', 'And if it’s you who’s wrong?'], ['Знайоме відчуття.', 'I know the feeling.']]),
 q('s5', 2, 'Ти запізнюєшся. Комусь потрібна допомога.', 'You’re late. Someone needs help.', [
-  ['Допомагаю. Запізнюсь, то й що', 'I help. So I’m late', 'HG'], ['Швидко кажу, кого покликати', 'I tell them who to call, fast', 'R'], ['Обіцяю повернутись', 'I promise to come back', 'S', ['І ти таки повернешся?', 'And will you come back?']]],
+  ['Допомагаю. Запізнюсь, то й що', 'I help. So I’m late', 'HG'], ['Швидко кажу, кого покликати', 'I tell them who to call, fast', 'R'], ['Обіцяю повернутись', 'I promise to come back', 'S', ['І ти таки повернешся?', 'And will you come back?', 's5back']]],
   [['Тут за запізнення знімають бали. Просто кажу.', 'Lateness costs points here. Just saying.'], ['З часом у цьому замку все складно.', 'Time is tricky in this castle.']]),
 q('s6', 2, 'Команда сперечається годину.', 'The team’s argued for an hour.', [
   ['Вирішую, а далі якось буде', 'I decide, and we’ll sort it out later', 'GS'], ['Малюю схему', 'I draw a diagram', 'R'], ['Приношу всім чай', 'I bring everyone tea', 'H'], ['Чекаю, хто втомиться першим', 'I wait to see who tires first', 'S']],
   [['Засновники теж так починали.', 'The founders started the same way.'], ['Годину? Я чув суперечки на тисячу років.', 'An hour? I’ve heard thousand-year arguments.']]),
 q('s7', 2, 'Ти випадково чуєш секрет.', 'You overhear a secret.', [
-  ['Забуваю', 'I forget it', 'H', ['Забудеш? Ну-ну.', 'You’ll forget? Sure.']], ['Запам’ятовую, раптом знадобиться', 'I keep it, just in case', 'S'], ['Кажу людині, що я це чую', 'I tell them I heard', 'G'], ['Перевіряю, чи це взагалі правда', 'I check whether it’s even true', 'R']],
+  ['Забуваю', 'I forget it', 'H', ['Забудеш? Ну-ну.', 'You’ll forget? Sure.', 's7forget']], ['Запам’ятовую, раптом знадобиться', 'I keep it, just in case', 'S'], ['Кажу людині, що я це чую', 'I tell them I heard', 'G'], ['Перевіряю, чи це взагалі правда', 'I check whether it’s even true', 'R']],
   [['Я знаю їх сотні. Ніхто не питає.', 'I know hundreds. Nobody asks.'], ['Стіни тут теж слухають.', 'The walls here listen too.']]),
 q('s8', 2, 'Правила явно дурні.', 'The rules are plainly silly.', [
   ['Граю. Правила є правила', 'I play. Rules are rules', 'H'], ['Знаходжу в них шпарину', 'I find the loophole', 'SR'], ['Кажу всім, що вони дурні', 'I tell everyone they’re stupid', 'G'], ['Пропоную кращі', 'I suggest better ones', 'R']],
@@ -73,7 +73,7 @@ q('s9', 2, 'Завтра екзамен. Сьогодні пригода.', 'Exa
   ['Іду. Екзамен якось буде', 'I go. The exam will sort itself out', 'G'], ['Беру конспект із собою', 'I bring my notes along', 'RH'], ['Вчу, а пригоду переношу на вихідні', 'I study, and move the adventure to the weekend', 'H'], ['Дізнаюсь, хто перевіряє екзамен', 'I find out who’s marking the exam', 'S']],
   [['Викладачі можуть почути. Жартую.', 'Teachers might hear this. Kidding.'], ['Такі є щороку.', 'There’s one every year.']]),
 q('s10', 2, 'Хтось привласнив твою ідею.', 'Someone steals your idea.', [
-  ['Кажу про це при всіх', 'I call it out in front of everyone', 'G'], ['Придумую кращу', 'I come up with a better one', 'R'], ['Хай. Ідей вистачить', 'Fine. I’ve got more', 'H'], ['Я запам’ятаю. Надовго', 'I’ll remember. For a long time', 'S', ['Надовго? Побачимо.', 'For a long time? We’ll see.']]],
+  ['Кажу про це при всіх', 'I call it out in front of everyone', 'G'], ['Придумую кращу', 'I come up with a better one', 'R'], ['Хай. Ідей вистачить', 'Fine. I’ve got more', 'H'], ['Я запам’ятаю. Надовго', 'I’ll remember. For a long time', 'S', ['Надовго? Побачимо.', 'For a long time? We’ll see.', 's10long']]],
   [['Буває і з найкращими.', 'It happens to the best.'], ['Мої пісні теж цитують без дозволу.', 'People quote my songs too.']]),
 q('s11', 2, 'Перший день у новому місці.', 'First day somewhere new.', [
   ['Вивчаю карту й розклад', 'I learn the map and timetable', 'RH'], ['Шукаю, хто тут усе вирішує', 'I find out who really runs the place', 'S'], ['Допомагаю тому, хто ще більш розгублений', 'I help whoever looks even more lost', 'H'], ['Іду туди, куди не можна. Просто подивитись', 'I go where I shouldn’t. Just to look', 'G']],
@@ -90,7 +90,7 @@ q('w2', 3, 'Четверо дверей. Обирай.', 'Four doors. Choose.', 
   ['Ті, за якими щось гуде', 'The one that’s humming', 'G'], ['Ті, що спершу ставлять запитання', 'The one that asks you a question first', 'R'], ['Ті, з-під яких пахне випічкою', 'The one that smells of baking', 'H'], ['Ті, що без ручки', 'The one with no handle', 'S']],
   [['Одні ведуть на кухню. Більше не скажу.', 'One leads to the kitchens. That’s all.'], ['Наступного тижня їх може бути п’ятеро.', 'Next week, there may be five.']]),
 q('w3', 3, 'Хто поїде з тобою до школи?', 'Who’s coming to school with you?', [
-  ['Кіт, який усе вирішує сам', 'A cat with its own plans', 'SR'], ['Сова з поганим характером', 'A bad-tempered owl', 'G'], ['Жаба, яка постійно губиться', 'A toad that keeps getting lost', 'H'], ['Щур із сумнівною репутацією', 'A rat of doubtful reputation', 'GS', ['Тільки перевір, чи це справді щур.', 'Do check it’s really a rat.']]],
+  ['Кіт, який усе вирішує сам', 'A cat with its own plans', 'SR'], ['Сова з поганим характером', 'A bad-tempered owl', 'G'], ['Жаба, яка постійно губиться', 'A toad that keeps getting lost', 'H'], ['Щур із сумнівною репутацією', 'A rat of doubtful reputation', 'GS', ['Тільки перевір, чи це справді щур.', 'Do check it’s really a rat.', 'w3rat']]],
   [['Улюбленці багато кажуть про людей.', 'Pets say a lot about people.'], ['У спальнях тісно. Гаразд.', 'Crowded dormitories. Fine.']]),
 q('w4', 3, 'Ліс кличе тебе на ім’я.', 'The forest calls your name.', [
   ['Іду подивитись', 'I go and see', 'G'], ['Питаю, звідки воно знає', 'I ask how it knows', 'R'], ['Кличу когось із собою', 'I fetch someone to come with me', 'H'], ['Відгукуюсь чужим ім’ям', 'I answer to someone else’s name', 'S']],

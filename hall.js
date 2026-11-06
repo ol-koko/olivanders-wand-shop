@@ -220,7 +220,7 @@ function buildHat() {
 const houseName = h => pickLang(HAT.houses[h][0], HAT.houses[h][1]);
 const wishBtns = () => ['G', 'S', 'R', 'H'].map(h => ({ cls: 'ban' + (st.wish === h ? ' want' : '') + (st.avoid === h ? ' nope' : ''), html: `${Crests.svg(h)}<span>${houseName(h)}</span>`, fn: () => tapHouse(h) })).concat([
   { cls: 'wide', label: pickLang(...(st.wish ? HAT.yes.go : HAT.yes.skip)), fn: decide },
-  { cls: 'wide', ghost: true, label: st.avoiding ? pickLang(...HAT.no.back) : pickLang(HAT.no.ua, HAT.no.en), fn: () => { st.avoiding = !st.avoiding; showWish(); } },
+  { cls: 'wide', ghost: true, label: st.avoiding ? pickLang(...HAT.no.back) : pickLang(HAT.no.ua, HAT.no.en), fn: () => { st.avoiding = !st.avoiding; showWish(); if (st.avoiding) say('unwant', 900); } },
 ]);
 function tallestNote() {
   const pool = POOL.slice().sort((a, b) => b.o.reduce((n, o) => n + pickLang(o.u, o.e).length, 0) - a.o.reduce((n, o) => n + pickLang(o.u, o.e).length, 0)).slice(0, 4);
@@ -237,38 +237,72 @@ function placeHat() {
   $('#hallDim').style.setProperty('--hy', (H - line - size * .5) + 'px');
 }
 let talkT = 0;
-function hatTalk(ms = 1200) { const h = $('#hat'); h.classList.add('talk'); clearTimeout(talkT); talkT = setTimeout(() => h.classList.remove('talk'), reduceMotion ? 0 : ms); if (A.on) noise(.05, { vol: .035, freq: 1500, q: .6 }); } // a soft tap of cloth, neutral: the low tones in core.js mean a wand said no
+function hatTalk(ms = 1200, tap = true) { const h = $('#hat'); h.classList.add('talk'); clearTimeout(talkT); talkT = setTimeout(() => h.classList.remove('talk'), reduceMotion ? 0 : ms); if (A.on && tap) noise(.05, { vol: .035, freq: 1500, q: .6 }); } // a soft tap of cloth, neutral: the low tones in core.js mean a wand said no
+
+/* ================= the Hat's voice ================= */
+// English recordings in /audio/hat, named by the ids in scripts/hat-lines-short.md. Ukrainian players hear English and read Ukrainian in the note.
+// The voice plays through the page's sound, so the sound button mutes it. Without sound, or if a file is slow, the Hat stays silent and the game goes on.
+const VOICE = { files: new Map(), buffers: new Map(), src: null, n: 0, chain: null, played: [] };
+const voiceUrl = id => `/audio/hat/${id}.mp3`;
+function prefetch(ids) { if (A.on) ids.forEach(id => { if (!VOICE.files.has(id)) VOICE.files.set(id, fetch(voiceUrl(id)).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)); }); }
+function stopVoice() { VOICE.n++; if (VOICE.src) { try { VOICE.src.stop(); } catch (_) { } VOICE.src = null; } }
+async function voiceBuffer(id) {
+  if (VOICE.buffers.has(id)) return VOICE.buffers.get(id);
+  prefetch([id]); const raw = await Promise.race([VOICE.files.get(id), wait(800).then(() => null)]); // a line that isn't there in time is skipped
+  if (!raw || !A.ctx) return null;
+  try { const b = await A.ctx.decodeAudioData(raw.slice(0)); VOICE.buffers.set(id, b); return b; } catch (_) { return null; }
+}
+// Says one line and resolves when it ends. Text-only timing when there's no voice.
+async function say(id, fallback = 1200, chained = false) {
+  if (!chained) VOICE.chain = null; stopVoice(); const n = VOICE.n;
+  const b = A.on && A.ctx ? await voiceBuffer(id) : null;
+  if (n !== VOICE.n) return; // another line started meanwhile
+  if (!b) { hatTalk(fallback); return; }
+  const src = A.ctx.createBufferSource(), g = A.ctx.createGain(); g.gain.value = 2.2; src.buffer = b; src.connect(g); g.connect(A.master); src.start(); VOICE.src = src; VOICE.played.push(id); if (VOICE.ended) (VOICE.gaps = VOICE.gaps || []).push(performance.now() - VOICE.ended);
+  hatTalk(b.duration * 1000, false);
+  await new Promise(r => { src.onended = r; setTimeout(r, b.duration * 1000 + 400); }); VOICE.ended = n === VOICE.n ? performance.now() : 0; // 0: cut short by the next line
+}
+const GAP = 750; // a breath between lines, so they don't run together
+const sayAll = async ids => { const me = {}; VOICE.chain = me; for (const [i, id] of ids.entries()) { if (VOICE.chain !== me) return; if (i) await wait(GAP); if (VOICE.chain !== me) return; await say(id, 1200, true); } }; // stops if anything else is said
+// Says a line, then the pause after it. The step also lasts at least `min`, as it did before the voice.
+const sayStep = (id, fallback, min) => Promise.all([wait(min), say(id, fallback).then(() => wait(GAP))]);
+const take = id => `${id}-${st.take}`; // the verdicts and build-up lines have three recordings each
+sndBtn.addEventListener('click', () => { if (!A.on) stopVoice(); });
 
 /* ================= the ceremony ================= */
 function recall(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (_) { return null; } }
 function loadWand() { const w = recall('wand-last'), ok = w && w.traits && Date.now() - w.at < 864e5; st.wandId = ok ? w.id : null; return ok ? SortingLogic.wandImpression(w.traits) : null; }
 function startCeremony() {
   st.phase = 'hall'; st.step = 0; st.answers = []; st.picking = false; st.house = null; st.wand = loadWand();
-  const line = st.wand ? pick(HAT.wand) : null;
+  const wi = st.wand ? Math.floor(Math.random() * HAT.wand.length) : -1, line = wi >= 0 ? HAT.wand[wi] : null, ids = ['introH', ...(line ? ['wand' + (wi + 1)] : []), 'introI'];
   setNote(() => ({ kicker: T('hatK'), hand: T('introH'), instr: line ? pickLang(line[0], line[1]) + ' ' + T('introI') : T('introI'), btns: [{ label: T('bStart'), fn: beginQuestions }] }));
-  hatTalk();
+  prefetch(ids); sayAll(ids);
 }
 function beginQuestions() {
   const seen = recall('hat-seen'), p = SortingLogic.pickQuestions(POOL, Array.isArray(seen) ? seen : []);
   try { localStorage.setItem('hat-seen', JSON.stringify(p.seen)); } catch (_) { }
-  st.questions = p.questions.map(q => ({ ...q, o: SortingLogic.shuffled(q.o) })); st.step = 0; st.answers = []; st.house = null; st.wish = st.avoid = null; st.avoiding = st.deciding = false; ask();
+  st.questions = p.questions.map(q => ({ ...q, o: SortingLogic.shuffled(q.o) })); st.step = 0; st.answers = []; st.house = null; st.wish = st.avoid = null; st.avoiding = st.deciding = false;
+  st.take = 1 + Math.floor(Math.random() * 3);
+  prefetch([...st.questions.flatMap(q => [q.id, q.id + 'r1', q.id + 'r2', ...q.o.filter(o => o.r).map(o => o.r[2])]), 'wish', 'unwant', 'think', 'decide1', ...HAT.build.map((_, i) => take('build' + (i + 1))), ...'GSRH'.split('').map(h => take('house' + h)), 'got1', 'got2', 'denied1', 'denied2', 'denied3', 'avoided1', 'overruled1']);
+  ask();
 }
 function ask() {
   const q = st.questions[st.step]; st.picking = true;
   setNote(() => ({ kicker: T('hatK'), hand: pickLang(q.ua, q.en), btns: q.o.map(o => ({ label: pickLang(o.u, o.e), ghost: true, fn: () => answer(q, o) })) }));
-  hatTalk(900);
+  say(q.id, 900);
 }
 async function answer(q, o) {
   if (!st.picking) return; st.picking = false; st.answers.push(o.w);
-  const r = o.r || pick(Math.random() < .85 ? q.r : SHARED); // a few lines answer one option only
-  setNote(() => ({ kicker: T('hatK'), hand: pickLang(r[0], r[1]) })); hatTalk(1000);
-  await wait(1900);
+  let r, id; // a few lines answer one option only
+  if (o.r) { r = o.r; id = o.r[2]; } else if (Math.random() < .85) { const i = Math.floor(Math.random() * q.r.length); r = q.r[i]; id = q.id + 'r' + (i + 1); } else { const i = Math.floor(Math.random() * SHARED.length); r = SHARED[i]; id = 'any' + (i + 1); }
+  setNote(() => ({ kicker: T('hatK'), hand: pickLang(r[0], r[1]) }));
+  await sayStep(id, 1000, 1900);
   if (++st.step < st.questions.length) return ask();
   showWish(true);
 }
 function showWish(first) {
   setNote(() => ({ kicker: T('hatK'), hand: pickLang(HAT.yes.ua, HAT.yes.en), instr: st.avoiding ? pickLang(...HAT.no.hint) : '', cls: 'wish', btns: wishBtns() }), !first);
-  if (first) hatTalk(900);
+  if (first) say('wish', 900);
 }
 function tapHouse(h) {
   if (st.avoiding) { st.avoid = st.avoid === h ? null : h; if (st.wish === h) st.wish = null; }
@@ -278,16 +312,15 @@ function tapHouse(h) {
 async function decide() {
   if (st.deciding) return; st.deciding = true;
   const open = !st.wish && !st.avoid, first = open ? pick(HAT.decide) : null;
-  setNote(() => ({ kicker: T('hatK'), hand: first ? pickLang(first[0], first[1]) : T('thinkH') })); hatTalk(1400);
-  await wait(reduceMotion ? 500 : 2000);
-  const build = pick(HAT.build); setNote(() => ({ kicker: T('hatK'), hand: pickLang(build[0], build[1]) })); hatTalk(1300);
-  await wait(reduceMotion ? 500 : 1800);
+  setNote(() => ({ kicker: T('hatK'), hand: first ? pickLang(first[0], first[1]) : T('thinkH') }));
+  await sayStep(first ? 'decide1' : 'think', 1400, reduceMotion ? 500 : 2000);
+  const bi = Math.floor(Math.random() * HAT.build.length), build = HAT.build[bi]; setNote(() => ({ kicker: T('hatK'), hand: pickLang(build[0], build[1]) }));
+  await sayStep(take('build' + (bi + 1)), 1300, reduceMotion ? 500 : 1800);
   st.house = SortingLogic.sortHouse({ answers: st.answers, wand: st.wand, wish: st.wish, avoid: st.avoid });
-  const said = st.wish ? (st.house === st.wish ? HAT.got : HAT.denied) : st.avoid ? (st.house === st.avoid ? HAT.overruled : HAT.avoided) : null, line = said ? pick(said) : null;
+  const kind = st.wish ? (st.house === st.wish ? 'got' : 'denied') : st.avoid ? (st.house === st.avoid ? 'overruled' : 'avoided') : null, li = kind ? Math.floor(Math.random() * HAT[kind].length) : -1, line = kind ? HAT[kind][li] : null;
   setNote(() => ({ kicker: T('doneK'), hand: houseName(st.house) + '!', instr: line ? pickLang(line[0], line[1]) : '' }));
-  hatTalk(1500); if (A.on) SFX.reveal();
   postRow('sorting_results', { house: st.house, wish: st.wish, unwanted: st.avoid, wand_prior: !!st.wand, device_type: deviceType(), language: lang });
-  await wait(reduceMotion ? 1200 : 2600);
+  await Promise.all([wait(reduceMotion ? 1200 : 2600), (async () => { await say(take('house' + st.house), 1500); if (A.on) SFX.reveal(); if (line) { await wait(GAP + 350); await say(kind + (li + 1), 1200); } await wait(GAP + 500); })()]); // the verdict gets a longer breath
   showCard();
 }
 
@@ -307,7 +340,7 @@ function showCard() {
   requestAnimationFrame(() => res.classList.add('show'));
 }
 $('#bAgain').addEventListener('click', () => {
-  $('.topbar').classList.remove('away'); const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
+  stopVoice(); $('.topbar').classList.remove('away'); const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
   $('#rSaved').hidden = true; setTimeout(beginQuestions, 500);
 });
 const cardFileName = () => lang === 'en' ? 'my-house.png' : 'miy-fakultet.png';
