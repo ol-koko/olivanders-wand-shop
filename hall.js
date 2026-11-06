@@ -353,8 +353,9 @@ async function decide() {
   const kind = st.wish ? (st.house === st.wish ? 'got' : 'denied') : st.avoid ? (st.house === st.avoid ? 'overruled' : 'avoided') : null, li = kind ? Math.floor(Math.random() * HAT[kind].length) : -1, line = kind ? HAT[kind][li] : null;
   setNote(() => ({ kicker: T('doneK'), hand: houseName(st.house) + '!', instr: line ? pickLang(line[0], line[1]) : '' }));
   postRow('sorting_results', { house: st.house, wish: st.wish, unwanted: st.avoid, wand_prior: !!st.wand, device_type: deviceType(), language: lang });
-  await Promise.all([wait(reduceMotion ? 1200 : 2200), (async () => { await say(take('house' + st.house), 1500); await wait(GAP); })()]); // the verdict gets a breath before the card
-  showCard(line ? kind + (li + 1) : null); // the chime and the Hat's extra line come with the card
+  // The house, then the Hat's line about the wish if there is one, then the card with its chime.
+  await Promise.all([wait(reduceMotion ? 1200 : 2200), (async () => { await say(take('house' + st.house), 1500); if (line) { await wait(GAP + 350); await say(kind + (li + 1), 1200); } await wait(GAP); })()]);
+  showCard();
 }
 
 /* ================= result card ================= */
@@ -371,10 +372,10 @@ function fillCard() {
   $('#bShare').textContent = T('share'); $('#bDown').textContent = T('download'); $('#bAgain').textContent = T('bAgain'); $('#rSavedCap').textContent = T('saveHold');
   refreshCard();
 }
-// The card opens on the verdict: a chime as the crest lands, then the Hat's extra line about the wish, if there is one.
-function showCard(lineId) {
+// The card opens after the verdict, with a chime as the crest lands.
+function showCard() {
   const me = st.cardRun = {};
-  const after = () => { if (st.cardRun !== me) return; if (A.on && A.ctx) SFX.reveal(); if (lineId) setTimeout(() => { if (st.cardRun === me) say(lineId, 1200); }, 900); };
+  const after = () => { if (st.cardRun === me && A.on && A.ctx) SFX.reveal(); };
   fillCard(); setShareMode(canShareFiles());
   const res = $('#result'), seal = $('#rSeal'), card = $('.rcard'); res.hidden = false; res.scrollTop = 0; note.classList.remove('show'); st.noteFn = null;
   seal.classList.remove('stamp', 'fade'); card.classList.remove('thud');
