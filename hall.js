@@ -9,9 +9,9 @@ Object.assign(S, {
   castleA: ['Нічний замок над озером', 'A castle above a lake at night'],
   hatK: ['Капелюх', 'The Hat'],
   introH: ['Сідай. Я ще нікого не з’їв.', 'Sit down. I haven’t eaten anyone yet.'],
-  introI: ['Кілька запитань, і я знатиму, куди тебе.', 'A few questions and I’ll know where you belong.'],
+  introI: ['Кілька запитань, і я знатиму, куди тебе відправити.', 'A few questions and I’ll know where you belong.'],
   bStart: ['Вдягти капелюха', 'Put the Hat on'],
-  thinkH: ['Гм… Дай подумати.', 'Hm… Let me think.'],
+  thinkH: ['Гм… Дай подумати.', 'Hmm… Let me think.'],
   doneK: ['Капелюх вирішив', 'The Hat has decided'],
   share: ['Поділитися', 'Share'],
   download: ['Завантажити картинку', 'Download image'],
@@ -280,6 +280,8 @@ async function decide() {
   const open = !st.wish && !st.avoid, first = open ? pick(HAT.decide) : null;
   setNote(() => ({ kicker: T('hatK'), hand: first ? pickLang(first[0], first[1]) : T('thinkH') })); hatTalk(1400);
   await wait(reduceMotion ? 500 : 2000);
+  const build = pick(HAT.build); setNote(() => ({ kicker: T('hatK'), hand: pickLang(build[0], build[1]) })); hatTalk(1300);
+  await wait(reduceMotion ? 500 : 1800);
   st.house = SortingLogic.sortHouse({ answers: st.answers, wand: st.wand, wish: st.wish, avoid: st.avoid });
   const said = st.wish ? (st.house === st.wish ? HAT.got : HAT.denied) : st.avoid ? (st.house === st.avoid ? HAT.overruled : HAT.avoided) : null, line = said ? pick(said) : null;
   setNote(() => ({ kicker: T('doneK'), hand: houseName(st.house) + '!', instr: line ? pickLang(line[0], line[1]) : '' }));
