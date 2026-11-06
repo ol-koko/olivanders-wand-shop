@@ -353,8 +353,8 @@ async function decide() {
   const kind = st.wish ? (st.house === st.wish ? 'got' : 'denied') : st.avoid ? (st.house === st.avoid ? 'overruled' : 'avoided') : null, li = kind ? Math.floor(Math.random() * HAT[kind].length) : -1, line = kind ? HAT[kind][li] : null;
   setNote(() => ({ kicker: T('doneK'), hand: houseName(st.house) + '!', instr: line ? pickLang(line[0], line[1]) : '' }));
   postRow('sorting_results', { house: st.house, wish: st.wish, unwanted: st.avoid, wand_prior: !!st.wand, device_type: deviceType(), language: lang });
-  await Promise.all([wait(reduceMotion ? 1200 : 2600), (async () => { await say(take('house' + st.house), 1500); if (A.on) SFX.reveal(); if (line) { await wait(GAP + 350); await say(kind + (li + 1), 1200); } await wait(GAP + 500); })()]); // the verdict gets a longer breath
-  showCard();
+  await Promise.all([wait(reduceMotion ? 1200 : 2200), (async () => { await say(take('house' + st.house), 1500); await wait(GAP); })()]); // the verdict gets a breath before the card
+  showCard(line ? kind + (li + 1) : null); // the chime and the Hat's extra line come with the card
 }
 
 /* ================= result card ================= */
@@ -371,25 +371,28 @@ function fillCard() {
   $('#bShare').textContent = T('share'); $('#bDown').textContent = T('download'); $('#bAgain').textContent = T('bAgain'); $('#rSavedCap').textContent = T('saveHold');
   refreshCard();
 }
-function showCard() {
+// The card opens on the verdict: a chime as the crest lands, then the Hat's extra line about the wish, if there is one.
+function showCard(lineId) {
+  const me = st.cardRun = {};
+  const after = () => { if (st.cardRun !== me) return; if (A.on && A.ctx) SFX.reveal(); if (lineId) setTimeout(() => { if (st.cardRun === me) say(lineId, 1200); }, 900); };
   fillCard(); setShareMode(canShareFiles());
   const res = $('#result'), seal = $('#rSeal'), card = $('.rcard'); res.hidden = false; res.scrollTop = 0; note.classList.remove('show'); st.noteFn = null;
   seal.classList.remove('stamp', 'fade'); card.classList.remove('thud');
   requestAnimationFrame(() => {
     res.classList.add('show');
-    stampSeal(seal, card);
+    stampSeal(seal, card, after);
   });
 }
 // The emblem drops onto the card like a wax seal: a squash on impact, a small shake and a soft thud. Reduced motion: it just fades in.
-function stampSeal(seal, card) {
-  if (reduceMotion) { seal.classList.add('fade'); return; }
+function stampSeal(seal, card, landed = () => { }) {
+  if (reduceMotion) { seal.classList.add('fade'); setTimeout(landed, 400); return; }
   setTimeout(() => {
     seal.classList.add('stamp');
-    setTimeout(() => { card.classList.add('thud'); if (A.on && A.ctx) { tone(82, .3, { vol: .16, glide: 46 }); noise(.16, { vol: .09, freq: 320, q: .5 }); } setTimeout(() => card.classList.remove('thud'), 360); setTimeout(() => turnCoin(), 500); }, 420);
+    setTimeout(() => { card.classList.add('thud'); if (A.on && A.ctx) { tone(82, .3, { vol: .16, glide: 46 }); noise(.16, { vol: .09, freq: 320, q: .5 }); } setTimeout(() => card.classList.remove('thud'), 360); setTimeout(() => turnCoin(), 500); landed(); }, 420);
   }, 380);
 }
 $('#bAgain').addEventListener('click', () => {
-  stopVoice(); COIN.turn = 0; $('.topbar').classList.remove('away'); const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
+  stopVoice(); st.cardRun = null; COIN.turn = 0; $('.topbar').classList.remove('away'); const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
   $('#rSaved').hidden = true; setTimeout(beginQuestions, 500);
 });
 // Turning the crest: one slow turn after the stamp, then drag to spin it, with a little momentum. It stops drawing when still.

@@ -34,7 +34,19 @@ for (const [name, opts] of [['sound on', { locale: 'en-US' }], ['Ukrainian', { l
   else check(v.house && !v.played.length, 'without the files the game still ends, silently');
   const real = errors.filter(e => !(name === 'files missing' && /404/.test(e))); check(!real.length, `${name}: no page errors ` + real.join(' | ')); await browser.close();
 }
-await closeAll();
+console.log('== with a wish: the chime and the extra line come with the card');
+{ const SPY = `window.__osc = []; { const AC = window.AudioContext; window.AudioContext = class extends AC { createOscillator() { __osc.push(performance.now()); return super.createOscillator(); } }; }`;
+  const { browser, page, errors } = await open(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, locale: 'en-US', init: SPY });
+  await enterHall(page); await page.waitForFunction(() => __hall.VOICE.played.includes('introI'), null, { timeout: 15000 }); await sleep(1500); await press(page); await game(page);
+  await wishPick(page, 0); await sleep(300);
+  await page.evaluate(() => { window.__t = {}; new MutationObserver(() => { if (!__t.card && document.querySelector('#result').classList.contains('show')) __t.card = performance.now(); if (!__t.land && document.querySelector('.rcard').classList.contains('thud')) __t.land = performance.now(); }).observe(document.querySelector('#result'), { attributes: true, subtree: true }); const p = __hall.VOICE.played, push = p.push.bind(p); p.push = (...x) => { for (const id of x) __t[id.replace(/^ua\//, '')] = performance.now(); return push(...x); }; });
+  await page.evaluate(() => document.querySelectorAll('#nBtns .wide')[0].click());
+  await toCard(page); await sleep(5000);
+  const t = await page.evaluate(() => ({ ...__t, osc: __osc.filter(x => x > (__t.land || 0) - 50 && x < (__t.land || 0) + 400).length, kind: Object.keys(__t).find(k => /^(got|denied)\d$/.test(k)), house: Object.keys(__t).find(k => /^house[GSRH]/.test(k)) }));
+  check(t.house && t[t.house] < t.card, `the house is said before the card opens (${t.house})`);
+  check(t.osc >= 4, `a chime as the crest lands: ${t.osc} tones`);
+  check(t.kind && t[t.kind] > t.land, `the extra line "${t.kind}" plays on the card, ${Math.round(t[t.kind] - t.land)} ms after the crest lands`);
+  check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close(); }
 await closeAll(); srv.close();
 console.log(fails.length ? `\n${fails.length} FAILED:\n- ${fails.join('\n- ')}` : '\nall passed');
 process.exit(fails.length ? 1 : 0);
