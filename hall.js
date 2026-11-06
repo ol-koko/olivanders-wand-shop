@@ -269,17 +269,17 @@ function faceTick(t) {
 function leanTo(o) { const b = [...document.querySelectorAll('#nBtns button')].find(x => x.textContent === pickLang(o.u, o.e)), h = $('#hat'); if (!b || reduceMotion) return; const r = b.getBoundingClientRect(), hb = h.getBoundingClientRect(); h.style.rotate = clamp((r.left + r.width / 2 - (hb.left + hb.width / 2)) / W * 22, -7, 7).toFixed(1) + 'deg'; }
 
 /* ================= the Hat's voice ================= */
-// English recordings in /audio/hat, named by the ids in scripts/hat-lines-short.md. Ukrainian players hear English and read Ukrainian in the note.
+// Recordings in /audio/hat (English) and /audio/hat/ua (Ukrainian), named by the ids in scripts/hat-lines-short.md. The Hat speaks the page's language; a switch mid-game applies from the next line.
 // The voice plays through the page's sound, so the sound button mutes it. Without sound, or if a file is slow, the Hat stays silent and the game goes on.
 const VOICE = { files: new Map(), buffers: new Map(), src: null, n: 0, chain: null, played: [] };
-const voiceUrl = id => `/audio/hat/${id}.mp3`;
-function prefetch(ids) { if (A.on) ids.forEach(id => { if (!VOICE.files.has(id)) VOICE.files.set(id, fetch(voiceUrl(id)).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)); }); }
+const voiceUrl = id => `/audio/hat/${lang === 'ua' ? 'ua/' : ''}${id}.mp3`;
+function prefetch(ids) { if (A.on) ids.forEach(id => { const k = voiceUrl(id); if (!VOICE.files.has(k)) VOICE.files.set(k, fetch(k).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)); }); }
 function stopVoice() { VOICE.n++; if (VOICE.src) { try { VOICE.src.stop(); } catch (_) { } VOICE.src = null; } }
 async function voiceBuffer(id) {
-  if (VOICE.buffers.has(id)) return VOICE.buffers.get(id);
-  prefetch([id]); const raw = await Promise.race([VOICE.files.get(id), wait(800).then(() => null)]); // a line that isn't there in time is skipped
+  const k = voiceUrl(id); if (VOICE.buffers.has(k)) return VOICE.buffers.get(k);
+  prefetch([id]); const raw = await Promise.race([VOICE.files.get(k), wait(800).then(() => null)]); // a line that isn't there in time is skipped
   if (!raw || !A.ctx) return null;
-  try { const b = await A.ctx.decodeAudioData(raw.slice(0)); VOICE.buffers.set(id, b); return b; } catch (_) { return null; }
+  try { const b = await A.ctx.decodeAudioData(raw.slice(0)); VOICE.buffers.set(k, b); return b; } catch (_) { return null; }
 }
 // Says one line and resolves when it ends. Text-only timing when there's no voice.
 async function say(id, fallback = 1200, chained = false) {
@@ -288,7 +288,7 @@ async function say(id, fallback = 1200, chained = false) {
   if (n !== VOICE.n) return; // another line started meanwhile
   if (!b) { hatTalk(fallback, true, moodOf(id)); return; }
   if (!FACE.level) { FACE.level = A.ctx.createAnalyser(); FACE.level.fftSize = 512; FACE.buf = new Float32Array(FACE.level.fftSize); }
-  const src = A.ctx.createBufferSource(), g = A.ctx.createGain(); g.gain.value = 2.2; src.buffer = b; src.connect(g); g.connect(A.master); g.connect(FACE.level); src.start(); VOICE.src = src; VOICE.played.push(id); if (VOICE.ended) (VOICE.gaps = VOICE.gaps || []).push(performance.now() - VOICE.ended);
+  const src = A.ctx.createBufferSource(), g = A.ctx.createGain(); g.gain.value = 2.2; src.buffer = b; src.connect(g); g.connect(A.master); g.connect(FACE.level); src.start(); VOICE.src = src; VOICE.played.push((lang === 'ua' ? 'ua/' : '') + id); if (VOICE.ended) (VOICE.gaps = VOICE.gaps || []).push(performance.now() - VOICE.ended);
   hatTalk(b.duration * 1000, false, moodOf(id));
   await new Promise(r => { src.onended = r; setTimeout(r, b.duration * 1000 + 400); }); VOICE.ended = n === VOICE.n ? performance.now() : 0; // 0: cut short by the next line
 }
@@ -296,7 +296,9 @@ const GAP = 750; // a breath between lines, so they don't run together
 const sayAll = async ids => { const me = {}; VOICE.chain = me; for (const [i, id] of ids.entries()) { if (VOICE.chain !== me) return; if (i) await wait(GAP); if (VOICE.chain !== me) return; await say(id, 1200, true); } }; // stops if anything else is said
 // Says a line, then the pause after it. The step also lasts at least `min`, as it did before the voice.
 const sayStep = (id, fallback, min) => Promise.all([wait(min), say(id, fallback).then(() => wait(GAP))]);
-const take = id => `${id}-${st.take}`; // the verdicts and build-up lines have three recordings each
+// The verdicts and build-up lines have three recordings each. In Ukrainian the owner picked one take per house name.
+const UA_HOUSE_TAKE = { G: 3, H: 2, R: 3, S: 3 };
+const take = id => { const h = /^house([GSRH])$/.exec(id); return `${id}-${h && lang === 'ua' ? UA_HOUSE_TAKE[h[1]] : st.take}`; };
 sndBtn.addEventListener('click', () => { if (!A.on) stopVoice(); });
 
 /* ================= the ceremony ================= */

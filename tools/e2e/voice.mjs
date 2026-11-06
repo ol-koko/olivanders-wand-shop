@@ -13,10 +13,11 @@ const wide = (page, i) => page.evaluate(n => document.querySelectorAll('#nBtns .
 const toCard = page => page.waitForFunction(() => document.querySelector('#result').classList.contains('show'), null, { timeout: 15000 });
 
 console.log('== the voice');
-for (const [name, opts] of [['sound on', {}], ['sound off', { init: `localStorage.setItem('wand-sound', '0');` }], ['files missing', { route: async p => p.route(u => /\/audio\/hat\//.test(u.pathname), r => r.fulfill({ status: 404, body: '' })) }]]) {
+for (const [name, opts] of [['sound on', { locale: 'en-US' }], ['Ukrainian', { locale: 'uk-UA' }], ['sound off', { init: `localStorage.setItem('wand-sound', '0');` }], ['files missing', { route: async p => p.route(u => /\/audio\/hat\//.test(u.pathname), r => r.fulfill({ status: 404, body: '' })) }]]) {
   const reqs = [], { browser, page, errors } = await open(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, ...opts, route: async p => { p.on('request', r => { const m = /\/audio\/hat\/(.+)\.mp3$/.exec(r.url()); if (m) reqs.push(m[1]); }); if (opts.route) await opts.route(p); } });
   await page.evaluate(() => document.querySelector('#cta').click()); await page.waitForFunction(() => __hall.st.phase === 'hall' && document.querySelector('#nBtns button'), null, { timeout: 25000 });
-  if (name === 'sound on') await page.waitForFunction(() => __hall.VOICE.played.includes('introI'), null, { timeout: 15000 }); await sleep(1500); await press(page); const a = await game(page); await wide(page, 0); await toCard(page);
+  if (name === 'sound on') await page.waitForFunction(() => __hall.VOICE.played.includes('introI'), null, { timeout: 15000 });
+  if (name === 'Ukrainian') await page.waitForFunction(() => __hall.VOICE.played.includes('ua/introI'), null, { timeout: 15000 }); await sleep(1500); await press(page); const a = await game(page); await wide(page, 0); await toCard(page);
   const v = await page.evaluate(() => ({ played: __hall.VOICE.played.slice(), take: __hall.st.take, house: __hall.st.house, mine: __hall.st.questions.flatMap(q => [q.id, q.id + 'r1', q.id + 'r2', ...q.o.filter(o => o.r).map(o => o.r[2])]) }));
   if (name === 'sound on') {
     const gaps = await page.evaluate(() => __hall.VOICE.gaps || []);
@@ -25,6 +26,10 @@ for (const [name, opts] of [['sound on', {}], ['sound off', { init: `localStorag
     check(a.every(q => v.played.includes(q.id)), 'every question is said aloud');
     check(v.played.includes('wish') && v.played.includes(`house${v.house}-${v.take}`), `the wish and the verdict are said: house${v.house}-${v.take}`);
     check(reqs.length < 45 && reqs.filter(x => /^[tsw]\d/.test(x)).every(x => v.mine.includes(x)), `only this game's lines load: ${reqs.length} files`);
+  } else if (name === 'Ukrainian') {
+    const pick = { G: 3, H: 2, R: 3, S: 3 }[v.house];
+    check(v.played.length > 6 && v.played.every(x => x.startsWith('ua/')) && reqs.every(x => x.startsWith('ua/')), `in Ukrainian the Hat speaks Ukrainian: ${v.played.slice(0, 3).join(', ')}`);
+    check(v.played.includes(`ua/house${v.house}-${pick}`), `and says the chosen take of the house: ua/house${v.house}-${pick}`);
   } else if (name === 'sound off') check(!reqs.length && !v.played.length, 'with sound off nothing loads or plays');
   else check(v.house && !v.played.length, 'without the files the game still ends, silently');
   const real = errors.filter(e => !(name === 'files missing' && /404/.test(e))); check(!real.length, `${name}: no page errors ` + real.join(' | ')); await browser.close();
