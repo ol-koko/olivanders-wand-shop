@@ -32,6 +32,15 @@
 /* street */
 #street{cursor:pointer;touch-action:none}
 .leak{animation:leak 3s ease-in-out infinite}
+#postHall{cursor:pointer;outline:none}
+#postHall .glow{opacity:.18;animation:postGlow 3.4s ease-in-out infinite alternate;transition:opacity .3s}
+#postHall:hover .glow{opacity:.55;animation:none}
+#postHall .ring{opacity:0}
+#postHall:focus-visible .ring{opacity:1}
+@keyframes postGlow{to{opacity:.42}}
+#post .sw{transform-box:view-box;transform-origin:0 0}
+#post .sw.swing{animation:swing .9s ease-out}
+@keyframes swing{20%{transform:rotate(-3deg)}45%{transform:rotate(2deg)}70%{transform:rotate(-1deg)}}
 @keyframes leak{50%{opacity:.55}}
 
 /* shop */
@@ -69,7 +78,7 @@
 .cam-frame{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
 
 /* result */
-@media (prefers-reduced-motion:reduce){.curtain,#cta,.tw{animation:none}}
+@media (prefers-reduced-motion:reduce){.curtain,#cta,.tw,#postHall .glow,#post .sw.swing{animation:none}}
 </style>
 </head>
 <body>
