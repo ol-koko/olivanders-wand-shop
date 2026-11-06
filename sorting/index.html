@@ -26,7 +26,7 @@
 @keyframes hatFloat{from{transform:translateY(-7px) rotate(-.8deg) scale(1)}to{transform:translateY(7px) rotate(.8deg) scale(1.016)}}
 #hat{transition:opacity .9s,rotate .5s cubic-bezier(.3,.7,.3,1)}
 #hat svg{width:100%;height:100%;display:block;overflow:visible}
-#hatTip,#hatMouth,.eye,.brow,.ghost{transform-box:fill-box}
+#hatTip,#hatMouth,.eye,.brow,.spirit{transform-box:fill-box}
 #hatTip{transform-origin:18% 100%;animation:hatSway 5s ease-in-out infinite alternate}
 #hatMouth{transform-origin:50% 30%;transform:scaleY(.32)}
 .eye{transform-origin:50% 50%;transition:transform .07s}
@@ -35,11 +35,11 @@
 #browL{transform-origin:100% 100%}#browR{transform-origin:0 100%}
 #hat.raise .brow{transform:translateY(-6px)}
 #hat.furrow #browL{transform:translateY(3px) rotate(9deg)}#hat.furrow #browR{transform:translateY(3px) rotate(-9deg)}
-.ghost{animation:ghostDrift 9s ease-in-out infinite alternate;opacity:.8}
-.ghost.g2{animation-duration:11s;animation-delay:-4s}.ghost.g3{animation-duration:13s;animation-delay:-7s}.ghost.g4{animation-duration:10s;animation-delay:-2s}
+.spirit{animation:ghostDrift 9s ease-in-out infinite alternate;opacity:.8}
+.spirit.g2{animation-duration:11s;animation-delay:-4s}.spirit.g3{animation-duration:13s;animation-delay:-7s}.spirit.g4{animation-duration:10s;animation-delay:-2s}
 @keyframes ghostDrift{from{transform:translate(-22px,6px)}to{transform:translate(26px,-10px)}}
 @keyframes hatSway{from{transform:rotate(-2.5deg)}to{transform:rotate(3deg)}}
-@media (prefers-reduced-motion:reduce){#hat,#hatTip,.ghost{animation:none}#hat{transition:opacity .9s}}
+@media (prefers-reduced-motion:reduce){#hat,#hatTip,.spirit{animation:none}#hat{transition:opacity .9s}}
 #nBtns .btn{font-size:16px;line-height:1.2;padding:9px 14px;border-radius:16px}
 #nBtns.wish{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 #nBtns .ban{display:flex;flex-direction:column;align-items:center;gap:3px;background:transparent;border:2px solid transparent;color:#2a170b;padding:3px 0;font-size:14px;border-radius:10px}

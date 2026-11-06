@@ -20,7 +20,8 @@ for (const [w, h] of [[390, 844], [1440, 900]]) {
   await hatIn(page); const held = Date.now() - t0; await ready(page);
   check(held > 2400 && held < 4200, `${w}: then the Hat comes in after about ${(held / 1000).toFixed(1)} s`);
   check(await page.evaluate(() => document.querySelector('#hallDim').classList.contains('in') && document.querySelector('#hat').classList.contains('in')), `${w}: the background dims behind the Hat`);
-  check(await page.evaluate(() => document.querySelectorAll('.ghost').length === 4), `${w}: ghosts drift in the Hall`);
+  check(await page.evaluate(() => document.querySelectorAll('.spirit').length === 4), `${w}: ghosts drift in the Hall`);
+  check(await page.evaluate(() => [...document.querySelectorAll('#nBtns button, #note')].every(b => getComputedStyle(b).animationName === 'none')), `${w}: the note and its buttons never drift`);
   check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close();
 }
 { const { browser, page } = await open(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, init: QUIET });
