@@ -8,8 +8,8 @@ Object.assign(S, {
   cta: ['Увійти до Великої зали', 'Enter the Great Hall'],
   castleA: ['Нічний замок над озером', 'A castle above a lake at night'],
   hatK: ['Капелюх', 'The Hat'],
-  introH: ['Сідай. Я ще нікого не з’їв.', 'Sit down. I haven’t eaten anyone yet.'],
-  introI: ['Кілька запитань, і я знатиму, куди тебе відправити.', 'A few questions and I’ll know where you belong.'],
+  introH: ['Сідай. Я ще нікого не з\'їв.', 'Sit. I haven’t eaten anyone yet.'],
+  introI: ['Три запитання, і я знатиму.', 'Three questions, then I’ll know.'],
   bStart: ['Вдягти капелюха', 'Put the Hat on'],
   thinkH: ['Гм… Дай подумати.', 'Hmm… Let me think.'],
   doneK: ['Капелюх вирішив', 'The Hat has decided'],
@@ -260,7 +260,7 @@ function ask() {
 }
 async function answer(q, o) {
   if (!st.picking) return; st.picking = false; st.answers.push(o.w);
-  const r = pick(Math.random() < .85 ? q.r : SHARED);
+  const r = o.r || pick(Math.random() < .85 ? q.r : SHARED); // a few lines answer one option only
   setNote(() => ({ kicker: T('hatK'), hand: pickLang(r[0], r[1]) })); hatTalk(1000);
   await wait(1900);
   if (++st.step < st.questions.length) return ask();
