@@ -430,7 +430,7 @@ async function enterHall() {
 async function establish(inn) {
   st.phase = 'establish'; let skip; const skipped = new Promise(r => { skip = r; });
   const end = () => skip(); addEventListener('pointerdown', end, { once: true }); addEventListener('keydown', end, { once: true });
-  const hold = reduceMotion ? 1000 : 2600, t0 = performance.now(); let going = true;
+  const hold = reduceMotion ? 800 : 1800, t0 = performance.now(); let going = true;
   if (!reduceMotion) { const step = () => { if (!going) return; const k = easeIO(clamp((performance.now() - t0) / hold)); inn.forEach((id, i) => { layers[id].s = 1 + (.04 + i * .025) * k; }); requestAnimationFrame(step); }; step(); }
   await Promise.race([wait(hold), skipped]); going = false;
   removeEventListener('pointerdown', end); removeEventListener('keydown', end);

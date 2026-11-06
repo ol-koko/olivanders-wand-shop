@@ -13,12 +13,12 @@ console.log('== the Hall before the Hat');
 for (const [w, h] of [[390, 844], [1440, 900]]) {
   const { browser, page, errors } = await open(url + 'sorting', { viewport: { width: w, height: h }, mobile: w < 768, init: QUIET });
   await fly(page); await page.waitForFunction(() => __hall.st.phase === 'establish', null, { timeout: 20000 }); const t0 = Date.now();
-  const a = await page.evaluate(() => ({ dim: document.querySelector('#hallDim').classList.contains('in'), hat: document.querySelector('#hat').classList.contains('in'), note: document.querySelector('#note').classList.contains('show'), s: __hall.layers.haBack.s })); await sleep(1500);
+  const a = await page.evaluate(() => ({ dim: document.querySelector('#hallDim').classList.contains('in'), hat: document.querySelector('#hat').classList.contains('in'), note: document.querySelector('#note').classList.contains('show'), s: __hall.layers.haBack.s })); await sleep(1000);
   const b = await page.evaluate(() => __hall.layers.haBack.s);
   check(!a.dim && !a.hat && !a.note, `${w}: a clear look at the Hall first, no blur, no Hat, no note`);
   check(b > a.s + .01, `${w}: a slow push-in: ${a.s.toFixed(3)} → ${b.toFixed(3)}`);
   await hatIn(page); const held = Date.now() - t0; await ready(page);
-  check(held > 2400 && held < 4200, `${w}: then the Hat comes in after about ${(held / 1000).toFixed(1)} s`);
+  check(held > 1700 && held < 3300, `${w}: then the Hat comes in after about ${(held / 1000).toFixed(1)} s`);
   check(await page.evaluate(() => document.querySelector('#hallDim').classList.contains('in') && document.querySelector('#hat').classList.contains('in')), `${w}: the background dims behind the Hat`);
   check(await page.evaluate(() => document.querySelectorAll('.spirit').length === 4), `${w}: ghosts drift in the Hall`);
   check(await page.evaluate(() => [...document.querySelectorAll('#nBtns button, #note')].every(b => getComputedStyle(b).animationName === 'none')), `${w}: the note and its buttons never drift`);
