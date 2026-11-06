@@ -1,6 +1,7 @@
 // Records the Sorting Hat's English lines with ElevenLabs. Local only: it never ships with the site.
-//   node scripts/voice-hat.mjs            asks before spending any characters
-//   node scripts/voice-hat.mjs --dry      only counts, no API calls
+//   node scripts/voice-hat.mjs            English, asks before spending any characters
+//   node scripts/voice-hat.mjs --lang ua  Ukrainian, into audio/hat/ua
+//   add --dry to only count, with no API calls
 // Reads the script from scripts/hat-lines-short.md (or a path given as the first argument), the key from .env.
 // Saves audio/hat/<id>.mp3, and <id>-1/2/3.mp3 for the verdicts and the build-up lines. Existing files are skipped.
 import fs from 'node:fs';
@@ -9,20 +10,21 @@ import readline from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const args = process.argv.slice(2), DRY = args.includes('--dry');
-const SCRIPT = path.resolve(args.find(a => !a.startsWith('--')) || path.join(ROOT, 'scripts', 'hat-lines-short.md'));
-const OUT = path.join(ROOT, 'audio', 'hat');
-const VOICE_ID = 'HAvvFKatz0uu0Fv55Riy'; // chosen by the owner in ElevenLabs
+const args = process.argv.slice(2), DRY = args.includes('--dry'), LANG = args.includes('--lang') ? args[args.indexOf('--lang') + 1] : 'en';
+if (!['en', 'ua'].includes(LANG)) { console.error('--lang must be en or ua'); process.exit(1); }
+const SCRIPT = path.resolve(args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--lang') || path.join(ROOT, 'scripts', 'hat-lines-short.md'));
+const OUT = path.join(ROOT, 'audio', 'hat', ...(LANG === 'ua' ? ['ua'] : []));
+const VOICE_ID = { en: 'HAvvFKatz0uu0Fv55Riy', ua: 'WtDqMP4cPOGB6kDiLZgi' }[LANG]; // chosen by the owner in ElevenLabs
 const MODEL = 'eleven_multilingual_v2', FORMAT = 'mp3_44100_64', TAKES = 3;
 const API = 'https://api.elevenlabs.io/v1';
 
-// Every table row whose first cell is an id. The English column is the one before the last (Ukrainian) column.
+// Every table row whose first cell is an id. The English column is the one before the last; the Ukrainian is the last.
 function readLines(file) {
   const out = [];
   for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
     const cells = line.split('|').slice(1, -1).map(c => c.trim());
     if (cells.length < 3 || cells[0] === 'id' || /^-+$/.test(cells[0]) || !/^[a-zA-Z]\w*$/.test(cells[0])) continue;
-    out.push({ id: cells[0], text: cells[cells.length - 2] });
+    out.push({ id: cells[0], text: cells[cells.length - (LANG === 'ua' ? 1 : 2)] });
   }
   return out;
 }
@@ -50,7 +52,7 @@ const ids = new Set(); for (const l of lines) { if (ids.has(l.id)) { console.err
 const jobs = lines.flatMap(l => fileNames(l).map(f => ({ ...l, file: f })));
 const todo = jobs.filter(j => !fs.existsSync(path.join(OUT, j.file)));
 const chars = a => a.reduce((n, j) => n + j.text.length, 0);
-console.log(`Script: ${path.relative(ROOT, SCRIPT)}, ${lines.length} lines, ${jobs.length} files with takes.`);
+console.log(`Script: ${path.relative(ROOT, SCRIPT)}, ${LANG === 'ua' ? 'Ukrainian' : 'English'}, ${lines.length} lines, ${jobs.length} files with takes, into ${path.relative(ROOT, OUT)}.`);
 console.log(`Total characters: ${chars(jobs)}. Still to record: ${todo.length} files, ${chars(todo)} characters (${jobs.length - todo.length} files already exist and are skipped).`);
 if (DRY || !todo.length) process.exit(0);
 
