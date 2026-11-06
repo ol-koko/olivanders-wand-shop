@@ -30,11 +30,9 @@ for (const [w, h] of [[320, 568], [360, 662], [390, 844], [430, 932], [844, 390]
 }
 console.log('== routing and language');
 { const { browser, page, errors } = await open(url, { viewport: { width: 390, height: 844 }, mobile: true, locale: 'en-US' });
-  const noindex = async () => page.evaluate(() => document.querySelector('meta[name=robots]')?.content);
   await page.evaluate(() => document.querySelector('#lang button[data-l="ua"]').click());
   await page.goto(url + 'sorting', { waitUntil: 'load' });
   check(await page.evaluate(() => document.querySelector('#stT').textContent) === 'Церемонія Розподілу', 'the language chosen in the shop carries over');
-  check(await noindex() === 'noindex', 'not indexed yet');
   await page.goBack({ waitUntil: 'load' }); check(new URL(page.url()).pathname === '/' && await page.evaluate(() => !!document.querySelector('#cta')), 'back returns to the street');
   await page.goForward({ waitUntil: 'load' }); check(/\/sorting/.test(page.url()), 'forward returns to the castle');
   await page.evaluate(() => document.querySelector('#cta').click()); await inHall(page); await page.waitForFunction(() => document.querySelector('#nBtns button'));

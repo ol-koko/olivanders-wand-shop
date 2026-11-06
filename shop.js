@@ -8,6 +8,11 @@ Object.assign(S, {
   shopA: ['Крамниця паличок', 'The wand shop'],
   sub: ['Серед тисяч паличок одна чекає саме на тебе', 'Among thousands of wands, one is waiting just for you.'],
   cta: ['Знайти свою паличку', 'Find your wand'],
+  postQ: ['Вже маєш паличку?', 'Got a wand?'],
+  postHall: ['До Гоґвортсу', 'To Hogwarts'],
+  postA: ['Вже маєш паличку? До Гоґвортсу, на церемонію розподілу', 'Got a wand? On to Hogwarts, for the Sorting Ceremony'],
+  postBank: ['Платформа 9¾', 'Platform 9¾'],
+  postPub: ['Косий провулок', 'Diagon Alley'],
   sign1: ['ОЛІВАНДЕР', 'OLLIVANDERS'],
   sign2: ['чарівні палички · з 382 р. до н. е.', 'makers of fine wands · since 382 B.C.'],
   shopK: ['Крамниця Олівандера', 'Ollivanders'],
@@ -182,6 +187,42 @@ function buildFg() {
     svgEl('path', { d: `M${x - 16},${679} Q${x},${660} ${x + 16},${679}`, stroke: '#e9eef8', 'stroke-width': 4, fill: 'none', 'stroke-linecap': 'round' }, g);
   });
 }
+// The signpost: the top board leads to the Sorting Ceremony, the other two only swing. Built once in local units, placed by placePost.
+function buildPost() {
+  const s = $('#svgFg');
+  s.insertAdjacentHTML('afterbegin', `<defs><linearGradient id="gPost" x1="0" x2="1"><stop offset="0" stop-color="#2a1a0e"/><stop offset=".45" stop-color="#6a4626"/><stop offset="1" stop-color="#24160b"/></linearGradient>
+  <linearGradient id="gBoard" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient>
+  <filter id="fPostGlow" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur stdDeviation="9"/></filter></defs>`);
+  const snow = (x0, x1, y) => `<path d="M${x0 + 2},${y + 1} Q${x0 + 20},${y - 6} ${(x0 + x1) / 2},${y - 3} Q${x1 - 20},${y - 7} ${x1 - 2},${y + 1} Q${(x0 + x1) / 2},${y + 3} ${x0 + 2},${y + 1}Z" fill="#eef3fb"/>`;
+  // a painted plank with a rough end and a pointed one
+  const board = (x0, x1, y0, h, left, fill) => { const m = y0 + h / 2, y1 = y0 + h; return left
+    ? `M${x0},${m} L${x0 + 20},${y0} L${x1 - 3},${y0 + 1} L${x1 + 2},${y0 + h * .3} L${x1 - 2},${y0 + h * .55} L${x1 + 3},${y1 - 2} L${x0 + 20},${y1}Z`
+    : `M${x1},${m} L${x1 - 20},${y0} L${x0 + 2},${y0 + 1} L${x0 - 3},${y0 + h * .35} L${x0 + 1},${y0 + h * .6} L${x0 - 2},${y1 - 1} L${x1 - 20},${y1}Z`; };
+  const plank = (d, fill) => `<path d="${d}" fill="${fill}"/><path d="${d}" fill="url(#gBoard)"/><path d="${d}" fill="none" stroke="#120a06" stroke-opacity=".6" stroke-width="1.5"/>`;
+  const b1 = board(-232, 24, 6, 66, true), b2 = board(-150, 66, 82, 36, false), b3 = board(-182, 22, 126, 36, true);
+  s.insertAdjacentHTML('beforeend', `<g id="post"><rect id="postBar" x="-7" y="-14" width="14" height="100" fill="url(#gPost)"/>
+    <path d="M-10,-14 L0,-26 L10,-14Z" fill="#24160b"/><path d="M-11,-15 Q0,-30 11,-15" stroke="#eef3fb" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <a id="postHall" href="/sorting"><path class="glow" d="${b1}" fill="#ffcf7a" filter="url(#fPostGlow)"/>${plank(b1, '#4a2d55')}${snow(-212, 22, 6)}
+      <path class="ring" d="${b1}" fill="none" stroke="#f4d895" stroke-width="3"/>
+      <text id="postQ" x="-102" y="31" text-anchor="middle" font-family="Cormorant Garamond,Georgia,serif" font-style="italic" font-weight="600" font-size="17" fill="#e8d7b0"></text>
+      <text id="postHallT" x="-102" y="60" text-anchor="middle" font-family="Cormorant Garamond,Georgia,serif" font-weight="700" font-size="27" letter-spacing=".5" fill="#f0cd84"></text>
+      <circle cx="0" cy="22" r="2.2" fill="#1a1008"/><circle cx="0" cy="56" r="2.2" fill="#1a1008"/></a>
+    <g class="sw" id="postBank">${plank(b2, '#8a8296')}${snow(-146, 46, 82)}<text id="postBankT" x="-78" y="107" text-anchor="middle" font-family="Cormorant Garamond,Georgia,serif" font-weight="700" font-size="20" fill="#2a1f34"></text><circle cx="0" cy="100" r="2" fill="#1a1008"/></g>
+    <g class="sw" id="postPub">${plank(b3, '#5c2236')}${snow(-162, 20, 126)}<text id="postPubT" x="-82" y="151" text-anchor="middle" font-family="Cormorant Garamond,Georgia,serif" font-weight="700" font-size="20" fill="#e9cfa0"></text><circle cx="0" cy="144" r="2" fill="#1a1008"/></g>
+  </g>`);
+}
+// Where there is street to the right of the shop it stands there; on narrow screens it rises into the sky at the right edge, below the title.
+function placePost(vbX, vbY, vbW, vbH, title) {
+  const ppu = H * 1.08 / vbH, xR = 500 + vbW / 2 / 1.08, yTop = vbY + vbH * (1 - 1 / 1.08) / 2, tU = yTop + title / ppu;
+  let x, top, k;
+  if (xR - 704 >= 300) { k = Math.min(clamp(28 / (27 * ppu), .8, 1.6), (xR - 724) / 300); x = Math.min(xR - 60 * k, Math.max(940, 724 + 236 * k)); /* the boards stay clear of the shop */ top = Math.max(945 - 400 * k, tU + 40 * k); }
+  else { k = clamp(21 / (27 * ppu), .8, 1.3); x = xR - 34 * k; top = tU + 34 * k; }
+  $('#post').setAttribute('transform', `translate(${x.toFixed(1)} ${top.toFixed(1)}) scale(${k.toFixed(3)})`);
+  $('#postBar').setAttribute('height', ((946 - top) / k + 14).toFixed(1));
+}
+function fitPostText() { // long words in either language stay on their boards
+  [['#postQ', 210], ['#postHallT', 214], ['#postBankT', 136], ['#postPubT', 176]].forEach(([id, max]) => { const t = $(id); t.removeAttribute('textLength'); try { if (t.getComputedTextLength() > max) { t.setAttribute('textLength', max); t.setAttribute('lengthAdjust', 'spacingAndGlyphs'); } } catch (_) { } });
+}
 function buildGarland() {
   const g = $('#garland'); const R = rng(9);
   for (let i = 1; i < 16; i++) { const t = i / 16, half = t < .5, u = half ? t * 2 : (t - .5) * 2; const x = 302 + 396 * t, y = 493 + 27 * 2 * u * (1 - u) * 1.0; const l = svgEl('circle', { cx: x, cy: y + 3, r: 3, fill: ['#ffd27a', '#ff7a6a', '#ffe9b0'][i % 3] }, g); l.setAttribute('class', 'tw'); l.style.animationDelay = (R() * 2.2) + 's'; }
@@ -194,6 +235,7 @@ function setViewBoxes() {
   const vbW = vbH * a, vbY = 1018 - vbH, vbX = 500 - vbW / 2;
   const vb = `${vbX.toFixed(1)} ${vbY.toFixed(1)} ${vbW.toFixed(1)} ${vbH.toFixed(1)}`;
   ['#svgSky', '#svgTown', '#svgShop', '#svgFg'].forEach(s => $(s).setAttribute('viewBox', vb));
+  placePost(vbX, vbY, vbW, vbH, $('#stTitle').getBoundingClientRect().bottom);
   $('#moonG').setAttribute('transform', a > .9 ? `translate(${Math.min(-210, 200 - 400 * vbH / H).toFixed(1)} 0)` : ''); // on wide screens keep the moon clear of the title
 }
 
@@ -873,6 +915,7 @@ function applyLang() {
   document.documentElement.lang = lang === 'en' ? 'en' : 'uk'; document.title = T('title'); $('#street').setAttribute('aria-label', T('streetA')); $('#shop').setAttribute('aria-label', T('shopA'));
   $('#stT').textContent = T('title'); $('#stS').textContent = T('sub'); $('#cta').textContent = T('cta'); $('#stFan').textContent = T('fan');
   $('#sign1').textContent = T('sign1'); $('#sign2').textContent = T('sign2');
+  $('#postQ').textContent = T('postQ'); $('#postHallT').textContent = T('postHall'); $('#postBankT').textContent = T('postBank'); $('#postPubT').textContent = T('postPub'); $('#postHall').setAttribute('aria-label', T('postA')); fitPostText();
   document.querySelectorAll('#lang button').forEach(b => b.classList.toggle('on', b.dataset.l === lang));
   sndBtn.setAttribute('aria-label', T(A.on ? 'sndOff' : 'sndOn'));
   setViewBoxes(); // the title's height depends on the language
@@ -940,8 +983,22 @@ function buildInterior() { drawBack(); drawMid(); drawFront(); initFX(); }
 // A tap enters the shop. A drag moves the scene instead, like the mouse on desktop, and eases back to the drift on release.
 const street = $('#street');
 dragDepth(street);
-street.addEventListener('click', () => { if (touch.moved) { touch.moved = false; return; } enterShop(); });
-addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && st.phase === 'street') enterShop(); });
+street.addEventListener('click', e => {
+  if (touch.moved) { touch.moved = false; return; }
+  const hall = e.target.closest('#postHall'), sw = e.target.closest('.sw');
+  if (hall) { e.preventDefault(); toHall(); return; }
+  if (sw) { sw.classList.remove('swing'); void sw.getBoundingClientRect(); sw.classList.add('swing'); return; } // the other boards only swing
+  enterShop();
+});
+addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && st.phase === 'street' && !e.target.closest?.('a')) enterShop(); });
+// To the Sorting Ceremony: the street fades out first. Coming back with the browser's Back button shows the street again.
+function toHall() {
+  if (st.phase !== 'street') return; st.phase = 'leaving';
+  const go = () => { location.href = '/sorting'; };
+  if (reduceMotion) return go();
+  const app = $('#app'); app.style.transition = 'opacity .45s'; app.style.opacity = 0; setTimeout(go, 430);
+}
+addEventListener('pageshow', e => { if (e.persisted && st.phase === 'leaving') { st.phase = 'street'; $('#app').style.opacity = 1; } });
 
 /* ================= boot ================= */
 function onResize() {
@@ -950,7 +1007,7 @@ function onResize() {
   if (st.shopVisible) { drawBack(); drawMid(); drawFront(); fxc = sizeCanvas(fx, W, H); }
 }
 let rT = 0; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(onResize, 120); });
-buildSky(); buildTown(); buildFg(); buildGarland(); setViewBoxes(); initSnow(); applyLang();
+buildSky(); buildTown(); buildFg(); buildPost(); buildGarland(); setViewBoxes(); initSnow(); applyLang();
 let last = performance.now();
 function frame(t) {
   requestAnimationFrame(frame); // first, so an error in one frame can't stop the game
