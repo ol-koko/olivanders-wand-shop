@@ -179,10 +179,12 @@ function buildHall() {
     roof += `<path d="${c}" fill="none" stroke="#1a0e06" stroke-width="${w * 1.5}"/><path d="${c}" fill="none" stroke="#4d2f16" stroke-width="${w}"/><path d="${c}" fill="none" stroke="#7a5128" stroke-width="${w * .22}" opacity=".85" transform="translate(0 ${(-w * .22).toFixed(1)})"/>`;
     for (const s of [-1, 1]) { const kx = VX + s * hw * .86, ky = ap + (sp - ap) * .66; roof += `<path d="M${kx.toFixed(0)} ${(ky - w).toFixed(0)}l${(s * w * .9).toFixed(0)} ${(w * 1.8).toFixed(0)}l${(-s * w * 1.1).toFixed(0)} ${(w * .55).toFixed(0)}z" fill="#6b4522"/>`; } }
   let can = ''; for (let i = 0; i < 52; i++) { const x = 40 + R() * 920, y = 80 + R() * 400, s = .55 + R() * 1; can += `<g${R() < .35 ? ' class="tw"' : ''}><circle cx="${x.toFixed(0)}" cy="${(y - 8 * s).toFixed(0)}" r="${(20 * s).toFixed(1)}" fill="url(#gCandle)"/><rect x="${(x - 1.7 * s).toFixed(1)}" y="${y.toFixed(0)}" width="${(3.4 * s).toFixed(1)}" height="${(17 * s).toFixed(1)}" fill="#f0e6cf"/><ellipse cx="${x.toFixed(0)}" cy="${(y - 3 * s).toFixed(1)}" rx="${(1.9 * s).toFixed(1)}" ry="${(4.2 * s).toFixed(1)}" fill="#ffd787"/></g>`; }
-  $('#svgHaMid').innerHTML = `<defs><linearGradient id="gSide" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#20160e"/><stop offset=".5" stop-color="#6b4728"/><stop offset="1" stop-color="#8a5c31"/></linearGradient>
+  const ghost = (x, y, s, k) => `<g transform="translate(${x} ${y}) scale(${s})"><g class="ghost g${k}"><path d="M-22 32c0-22 10-36 22-36s22 14 22 36v42l-7-6-7 8-8-8-7 8-8-8-7 6z" fill="url(#gGhost)"/><path d="M-22 40c-10 6-16 16-14 26M22 40c10 4 16 12 16 22" fill="none" stroke="#eaf2ff" stroke-width="5" stroke-linecap="round" opacity=".28"/><ellipse cx="-7" cy="16" rx="3" ry="4.4" fill="#0b1630" opacity=".45"/><ellipse cx="7" cy="16" rx="3" ry="4.4" fill="#0b1630" opacity=".45"/><path d="M-5 28q5 4 10 0" fill="none" stroke="#0b1630" stroke-width="1.6" opacity=".35"/></g></g>`;
+  const ghosts = ghost(352, 300, 1.25, 1) + ghost(676, 262, 1, 2) + ghost(150, 360, .9, 3) + ghost(860, 380, .85, 4);
+  $('#svgHaMid').innerHTML = `<defs><radialGradient id="gGhost" cx=".5" cy=".3" r=".8"><stop offset="0" stop-color="#f4f8ff" stop-opacity=".62"/><stop offset=".7" stop-color="#cfdcff" stop-opacity=".22"/><stop offset="1" stop-color="#cfdcff" stop-opacity="0"/></radialGradient><linearGradient id="gSide" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#20160e"/><stop offset=".5" stop-color="#6b4728"/><stop offset="1" stop-color="#8a5c31"/></linearGradient>
     <radialGradient id="gFire"><stop offset="0" stop-color="#ffb65f" stop-opacity=".6"/><stop offset="1" stop-color="#ffb65f" stop-opacity="0"/></radialGradient>
     <radialGradient id="gCandle"><stop offset="0" stop-color="#ffd38c" stop-opacity=".42"/><stop offset="1" stop-color="#ffd38c" stop-opacity="0"/></radialGradient></defs>
-    ${wall(-1)}${wall(1)}${sideTree(210, 632, 220)}${sideTree(790, 632, 220)}${roof}${can}`;
+    ${wall(-1)}${wall(1)}${sideTree(210, 632, 220)}${sideTree(790, 632, 220)}${roof}${ghosts}${can}`;
 
   // ---- near: stone floor and four long tables running towards the back
   const quadP = (ax, bx, y0, y1, fill) => { const k = (x, y) => VX + (x - VX) * (y - VY) / (BB - VY); return `<polygon points="${ax},${y0} ${bx},${y0} ${k(bx, y1).toFixed(1)},${y1} ${k(ax, y1).toFixed(1)},${y1}" fill="${fill}"/>`; };
@@ -212,7 +214,9 @@ function buildHat() {
       <polygon points="242,246 284,240 292,288 248,294" fill="#34353f"/><path d="M242 246l4 4M254 244l2 4M270 241l2 4M284 240l-3 4M292 288l-4-3M270 291l-2-4M248 294l3-4M244 270l4 0M288 264l-4 0" stroke="${stitch}" stroke-width="1.8"/>
       <polygon points="176,136 212,126 220,158 184,168" fill="#2a2b33"/><path d="M176 136l4 3M190 132l2 4M204 128l2 4M212 126l-3 4M220 158l-4-3M202 163l-2-4M184 168l3-4" stroke="${stitch}" stroke-width="1.6"/>
       <path d="M124 262q40-22 76-12M104 310q44 6 84-4M226 216q24-14 48-6M214 318q30-4 60-16" fill="none" stroke="${crease}" stroke-width="3.6" opacity=".75"/>
-      <g id="hatBrows"><path d="M146 186q24-20 48-4" fill="none" stroke="#000" stroke-width="8" stroke-linecap="round"/><path d="M146 190q24-20 48-4" fill="none" stroke="${rim}" stroke-width="2" stroke-linecap="round" opacity=".8"/><path d="M222 178q22-12 44 8" fill="none" stroke="#000" stroke-width="8" stroke-linecap="round"/><path d="M222 182q22-12 44 8" fill="none" stroke="${rim}" stroke-width="2" stroke-linecap="round" opacity=".8"/><path d="M158 204q14-8 28-2M232 198q14-6 26 2" fill="none" stroke="#000" stroke-width="5" stroke-linecap="round"/></g>
+      <g id="browL" class="brow"><path d="M146 186q24-20 48-4" fill="none" stroke="#000" stroke-width="8" stroke-linecap="round"/><path d="M146 190q24-20 48-4" fill="none" stroke="${rim}" stroke-width="2" stroke-linecap="round" opacity=".8"/></g><g id="browR" class="brow"><path d="M222 178q22-12 44 8" fill="none" stroke="#000" stroke-width="8" stroke-linecap="round"/><path d="M222 182q22-12 44 8" fill="none" stroke="${rim}" stroke-width="2" stroke-linecap="round" opacity=".8"/></g>
+      <g id="eyeL" class="eye"><path d="M155 208q17-14 34 0q-17 11-34 0z" fill="#000"/><g id="pupL"><circle cx="172" cy="207" r="4.8" fill="#f2c97a"/><circle cx="173.8" cy="205.2" r="1.5" fill="#fff8e0"/></g></g>
+      <g id="eyeR" class="eye"><path d="M228 202q17-13 34 0q-17 10-34 0z" fill="#000"/><g id="pupR"><circle cx="245" cy="201" r="4.6" fill="#f2c97a"/><circle cx="246.7" cy="199.3" r="1.4" fill="#fff8e0"/></g></g>
       <path id="hatMouth" d="M140 252q28 16 60 12t62-22q-8 22-30 32t-50 6q-24-6-42-28z" fill="#000"/><path d="M140 252q30 14 60 10t62-20" fill="none" stroke="${rim}" stroke-width="2.4" opacity=".85"/><path d="M146 262q24 26 56 22t52-34" fill="none" stroke="${rim}" stroke-width="1.6" opacity=".5"/>
     </g></svg>`;
 }
@@ -237,7 +241,32 @@ function placeHat() {
   $('#hallDim').style.setProperty('--hy', (H - line - size * .5) + 'px');
 }
 let talkT = 0;
-function hatTalk(ms = 1200, tap = true) { const h = $('#hat'); h.classList.add('talk'); clearTimeout(talkT); talkT = setTimeout(() => h.classList.remove('talk'), reduceMotion ? 0 : ms); if (A.on && tap) noise(.05, { vol: .035, freq: 1500, q: .6 }); } // a soft tap of cloth, neutral: the low tones in core.js mean a wand said no
+function hatTalk(ms = 1200, tap = true, mood = null) { const h = $('#hat'); h.classList.remove('raise', 'furrow'); if (mood) h.classList.add(mood); clearTimeout(talkT); talkT = setTimeout(() => h.classList.remove('raise', 'furrow'), ms + 300); if (A.on && tap) noise(.05, { vol: .035, freq: 1500, q: .6 }); } // a soft tap of cloth, neutral: the low tones in core.js mean a wand said no
+
+/* ================= the Hat's face ================= */
+// Eyes follow the pointer or the option under it and come back to the player; random blinks; brows by the line's mood; the mouth by the voice's level.
+const FACE = { tx: 0, ty: 0, x: 0, y: 0, moved: -1e9, focus: null, blinkAt: 0, open: 0, level: null };
+addEventListener('pointermove', e => { FACE.mx = e.clientX; FACE.my = e.clientY; FACE.moved = now; }, { passive: true });
+const focusOn = el => { const b = el && el.closest && el.closest('#nBtns button'); if (b) { const r = b.getBoundingClientRect(); FACE.focus = { x: r.left + r.width / 2, y: r.top + r.height / 2, at: now }; } };
+addEventListener('pointerover', e => focusOn(e.target)); addEventListener('focusin', e => focusOn(e.target));
+// Which way the brows go for a line: up for questions and surprises, down while thinking.
+const moodOf = id => /^(think|build|any1$|w5r2|t3r2)/.test(id) ? 'furrow' : /^(any3|any4|denied|overruled|house|wish|unwant|[tsw]\d+$|s4r1|w3rat|s7forget)/.test(id) ? 'raise' : null;
+function faceTick(t) {
+  const h = $('#hat'); if ($('#hall').hidden || !h.classList.contains('in')) return;
+  const hb = h.getBoundingClientRect(), ex = hb.left + hb.width * .52, ey = hb.top + hb.height * .51;
+  let gx = 0, gy = .35; // looking at the player
+  const f = FACE.focus && t - FACE.focus.at < 1600 ? FACE.focus : t - FACE.moved < 1400 ? { x: FACE.mx, y: FACE.my } : null;
+  if (f) { gx = clamp((f.x - ex) / (W * .35), -1, 1); gy = clamp((f.y - ey) / (H * .35), -1, 1); }
+  FACE.x += (gx - FACE.x) * .14; FACE.y += (gy - FACE.y) * .14;
+  const tr = `translate(${(FACE.x * 4.6).toFixed(2)} ${(FACE.y * 2.6).toFixed(2)})`; $('#pupL').setAttribute('transform', tr); $('#pupR').setAttribute('transform', tr);
+  if (t > FACE.blinkAt) { if (FACE.blinkAt) { h.classList.add('blink'); setTimeout(() => h.classList.remove('blink'), 130); } FACE.blinkAt = t + (Math.random() < .15 ? 260 : 2400 + Math.random() * 4200); }
+  // the mouth opens with the voice's loudness and rests closed when there's no voice
+  let target = 0; if (FACE.level && VOICE.src) { FACE.level.getFloatTimeDomainData(FACE.buf); let sum = 0; for (const v of FACE.buf) sum += v * v; target = Math.min(1.25, Math.sqrt(sum / FACE.buf.length) * 9); }
+  FACE.open += (target - FACE.open) * (target > FACE.open ? .55 : .25);
+  $('#hatMouth').style.transform = `scaleY(${(.32 + FACE.open).toFixed(3)})`;
+}
+// Leans a little toward the option the player picked, until the next question.
+function leanTo(o) { const b = [...document.querySelectorAll('#nBtns button')].find(x => x.textContent === pickLang(o.u, o.e)), h = $('#hat'); if (!b || reduceMotion) return; const r = b.getBoundingClientRect(), hb = h.getBoundingClientRect(); h.style.rotate = clamp((r.left + r.width / 2 - (hb.left + hb.width / 2)) / W * 22, -7, 7).toFixed(1) + 'deg'; }
 
 /* ================= the Hat's voice ================= */
 // English recordings in /audio/hat, named by the ids in scripts/hat-lines-short.md. Ukrainian players hear English and read Ukrainian in the note.
@@ -257,9 +286,10 @@ async function say(id, fallback = 1200, chained = false) {
   if (!chained) VOICE.chain = null; stopVoice(); const n = VOICE.n;
   const b = A.on && A.ctx ? await voiceBuffer(id) : null;
   if (n !== VOICE.n) return; // another line started meanwhile
-  if (!b) { hatTalk(fallback); return; }
-  const src = A.ctx.createBufferSource(), g = A.ctx.createGain(); g.gain.value = 2.2; src.buffer = b; src.connect(g); g.connect(A.master); src.start(); VOICE.src = src; VOICE.played.push(id); if (VOICE.ended) (VOICE.gaps = VOICE.gaps || []).push(performance.now() - VOICE.ended);
-  hatTalk(b.duration * 1000, false);
+  if (!b) { hatTalk(fallback, true, moodOf(id)); return; }
+  if (!FACE.level) { FACE.level = A.ctx.createAnalyser(); FACE.level.fftSize = 512; FACE.buf = new Float32Array(FACE.level.fftSize); }
+  const src = A.ctx.createBufferSource(), g = A.ctx.createGain(); g.gain.value = 2.2; src.buffer = b; src.connect(g); g.connect(A.master); g.connect(FACE.level); src.start(); VOICE.src = src; VOICE.played.push(id); if (VOICE.ended) (VOICE.gaps = VOICE.gaps || []).push(performance.now() - VOICE.ended);
+  hatTalk(b.duration * 1000, false, moodOf(id));
   await new Promise(r => { src.onended = r; setTimeout(r, b.duration * 1000 + 400); }); VOICE.ended = n === VOICE.n ? performance.now() : 0; // 0: cut short by the next line
 }
 const GAP = 750; // a breath between lines, so they don't run together
@@ -287,18 +317,18 @@ function beginQuestions() {
   ask();
 }
 function ask() {
-  const q = st.questions[st.step]; st.picking = true;
+  const q = st.questions[st.step]; st.picking = true; $('#hat').style.rotate = '0deg';
   setNote(() => ({ kicker: T('hatK'), hand: pickLang(q.ua, q.en), btns: q.o.map(o => ({ label: pickLang(o.u, o.e), ghost: true, fn: () => answer(q, o) })) }));
   say(q.id, 900);
 }
 async function answer(q, o) {
-  if (!st.picking) return; st.picking = false; st.answers.push(o.w);
+  if (!st.picking) return; st.picking = false; st.answers.push(o.w); leanTo(o);
   let r, id; // a few lines answer one option only
   if (o.r) { r = o.r; id = o.r[2]; } else if (Math.random() < .85) { const i = Math.floor(Math.random() * q.r.length); r = q.r[i]; id = q.id + 'r' + (i + 1); } else { const i = Math.floor(Math.random() * SHARED.length); r = SHARED[i]; id = 'any' + (i + 1); }
   setNote(() => ({ kicker: T('hatK'), hand: pickLang(r[0], r[1]) }));
   await sayStep(id, 1000, 1900);
   if (++st.step < st.questions.length) return ask();
-  showWish(true);
+  $('#hat').style.rotate = '0deg'; showWish(true);
 }
 function showWish(first) {
   setNote(() => ({ kicker: T('hatK'), hand: pickLang(HAT.yes.ua, HAT.yes.en), instr: st.avoiding ? pickLang(...HAT.no.hint) : '', cls: 'wish', btns: wishBtns() }), !first);
@@ -391,9 +421,19 @@ async function enterHall() {
   // the snow keeps falling inside
   $('#haMid').after($('#snowBack')); $('#haFront').after($('#snowFront')); $('#haFront').after($('#hallDim')); $('#hallDim').after($('#snowFront')); $('#snowFront').after($('#hat'));
   $('#castle').hidden = true; hall.style.opacity = 1; placeHat();
-  void $('#hat').offsetWidth; $('#hat').classList.add('in'); $('#hallDim').classList.add('in');
   await run(reduceMotion ? 400 : 1300, t => { const e = easeOut(t); if (!reduceMotion) inn.forEach((id, i) => { layers[id].s = 1 + (.3 + i * .1) * (1 - e); }); fl.style.opacity = 1 - easeOut(clamp(t / .75)); });
+  await establish(inn);
+  $('#hallDim').classList.add('in'); await wait(reduceMotion ? 150 : 550); void $('#hat').offsetWidth; $('#hat').classList.add('in');
   startCeremony();
+}
+// A clear look at the Hall before the Hat: a slow push-in for a few seconds. A tap or a key skips it.
+async function establish(inn) {
+  st.phase = 'establish'; let skip; const skipped = new Promise(r => { skip = r; });
+  const end = () => skip(); addEventListener('pointerdown', end, { once: true }); addEventListener('keydown', end, { once: true });
+  const hold = reduceMotion ? 1000 : 2600, t0 = performance.now(); let going = true;
+  if (!reduceMotion) { const step = () => { if (!going) return; const k = easeIO(clamp((performance.now() - t0) / hold)); inn.forEach((id, i) => { layers[id].s = 1 + (.04 + i * .025) * k; }); requestAnimationFrame(step); }; step(); }
+  await Promise.race([wait(hold), skipped]); going = false;
+  removeEventListener('pointerdown', end); removeEventListener('keydown', end);
 }
 const castle = $('#castle');
 dragDepth(castle);
@@ -406,7 +446,7 @@ let resizeT = 0; addEventListener('resize', () => { clearTimeout(resizeT); resiz
 buildSky(); buildFar(); buildMain(); buildFg(); buildHat(); setViewBoxes(); initSnow(); applyLang();
 function frame(t) {
   requestAnimationFrame(frame); // first, so an error in one frame can't stop the page
-  now = t; updatePar(t);
+  now = t; updatePar(t); faceTick(t);
   $('#hat').style.translate = `${(-par.x * MIN * .035).toFixed(1)}px ${(-par.y * MIN * .022).toFixed(1)}px`;
   if (st.phase === 'castle') drawSnow(t); else if ($('#castle').hidden) drawSnow(t, .75);
 }
