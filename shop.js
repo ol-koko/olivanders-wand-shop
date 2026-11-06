@@ -11,8 +11,8 @@ Object.assign(S, {
   postQ: ['Вже маєш паличку?', 'Got a wand?'],
   postHall: ['До Гоґвортсу', 'To Hogwarts'],
   postA: ['Вже маєш паличку? До Гоґвортсу, на церемонію розподілу', 'Got a wand? On to Hogwarts, for the Sorting Ceremony'],
-  postBank: ['Ґрінґотс', 'Gringotts'],
-  postPub: ['Дірявий Казан', 'Leaky Cauldron'],
+  postBank: ['Платформа 9¾', 'Platform 9¾'],
+  postPub: ['Косий провулок', 'Diagon Alley'],
   sign1: ['ОЛІВАНДЕР', 'OLLIVANDERS'],
   sign2: ['чарівні палички · з 382 р. до н. е.', 'makers of fine wands · since 382 B.C.'],
   shopK: ['Крамниця Олівандера', 'Ollivanders'],
@@ -207,7 +207,7 @@ function buildPost() {
       <text id="postQ" x="-102" y="31" text-anchor="middle" font-family="Cormorant Garamond,Georgia,serif" font-style="italic" font-weight="600" font-size="17" fill="#e8d7b0"></text>
       <text id="postHallT" x="-102" y="60" text-anchor="middle" font-family="Cormorant Garamond,Georgia,serif" font-weight="700" font-size="27" letter-spacing=".5" fill="#f0cd84"></text>
       <circle cx="0" cy="22" r="2.2" fill="#1a1008"/><circle cx="0" cy="56" r="2.2" fill="#1a1008"/></a>
-    <g class="sw" id="postBank">${plank(b2, '#8a8296')}${snow(-146, 46, 82)}<text id="postBankT" x="-48" y="107" text-anchor="middle" font-family="Cormorant Garamond,Georgia,serif" font-weight="700" font-size="20" fill="#2a1f34"></text><circle cx="0" cy="100" r="2" fill="#1a1008"/></g>
+    <g class="sw" id="postBank">${plank(b2, '#8a8296')}${snow(-146, 46, 82)}<text id="postBankT" x="-78" y="107" text-anchor="middle" font-family="Cormorant Garamond,Georgia,serif" font-weight="700" font-size="20" fill="#2a1f34"></text><circle cx="0" cy="100" r="2" fill="#1a1008"/></g>
     <g class="sw" id="postPub">${plank(b3, '#5c2236')}${snow(-162, 20, 126)}<text id="postPubT" x="-82" y="151" text-anchor="middle" font-family="Cormorant Garamond,Georgia,serif" font-weight="700" font-size="20" fill="#e9cfa0"></text><circle cx="0" cy="144" r="2" fill="#1a1008"/></g>
   </g>`);
 }
@@ -221,7 +221,7 @@ function placePost(vbX, vbY, vbW, vbH, title) {
   $('#postBar').setAttribute('height', ((946 - top) / k + 14).toFixed(1));
 }
 function fitPostText() { // long words in either language stay on their boards
-  [['#postQ', 210], ['#postHallT', 214], ['#postBankT', 176], ['#postPubT', 176]].forEach(([id, max]) => { const t = $(id); t.removeAttribute('textLength'); try { if (t.getComputedTextLength() > max) { t.setAttribute('textLength', max); t.setAttribute('lengthAdjust', 'spacingAndGlyphs'); } } catch (_) { } });
+  [['#postQ', 210], ['#postHallT', 214], ['#postBankT', 136], ['#postPubT', 176]].forEach(([id, max]) => { const t = $(id); t.removeAttribute('textLength'); try { if (t.getComputedTextLength() > max) { t.setAttribute('textLength', max); t.setAttribute('lengthAdjust', 'spacingAndGlyphs'); } } catch (_) { } });
 }
 function buildGarland() {
   const g = $('#garland'); const R = rng(9);

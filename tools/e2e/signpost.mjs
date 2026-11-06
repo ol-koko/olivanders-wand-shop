@@ -14,7 +14,7 @@ for (const [w, h] of [[390, 844], [320, 568], [1440, 900], [844, 390]]) for (con
     check(bh >= 14, `readable: ${Math.round(bh)} px`);
     check(l === 'ua' ? /Гоґвортсу/.test(txt[2]) : /Hogwarts/.test(txt[2]), `named for screen readers: ${txt[2]}`);
     await page.mouse.click(...(await center(page, '#postBankT')).slice(0, 2)); await sleep(200);
-    check(await page.evaluate(() => __wand.st.phase === 'street' && document.querySelector('#postBank').classList.contains('swing')), 'the Gringotts board swings and the shop stays shut');
+    check(await page.evaluate(() => __wand.st.phase === 'street' && document.querySelector('#postBank').classList.contains('swing')), 'the Platform 9¾ board swings and the shop stays shut');
     if (mobile) { await page.touchscreen.tap(x, y); } else await page.mouse.click(x, y);
     await page.waitForURL(/\/sorting/, { timeout: 5000 }).catch(() => { });
     check(/\/sorting/.test(page.url()) , `the top board leads to the Sorting Ceremony: ${page.url().replace(url, '/')}`);
