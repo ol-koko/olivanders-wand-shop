@@ -12,7 +12,7 @@ q('t2', 1, 'Що в тебе в кишені?', 'What’s in your pocket?', [
   [['Я ж на твоїй голові. Бачу.', 'I’m on your head. I can see.'], ['Капелюхи в кишенях не тямлять.', 'Hats know nothing about pockets.']]),
 q('t3', 1, 'Який звук тебе заспокоює?', 'Which sound calms you?', [
   ['Дощ по підвіконню', 'Rain on the windowsill', 'R'], ['Чайник, що закипає', 'A kettle coming to the boil', 'H'], ['Вогонь, що потріскує', 'A crackling fire', 'G'], ['Тиша, у якій нікому нічого від тебе не треба', 'Silence where nobody needs anything from you', 'S']],
-  [['Тут такого не почуєш.', 'You won’t hear that in here.'], ['Гм. Тиша тут рідкість.', 'Hmm. Quiet is rare here.']]),
+  [['Запам\'ятаю цей звук.', 'I’ll remember that sound.'], ['Гм. Тиша тут рідкість.', 'Hmm. Quiet is rare here.']]),
 q('t4', 1, 'Телефон на трьох відсотках?', 'Phone on three percent?', [
   ['Зарядка завжди зі мною', 'I always carry a charger', 'RH'], ['Знаходжу, в кого позичити', 'I find someone to borrow one from', 'S'], ['Хай сідає, подивимось, що буде', 'Let it die. Let’s see what happens', 'G'], ['Пишу своїм, що зникаю', 'I text my people that I’m vanishing', 'H']],
   [['Не знаю, що таке телефон. Але промовисто.', 'I don’t know phones. Still telling.'], ['Три відсотки. Драматично.', 'Three percent. Dramatic.']]),
@@ -33,7 +33,7 @@ q('t9', 1, 'Ідеальна погода?', 'Perfect weather?', [
   [['Глянь угору. Стеля теж має настрій.', 'Look up. Our ceiling has moods.'], ['Шотландія може розчарувати.', 'Scotland may disappoint you.']]),
 q('t10', 1, 'Скільки непрочитаних?', 'Unread messages?', [
   ['Нуль. Завжди', 'Zero. Always', 'RH'], ['Три тисячі, і я спокійно сплю', 'Three thousand, and I sleep fine', 'G'], ['Прочитані всі, відповім, коли буде що сказати', 'I’ve read them all. I’ll reply when I’ve something to say', 'S'], ['Не знаю, я туди не заглядаю', 'No idea, I never look', '']],
-  [['Сови обурені.', 'The owls are outraged.'], ['Мені ніхто не пише.', 'Nobody writes to me.']]),
+  [['Сови мають про це свою думку.', 'The owls have opinions about that.'], ['Мені ніхто не пише.', 'Nobody writes to me.']]),
 q('t11', 1, 'Яке печиво з банки?', 'Which biscuit from the jar?', [
   ['Найбільше', 'The biggest', 'G'], ['Те, якого ніхто не помітить', 'The one nobody will miss', 'S'], ['Те, що спекла бабуся', 'The one Grandma made', 'H'], ['Те, що має дивний присмак: треба розгадати', 'The one that tastes odd. I need to work it out', 'R']],
   [['Банка бачила. І я теж.', 'The jar saw that. So did I.'], ['У цьому вся людина.', 'That’s the whole person, right there.']]),
@@ -73,7 +73,7 @@ q('s9', 2, 'Завтра екзамен. Сьогодні пригода.', 'Exa
   ['Іду. Екзамен якось буде', 'I go. The exam will sort itself out', 'G'], ['Беру конспект із собою', 'I bring my notes along', 'RH'], ['Вчу, а пригоду переношу на вихідні', 'I study, and move the adventure to the weekend', 'H'], ['Дізнаюсь, хто перевіряє екзамен', 'I find out who’s marking the exam', 'S']],
   [['Викладачі можуть почути. Жартую.', 'Teachers might hear this. Kidding.'], ['Такі є щороку.', 'There’s one every year.']]),
 q('s10', 2, 'Хтось привласнив твою ідею.', 'Someone steals your idea.', [
-  ['Кажу про це при всіх', 'I call it out in front of everyone', 'G'], ['Придумую кращу', 'I come up with a better one', 'R'], ['Хай. Ідей вистачить', 'Fine. I’ve got more', 'H'], ['Я запам’ятаю. Надовго', 'I’ll remember. For a long time', 'S', ['«Надовго» в людей буває різним.', 'People’s “long time” varies.']]],
+  ['Кажу про це при всіх', 'I call it out in front of everyone', 'G'], ['Придумую кращу', 'I come up with a better one', 'R'], ['Хай. Ідей вистачить', 'Fine. I’ve got more', 'H'], ['Я запам’ятаю. Надовго', 'I’ll remember. For a long time', 'S', ['Надовго? Побачимо.', 'For a long time? We’ll see.']]],
   [['Буває і з найкращими.', 'It happens to the best.'], ['Мої пісні теж цитують без дозволу.', 'People quote my songs too.']]),
 q('s11', 2, 'Перший день у новому місці.', 'First day somewhere new.', [
   ['Вивчаю карту й розклад', 'I learn the map and timetable', 'RH'], ['Шукаю, хто тут усе вирішує', 'I find out who really runs the place', 'S'], ['Допомагаю тому, хто ще більш розгублений', 'I help whoever looks even more lost', 'H'], ['Іду туди, куди не можна. Просто подивитись', 'I go where I shouldn’t. Just to look', 'G']],
@@ -85,7 +85,7 @@ q('s12', 2, 'Один факт про твоє майбутнє?', 'One fact abo
 // 3. Choices in the magical world
 q('w1', 3, 'Обери одне зілля.', 'Pick one potion.', [
   ['Удачі на один день', 'One day of luck', 'SG'], ['Розуміти будь-яку мову', 'Understanding any language', 'R'], ['Повернути один втрачений день', 'One lost day back', 'H'], ['Дякую, ні: я не п’ю, що дають незнайомці', 'No thanks. I don’t drink what strangers hand me', '']],
-  [['Попереджаю: від нього болить голова.', 'Fair warning: it gives headaches.'], ['Я б теж обрав. Але я капелюх.', 'I’d pick that too. But I’m a hat.']]),
+  [['Зілля — штука підступна.', 'Potions are tricky things.'], ['Я б теж обрав. Але я капелюх.', 'I’d pick that too. But I’m a hat.']]),
 q('w2', 3, 'Четверо дверей. Обирай.', 'Four doors. Choose.', [
   ['Ті, за якими щось гуде', 'The one that’s humming', 'G'], ['Ті, що спершу ставлять запитання', 'The one that asks you a question first', 'R'], ['Ті, з-під яких пахне випічкою', 'The one that smells of baking', 'H'], ['Ті, що без ручки', 'The one with no handle', 'S']],
   [['Одні ведуть на кухню. Більше не скажу.', 'One leads to the kitchens. That’s all.'], ['Наступного тижня їх може бути п\'ятеро.', 'Next week, there may be five.']]),
