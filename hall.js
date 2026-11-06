@@ -26,7 +26,7 @@ Object.assign(S, {
   bAgain: ['Ще раз', 'Once more'],
 });
 
-const st = { phase: 'castle', cap: null, noteFn: null, input: 'pointer', questions: [], step: 0, answers: [], picking: false, wand: null, wandId: null, house: null, wish: null, avoid: null, avoiding: false, deciding: false };
+const st = { phase: 'castle', cap: null, noteFn: null, input: 'pointer', questions: [], step: 0, answers: [], picking: false, wand: null, wandId: null, house: null, wish: null, avoid: null, avoiding: false, deciding: false, take: 1 };
 const { POOL, WISH: HAT, SHARED } = SortingQuestions;
 const pickLang = (ua, en) => lang === 'en' ? en : ua;
 
@@ -360,19 +360,34 @@ async function decide() {
 function fillCard() {
   const h = st.house; if (!h) return;
   $('#rKicker').textContent = T('doneK'); $('#rName').textContent = houseName(h); $('#rLore').textContent = T(h.toLowerCase() + 'Line');
-  $('#rStage').innerHTML = Crests.svg(h, houseName(h));
+  $('#rSeal').innerHTML = Crests.svg(h, houseName(h), true);
   const w = st.wandId && WANDS.find(x => x.id === st.wandId), sp = $('#rSpecs'), to = $('#rToShop');
   sp.hidden = !w; if (w) sp.textContent = T('wandIs', { w: L(w.name) }); to.hidden = !!w; to.textContent = T('toShop');
+  $('.rcard').classList.toggle('wand', !!w); $('#rStage').hidden = !w;
   $('#bShare').textContent = T('share'); $('#bDown').textContent = T('download'); $('#bAgain').textContent = T('bAgain'); $('#rSavedCap').textContent = T('saveHold');
   refreshCard();
 }
 function showCard() {
   fillCard(); setShareMode(canShareFiles());
-  const res = $('#result'); res.hidden = false; res.scrollTop = 0; note.classList.remove('show'); st.noteFn = null;
-  requestAnimationFrame(() => res.classList.add('show'));
+  const res = $('#result'), seal = $('#rSeal'), card = $('.rcard'); res.hidden = false; res.scrollTop = 0; note.classList.remove('show'); st.noteFn = null;
+  seal.classList.remove('stamp', 'fade'); card.classList.remove('thud');
+  requestAnimationFrame(() => {
+    res.classList.add('show');
+    const w = st.wandId && WANDS.find(x => x.id === st.wandId);
+    if (w) { const rw = $('#rWand'), cw = rw.clientWidth, chh = rw.clientHeight, x = sizeCanvas(rw, cw, chh); drawWand(x, cw / 2, chh / 2, Math.min(cw * .92, 420) * (.8 + .2 * (w.lenN - 9.5) / 5.5), -.05, w, .5); show3D(w); } // the 2D drawing stays if 3D can't load
+    stampSeal(seal, card);
+  });
+}
+// The emblem drops onto the card like a wax seal: a squash on impact, a small shake and a soft thud. Reduced motion: it just fades in.
+function stampSeal(seal, card) {
+  if (reduceMotion) { seal.classList.add('fade'); return; }
+  setTimeout(() => {
+    seal.classList.add('stamp');
+    setTimeout(() => { card.classList.add('thud'); if (A.on && A.ctx) { tone(82, .3, { vol: .16, glide: 46 }); noise(.16, { vol: .09, freq: 320, q: .5 }); } setTimeout(() => card.classList.remove('thud'), 360); }, 420);
+  }, 380);
 }
 $('#bAgain').addEventListener('click', () => {
-  stopVoice(); $('.topbar').classList.remove('away'); const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
+  stopVoice(); hide3D(); $('.topbar').classList.remove('away'); const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
   $('#rSaved').hidden = true; setTimeout(beginQuestions, 500);
 });
 const cardFileName = () => lang === 'en' ? 'my-house.png' : 'miy-fakultet.png';

@@ -7,6 +7,7 @@ const easeOut = t => 1 - Math.pow(1 - t, 3);
 function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const pick = a => a[Math.floor(Math.random() * a.length)];
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 const SVGNS = 'http://www.w3.org/2000/svg';
 let W = innerWidth, H = innerHeight, MIN = Math.min(W, H);
 const DPR = Math.min(2, window.devicePixelRatio || 1);

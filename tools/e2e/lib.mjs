@@ -21,7 +21,7 @@ export function serve() {
       if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end(); }
       let body = fs.readFileSync(file);
       if (file.endsWith('shop.js')) body = body.toString('utf8') + HOOK;
-      if (file.endsWith('hall.js')) body = body.toString('utf8') + '\nwindow.__hall = { st, par, layers, POOL, setNote, placeHat, T, renderNote, makeCard, showWish, wishBtns, answer, VOICE, A, FACE };\n';
+      if (file.endsWith('hall.js')) body = body.toString('utf8') + '\nwindow.__hall = { st, par, layers, POOL, setNote, placeHat, T, renderNote, makeCard, showWish, wishBtns, answer, VOICE, A, FACE, v3 };\n';
       res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' }); res.end(body);
     }).listen(0, '127.0.0.1', () => resolve({ srv, url: `http://localhost:${srv.address().port}/` }));
   });

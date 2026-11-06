@@ -50,10 +50,23 @@
 #nBtns .wide{grid-column:1/-1}
 @media (max-width:360px){#nBtns .ban{font-size:11.5px}#nBtns .ban svg{height:50px}#nBtns.wish{gap:3px}}
 @media (max-height:480px){#nBtns .ban svg{height:30px}#nBtns .wide{grid-column:span 2}#nBtns .btn{padding:6px 10px;font-size:15px}.hand{font-size:22px}}
-#rStage{display:flex;justify-content:center;align-items:center}
-#rStage svg{height:100%;width:auto;filter:drop-shadow(0 8px 18px rgba(0,0,0,.65))}
+#rSeal{position:relative;margin:clamp(6px,1.4vh,14px) auto 0;height:clamp(150px,calc(150px + (var(--h) - 568px)*.22),230px);aspect-ratio:240/300;opacity:0;transform-origin:50% 92%}
+#rSeal svg{width:100%;height:100%;display:block;filter:drop-shadow(0 8px 16px rgba(0,0,0,.65))}
+.rcard.wand #rSeal{position:absolute;left:50%;top:clamp(12px,1.8vh,18px);height:clamp(84px,calc(84px + (var(--h) - 568px)*.09),108px);margin:0;translate:-50% 0;z-index:3}
+.rcard.wand{position:relative;padding-top:clamp(98px,calc(98px + (var(--h) - 568px)*.1),124px)}
+#rSeal.stamp{animation:stamp .72s cubic-bezier(.55,0,.8,.3) both}
+@keyframes stamp{0%{opacity:0;transform:translateY(-80px) scale(1.9)}58%{opacity:1;transform:translateY(0) scale(1.03)}68%{transform:scale(1.1,.86)}82%{transform:scale(.97,1.04)}100%{opacity:1;transform:none}}
+#rSeal.fade{animation:sealFade .6s ease-out both}
+@keyframes sealFade{from{opacity:0}to{opacity:1}}
+.rcard.thud{animation:cardThud .34s ease-out}
+@keyframes cardThud{25%{translate:0 3px}50%{translate:-2px -1px}75%{translate:1px 1px}100%{translate:0 0}}
+#rSeal .shine{animation:shine 5.4s ease-in-out 1.4s infinite}
+@keyframes shine{0%{transform:translateX(0) skewX(-18deg)}24%,100%{transform:translateX(470px) skewX(-18deg)}}
+@media (prefers-reduced-motion:reduce){#rSeal .shine{animation:none;display:none}}
 #rSpecs{text-transform:none}
-#rToShop{display:inline-block;margin-top:10px;font-size:15px;color:#d9b46a}
+#rToShop{display:inline-block;margin-top:10px;font-size:15px;color:#e8c27a;text-decoration:none;border-radius:4px}
+#rToShop:hover,#rToShop:focus-visible{text-decoration:underline;text-underline-offset:3px}
+#rToShop:focus-visible{outline:2px solid #e8c27a;outline-offset:4px}
 .house{font-weight:700;letter-spacing:.04em}
 </style>
 </head>
@@ -95,7 +108,8 @@
     <div class="r-kicker" id="rKicker"></div>
     <h1 id="rName"></h1>
     <div class="r-specs" id="rSpecs" hidden></div>
-    <div id="rStage"></div>
+    <div id="rSeal" aria-hidden="true"></div>
+    <div id="rStage" hidden><canvas id="rWand"></canvas><canvas id="rWand3d"></canvas></div>
     <p class="r-lore" id="rLore"></p>
     <div class="r-btns">
       <button class="pri" id="bShare" hidden></button>
@@ -111,6 +125,7 @@
 </div>
 <script src="/logic.js"></script>
 <script src="/core.js"></script>
+<script src="/wands.js"></script>
 <script src="/sorting-logic.js"></script>
 <script src="/sorting-questions.js"></script>
 <script src="/crests.js"></script>
