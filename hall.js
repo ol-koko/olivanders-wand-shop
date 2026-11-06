@@ -258,11 +258,14 @@ async function say(id, fallback = 1200, chained = false) {
   const b = A.on && A.ctx ? await voiceBuffer(id) : null;
   if (n !== VOICE.n) return; // another line started meanwhile
   if (!b) { hatTalk(fallback); return; }
-  const src = A.ctx.createBufferSource(), g = A.ctx.createGain(); g.gain.value = 2.2; src.buffer = b; src.connect(g); g.connect(A.master); src.start(); VOICE.src = src; VOICE.played.push(id);
+  const src = A.ctx.createBufferSource(), g = A.ctx.createGain(); g.gain.value = 2.2; src.buffer = b; src.connect(g); g.connect(A.master); src.start(); VOICE.src = src; VOICE.played.push(id); if (VOICE.ended) (VOICE.gaps = VOICE.gaps || []).push(performance.now() - VOICE.ended);
   hatTalk(b.duration * 1000, false);
-  await new Promise(r => { src.onended = r; setTimeout(r, b.duration * 1000 + 400); });
+  await new Promise(r => { src.onended = r; setTimeout(r, b.duration * 1000 + 400); }); VOICE.ended = n === VOICE.n ? performance.now() : 0; // 0: cut short by the next line
 }
-const sayAll = async ids => { const me = {}; VOICE.chain = me; for (const id of ids) { if (VOICE.chain !== me) return; await say(id, 1200, true); } }; // stops if anything else is said
+const GAP = 750; // a breath between lines, so they don't run together
+const sayAll = async ids => { const me = {}; VOICE.chain = me; for (const [i, id] of ids.entries()) { if (VOICE.chain !== me) return; if (i) await wait(GAP); if (VOICE.chain !== me) return; await say(id, 1200, true); } }; // stops if anything else is said
+// Says a line, then the pause after it. The step also lasts at least `min`, as it did before the voice.
+const sayStep = (id, fallback, min) => Promise.all([wait(min), say(id, fallback).then(() => wait(GAP))]);
 const take = id => `${id}-${st.take}`; // the verdicts and build-up lines have three recordings each
 sndBtn.addEventListener('click', () => { if (!A.on) stopVoice(); });
 
@@ -293,7 +296,7 @@ async function answer(q, o) {
   let r, id; // a few lines answer one option only
   if (o.r) { r = o.r; id = o.r[2]; } else if (Math.random() < .85) { const i = Math.floor(Math.random() * q.r.length); r = q.r[i]; id = q.id + 'r' + (i + 1); } else { const i = Math.floor(Math.random() * SHARED.length); r = SHARED[i]; id = 'any' + (i + 1); }
   setNote(() => ({ kicker: T('hatK'), hand: pickLang(r[0], r[1]) }));
-  await Promise.all([wait(1900), say(id, 1000)]);
+  await sayStep(id, 1000, 1900);
   if (++st.step < st.questions.length) return ask();
   showWish(true);
 }
@@ -310,14 +313,14 @@ async function decide() {
   if (st.deciding) return; st.deciding = true;
   const open = !st.wish && !st.avoid, first = open ? pick(HAT.decide) : null;
   setNote(() => ({ kicker: T('hatK'), hand: first ? pickLang(first[0], first[1]) : T('thinkH') }));
-  await Promise.all([wait(reduceMotion ? 500 : 2000), say(first ? 'decide1' : 'think', 1400)]);
+  await sayStep(first ? 'decide1' : 'think', 1400, reduceMotion ? 500 : 2000);
   const bi = Math.floor(Math.random() * HAT.build.length), build = HAT.build[bi]; setNote(() => ({ kicker: T('hatK'), hand: pickLang(build[0], build[1]) }));
-  await Promise.all([wait(reduceMotion ? 500 : 1800), say(take('build' + (bi + 1)), 1300)]);
+  await sayStep(take('build' + (bi + 1)), 1300, reduceMotion ? 500 : 1800);
   st.house = SortingLogic.sortHouse({ answers: st.answers, wand: st.wand, wish: st.wish, avoid: st.avoid });
   const kind = st.wish ? (st.house === st.wish ? 'got' : 'denied') : st.avoid ? (st.house === st.avoid ? 'overruled' : 'avoided') : null, li = kind ? Math.floor(Math.random() * HAT[kind].length) : -1, line = kind ? HAT[kind][li] : null;
   setNote(() => ({ kicker: T('doneK'), hand: houseName(st.house) + '!', instr: line ? pickLang(line[0], line[1]) : '' }));
   postRow('sorting_results', { house: st.house, wish: st.wish, unwanted: st.avoid, wand_prior: !!st.wand, device_type: deviceType(), language: lang });
-  await Promise.all([wait(reduceMotion ? 1200 : 2600), (async () => { await say(take('house' + st.house), 1500); if (A.on) SFX.reveal(); if (line) await say(kind + (li + 1), 1200); })()]);
+  await Promise.all([wait(reduceMotion ? 1200 : 2600), (async () => { await say(take('house' + st.house), 1500); if (A.on) SFX.reveal(); if (line) { await wait(GAP + 350); await say(kind + (li + 1), 1200); } await wait(GAP + 500); })()]); // the verdict gets a longer breath
   showCard();
 }
 

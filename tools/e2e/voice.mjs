@@ -16,9 +16,11 @@ console.log('== the voice');
 for (const [name, opts] of [['sound on', {}], ['sound off', { init: `localStorage.setItem('wand-sound', '0');` }], ['files missing', { route: async p => p.route(u => /\/audio\/hat\//.test(u.pathname), r => r.fulfill({ status: 404, body: '' })) }]]) {
   const reqs = [], { browser, page, errors } = await open(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, ...opts, route: async p => { p.on('request', r => { const m = /\/audio\/hat\/(.+)\.mp3$/.exec(r.url()); if (m) reqs.push(m[1]); }); if (opts.route) await opts.route(p); } });
   await page.evaluate(() => document.querySelector('#cta').click()); await page.waitForFunction(() => __hall.st.phase === 'hall' && document.querySelector('#nBtns button'), null, { timeout: 25000 });
-  await sleep(3500); await press(page); const a = await game(page); await wide(page, 0); await toCard(page);
+  if (name === 'sound on') await page.waitForFunction(() => __hall.VOICE.played.includes('introI'), null, { timeout: 15000 }); await sleep(1500); await press(page); const a = await game(page); await wide(page, 0); await toCard(page);
   const v = await page.evaluate(() => ({ played: __hall.VOICE.played.slice(), take: __hall.st.take, house: __hall.st.house, mine: __hall.st.questions.flatMap(q => [q.id, q.id + 'r1', q.id + 'r2', ...q.o.filter(o => o.r).map(o => o.r[2])]) }));
   if (name === 'sound on') {
+    const gaps = await page.evaluate(() => __hall.VOICE.gaps || []);
+    check(gaps.length >= 4 && gaps.every(g => g >= 650), `a pause between lines: ${gaps.map(Math.round).join(' ')} ms`);
     check(['introH', 'introI'].every(x => v.played.includes(x)), `the Hat greets aloud: ${v.played.slice(0, 2).join(', ')}`);
     check(a.every(q => v.played.includes(q.id)), 'every question is said aloud');
     check(v.played.includes('wish') && v.played.includes(`house${v.house}-${v.take}`), `the wish and the verdict are said: house${v.house}-${v.take}`);
