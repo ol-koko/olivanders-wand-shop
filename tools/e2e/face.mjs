@@ -57,11 +57,11 @@ await closeAll();
 
 console.log('== the mouth follows the voice');
 { const { browser, page, errors } = await open(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true });
-  await fly(page); await page.waitForFunction(() => __hall.VOICE.played.includes('introH'), null, { timeout: 30000 });
+  await fly(page); await page.waitForFunction(() => __hall.VOICE.played.some(x => /introH$/.test(x)), null, { timeout: 30000 });
   const s = await page.evaluate(() => new Promise(r => { const v = []; const t = setInterval(() => v.push(+/scaleY\(([\d.]+)\)/.exec(document.querySelector('#hatMouth').style.transform)[1]), 50); setTimeout(() => { clearInterval(t); r(v); }, 2000); }));
   const max = Math.max(...s), min = Math.min(...s), changes = s.filter((v, i) => i && Math.abs(v - s[i - 1]) > .03).length;
   check(max > .6 && changes > 8, `the mouth opens and closes with the voice: ${min.toFixed(2)}–${max.toFixed(2)}, ${changes} moves`);
-  await page.waitForFunction(() => __hall.VOICE.played.includes('introI'), null, { timeout: 15000 }); await sleep(4500);
+  await page.waitForFunction(() => __hall.VOICE.played.some(x => /introI$/.test(x)), null, { timeout: 15000 }); await sleep(4500);
   check(+/scaleY\(([\d.]+)\)/.exec(await page.evaluate(() => document.querySelector('#hatMouth').style.transform))[1] < .4, 'and rests closed after the line'); check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close(); }
 await closeAll();
 

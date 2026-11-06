@@ -50,8 +50,8 @@ const mirror = d => `<g transform="translate(240 0) scale(-1 1)">${d}</g>`;
 const SHIELD = 'M60 58Q90 72 120 58 150 72 180 58 188 86 180 112V150C180 196 146 226 120 242 94 226 60 196 60 150V112C52 86 60 58 60 58Z';
 const SHIELD_IN = 'M68 68Q94 79 120 68 146 79 172 68 178 88 172 112V150C172 190 142 217 120 232 98 217 68 190 68 150V112C62 88 68 68 68 68Z';
 const CROWN = 'M84 44 76 14 94 28 106 8 120 26 134 8 146 28 164 14 156 44Q120 56 84 44Z';
-// A crest as SVG. `name` adds a ribbon with the house name, for the bigger sizes.
-function svg(h, name) {
+// A crest as SVG. `name` adds a ribbon with the house name, for the bigger sizes; `shine` adds a gold glint that a page can sweep across it.
+function svg(h, name, shine) {
   const o = HOUSES[h], a = o.animal, n = ++uid, gold = `cG${n}`, mt = `cM${n}`, fld = `cF${n}`, pat = `cP${n}`, rib = `cR${n}`, line = o.metal === 'ink' ? '#a89f8a' : '#1a0d03', ink = o.metal === 'ink';
   const mantle = MANTLE.map(d => scroll(d, gold)).join('');
   const leaves = [[20, 92], [18, 138], [32, 188]].map(([x, y]) => `<path d="M${x} ${y}c-10-6-14-16-10-26 8 4 14 14 10 26z" fill="url(#${gold})" stroke="#2a1806" stroke-width="1"/>`).join('');
@@ -64,6 +64,7 @@ function svg(h, name) {
     <path d="${SHIELD}" fill="url(#${gold})" stroke="#2a1806" stroke-width="2"/><path d="${SHIELD_IN}" fill="url(#${fld})" stroke="#2a1806" stroke-width="1.6"/><path d="${SHIELD_IN}" fill="url(#${pat})"/>
     ${h === 'H' ? `<clipPath id="cC${n}"><path d="${SHIELD_IN}"/></clipPath><g clip-path="url(#cC${n})" opacity=".14" fill="#000"><rect x="84" y="60" width="14" height="180"/><rect x="113" y="60" width="14" height="180"/><rect x="142" y="60" width="14" height="180"/></g>` : ''}
     <path d="M74 74Q96 84 120 74" fill="none" stroke="#fff" stroke-width="1.2" opacity=".28"/>
+    ${shine ? `<clipPath id="cS${n}"><path d="${SHIELD}"/><path d="${CROWN}"/></clipPath><linearGradient id="cL${n}" x1="0" x2="1"><stop offset="0" stop-color="#fff6d8" stop-opacity="0"/><stop offset=".5" stop-color="#fff6d8" stop-opacity=".55"/><stop offset="1" stop-color="#fff6d8" stop-opacity="0"/></linearGradient>` : ''}
     <g fill="url(#${gold})" stroke="#2a1806" stroke-width=".8"><circle cx="64" cy="66" r="2.6"/><circle cx="176" cy="66" r="2.6"/><circle cx="120" cy="238" r="2.6"/><circle cx="64" cy="116" r="2.2"/><circle cx="176" cy="116" r="2.2"/></g>
     <g transform="translate(66 88) scale(1.08)" stroke-linejoin="round">
       ${a.tongue ? `<path d="${a.tongue}" fill="#d43c3c"/>` : ''}
@@ -76,6 +77,7 @@ function svg(h, name) {
       <path d="${a.lines}" fill="none" stroke="${line}" stroke-width="1.1" stroke-linecap="round" opacity=".7"/>
       <path d="${a.marks}" fill="${ink ? '#f1ead8' : '#1a0d03'}" stroke="${ink ? '#000' : '#1a0d03'}" stroke-width=".9" stroke-linecap="round"/>
     </g>
+    ${shine ? `<g clip-path="url(#cS${n})"><rect class="shine" x="-150" y="0" width="70" height="260" fill="url(#cL${n})"/></g>` : ''}
     ${name ? `<path d="M14 262 40 250 40 284 26 276 14 284Z" fill="#8f6a30" stroke="#2a1806"/><path d="M226 262 200 250 200 284 214 276 226 284Z" fill="#8f6a30" stroke="#2a1806"/><path d="M32 246Q120 266 208 246V278Q120 298 32 278Z" fill="url(#${rib})" stroke="#2a1806" stroke-width="1.6"/><path id="cT${n}" d="M38 270Q120 288 202 270" fill="none"/><text font-family="'Cormorant Garamond',Georgia,serif" font-size="19" font-weight="700" letter-spacing="1.5" fill="#2a1806" text-anchor="middle"><textPath href="#cT${n}" startOffset="50%">${name}</textPath></text>` : ''}
   </svg>`;
 }

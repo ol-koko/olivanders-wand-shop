@@ -20,6 +20,7 @@ Then:
     node tools/e2e/hat.mjs             # the Hat: full games, every question on small screens, first impression
     node tools/e2e/face.mjs            # the Hall's first look, the Hat's eyes, blinks, brows, mouth and lean, frame rate
     node tools/e2e/voice.mjs           # the Hat's voice: what loads and plays, muted, missing files
+    node tools/e2e/housecard.mjs       # the house card: 3D wand, stamped seal and shimmer, the shop link, reduced motion
     node tools/e2e/card.mjs            # result card and every sharing path, both languages
     node tools/e2e/ui.mjs              # first screens across phone and desktop sizes
     node tools/e2e/sound.mjs           # sound starts on the entry tap, the choice is remembered

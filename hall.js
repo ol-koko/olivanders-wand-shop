@@ -26,7 +26,7 @@ Object.assign(S, {
   bAgain: ['Ще раз', 'Once more'],
 });
 
-const st = { phase: 'castle', cap: null, noteFn: null, input: 'pointer', questions: [], step: 0, answers: [], picking: false, wand: null, wandId: null, house: null, wish: null, avoid: null, avoiding: false, deciding: false };
+const st = { phase: 'castle', cap: null, noteFn: null, input: 'pointer', questions: [], step: 0, answers: [], picking: false, wand: null, wandId: null, house: null, wish: null, avoid: null, avoiding: false, deciding: false, take: 1 };
 const { POOL, WISH: HAT, SHARED } = SortingQuestions;
 const pickLang = (ua, en) => lang === 'en' ? en : ua;
 
@@ -261,7 +261,8 @@ function faceTick(t) {
   const tr = `translate(${(FACE.x * 4.6).toFixed(2)} ${(FACE.y * 2.6).toFixed(2)})`; $('#pupL').setAttribute('transform', tr); $('#pupR').setAttribute('transform', tr);
   if (t > FACE.blinkAt) { if (FACE.blinkAt) { h.classList.add('blink'); setTimeout(() => h.classList.remove('blink'), 130); } FACE.blinkAt = t + (Math.random() < .15 ? 260 : 2400 + Math.random() * 4200); }
   // the mouth opens with the voice's loudness and rests closed when there's no voice
-  let target = 0; if (FACE.level && VOICE.src) { FACE.level.getFloatTimeDomainData(FACE.buf); let sum = 0; for (const v of FACE.buf) sum += v * v; target = Math.min(1.25, Math.sqrt(sum / FACE.buf.length) * 9); }
+  // Bytes, not floats: every browser fills them. If the level stays silent while a line plays, the mouth moves on its own.
+  let target = 0; if (FACE.level && VOICE.src && VOICE.playing) { FACE.level.getByteTimeDomainData(FACE.buf); let sum = 0; for (const v of FACE.buf) sum += ((v - 128) / 128) ** 2; const rms = Math.sqrt(sum / FACE.buf.length); if (rms > .004) FACE.heard = t; target = t - (FACE.heard || 0) < 400 ? Math.min(1.25, rms * 9) : .45 + .4 * Math.sin(t / 70) * Math.sin(t / 113); }
   FACE.open += (target - FACE.open) * (target > FACE.open ? .55 : .25);
   $('#hatMouth').style.transform = `scaleY(${(.32 + FACE.open).toFixed(3)})`;
 }
@@ -274,7 +275,7 @@ function leanTo(o) { const b = [...document.querySelectorAll('#nBtns button')].f
 const VOICE = { files: new Map(), buffers: new Map(), src: null, n: 0, chain: null, played: [] };
 const voiceUrl = id => `/audio/hat/${lang === 'ua' ? 'ua/' : ''}${id}.mp3`;
 function prefetch(ids) { if (A.on) ids.forEach(id => { const k = voiceUrl(id); if (!VOICE.files.has(k)) VOICE.files.set(k, fetch(k).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)); }); }
-function stopVoice() { VOICE.n++; if (VOICE.src) { try { VOICE.src.stop(); } catch (_) { } VOICE.src = null; } }
+function stopVoice() { VOICE.n++; VOICE.playing = false; if (VOICE.src) { try { VOICE.src.stop(); } catch (_) { } VOICE.src = null; } }
 async function voiceBuffer(id) {
   const k = voiceUrl(id); if (VOICE.buffers.has(k)) return VOICE.buffers.get(k);
   prefetch([id]); const raw = await Promise.race([VOICE.files.get(k), wait(800).then(() => null)]); // a line that isn't there in time is skipped
@@ -287,10 +288,10 @@ async function say(id, fallback = 1200, chained = false) {
   const b = A.on && A.ctx ? await voiceBuffer(id) : null;
   if (n !== VOICE.n) return; // another line started meanwhile
   if (!b) { hatTalk(fallback, true, moodOf(id)); return; }
-  if (!FACE.level) { FACE.level = A.ctx.createAnalyser(); FACE.level.fftSize = 512; FACE.buf = new Float32Array(FACE.level.fftSize); }
-  const src = A.ctx.createBufferSource(), g = A.ctx.createGain(); g.gain.value = 2.2; src.buffer = b; src.connect(g); g.connect(A.master); g.connect(FACE.level); src.start(); VOICE.src = src; VOICE.played.push((lang === 'ua' ? 'ua/' : '') + id); if (VOICE.ended) (VOICE.gaps = VOICE.gaps || []).push(performance.now() - VOICE.ended);
+  if (!FACE.level) { FACE.level = A.ctx.createAnalyser(); FACE.level.fftSize = 512; FACE.buf = new Uint8Array(FACE.level.fftSize); FACE.level.connect(A.master); } // in the chain, not a side branch: some browsers leave an unconnected analyser silent
+  const src = A.ctx.createBufferSource(), g = A.ctx.createGain(); g.gain.value = 2.2; src.buffer = b; src.connect(g); g.connect(FACE.level); src.start(); VOICE.src = src; VOICE.playing = true; FACE.heard = now; VOICE.played.push((lang === 'ua' ? 'ua/' : '') + id); if (VOICE.ended) (VOICE.gaps = VOICE.gaps || []).push(performance.now() - VOICE.ended);
   hatTalk(b.duration * 1000, false, moodOf(id));
-  await new Promise(r => { src.onended = r; setTimeout(r, b.duration * 1000 + 400); }); VOICE.ended = n === VOICE.n ? performance.now() : 0; // 0: cut short by the next line
+  await new Promise(r => { src.onended = r; setTimeout(r, b.duration * 1000 + 400); }); if (VOICE.src === src) VOICE.playing = false; VOICE.ended = n === VOICE.n ? performance.now() : 0; // 0: cut short by the next line
 }
 const GAP = 750; // a breath between lines, so they don't run together
 const sayAll = async ids => { const me = {}; VOICE.chain = me; for (const [i, id] of ids.entries()) { if (VOICE.chain !== me) return; if (i) await wait(GAP); if (VOICE.chain !== me) return; await say(id, 1200, true); } }; // stops if anything else is said
@@ -360,21 +361,54 @@ async function decide() {
 function fillCard() {
   const h = st.house; if (!h) return;
   $('#rKicker').textContent = T('doneK'); $('#rName').textContent = houseName(h); $('#rLore').textContent = T(h.toLowerCase() + 'Line');
-  $('#rStage').innerHTML = Crests.svg(h, houseName(h));
+  // A medal you can turn: the live crest in front, a darker copy behind and a few layers between for the edge.
+  const flat = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(Crests.svg(h, houseName(h)));
+  $('#rSeal').innerHTML = `<div class="coin"><div class="face front">${Crests.svg(h, houseName(h), true)}</div>${[1, 2, 3, 4, 5].map(i => `<img class="face edge" style="transform:translateZ(${-i * 1.6}px)" src="${flat}" alt="">`).join('')}<img class="face back" src="${flat}" alt=""></div>`;
+  applyCoin();
   const w = st.wandId && WANDS.find(x => x.id === st.wandId), sp = $('#rSpecs'), to = $('#rToShop');
   sp.hidden = !w; if (w) sp.textContent = T('wandIs', { w: L(w.name) }); to.hidden = !!w; to.textContent = T('toShop');
+
   $('#bShare').textContent = T('share'); $('#bDown').textContent = T('download'); $('#bAgain').textContent = T('bAgain'); $('#rSavedCap').textContent = T('saveHold');
   refreshCard();
 }
 function showCard() {
   fillCard(); setShareMode(canShareFiles());
-  const res = $('#result'); res.hidden = false; res.scrollTop = 0; note.classList.remove('show'); st.noteFn = null;
-  requestAnimationFrame(() => res.classList.add('show'));
+  const res = $('#result'), seal = $('#rSeal'), card = $('.rcard'); res.hidden = false; res.scrollTop = 0; note.classList.remove('show'); st.noteFn = null;
+  seal.classList.remove('stamp', 'fade'); card.classList.remove('thud');
+  requestAnimationFrame(() => {
+    res.classList.add('show');
+    stampSeal(seal, card);
+  });
+}
+// The emblem drops onto the card like a wax seal: a squash on impact, a small shake and a soft thud. Reduced motion: it just fades in.
+function stampSeal(seal, card) {
+  if (reduceMotion) { seal.classList.add('fade'); return; }
+  setTimeout(() => {
+    seal.classList.add('stamp');
+    setTimeout(() => { card.classList.add('thud'); if (A.on && A.ctx) { tone(82, .3, { vol: .16, glide: 46 }); noise(.16, { vol: .09, freq: 320, q: .5 }); } setTimeout(() => card.classList.remove('thud'), 360); setTimeout(() => turnCoin(), 500); }, 420);
+  }, 380);
 }
 $('#bAgain').addEventListener('click', () => {
-  stopVoice(); $('.topbar').classList.remove('away'); const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
+  stopVoice(); COIN.turn = 0; $('.topbar').classList.remove('away'); const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
   $('#rSaved').hidden = true; setTimeout(beginQuestions, 500);
 });
+// Turning the crest: one slow turn after the stamp, then drag to spin it, with a little momentum. It stops drawing when still.
+const COIN = { yaw: 0, pitch: 0, vy: 0, drag: null, turn: 0, raf: 0, last: 0 };
+const TURN_MS = 2600;
+function applyCoin() { const c = $('#rSeal .coin'); if (!c) return; const extra = COIN.turn ? easeIO(Math.min(1, COIN.turn / TURN_MS)) * 360 : 0; c.style.transform = `rotateX(${COIN.pitch.toFixed(2)}deg) rotateY(${(COIN.yaw + extra).toFixed(2)}deg)`; }
+function coinTick(t) {
+  COIN.raf = 0; const dt = Math.min(50, t - (COIN.last || t)); COIN.last = t;
+  if (COIN.turn) { COIN.turn += dt; if (COIN.turn >= TURN_MS) { COIN.turn = 0; COIN.yaw += 360; } }
+  if (!COIN.drag) { COIN.yaw += COIN.vy * dt; COIN.vy *= Math.pow(.91, dt / 16); if (Math.abs(COIN.vy) < .002) COIN.vy = 0; COIN.pitch *= Math.pow(.9, dt / 16); if (Math.abs(COIN.pitch) < .05) COIN.pitch = 0; }
+  applyCoin();
+  if (COIN.turn || COIN.drag || COIN.vy || COIN.pitch) COIN.raf = requestAnimationFrame(coinTick);
+}
+const wakeCoin = () => { if (!COIN.raf) { COIN.last = 0; COIN.raf = requestAnimationFrame(coinTick); } };
+function turnCoin() { if (reduceMotion) return; COIN.turn = 1e-6; wakeCoin(); }
+{ const s = $('#rSeal');
+  s.addEventListener('pointerdown', e => { COIN.drag = { x: e.clientX, y: e.clientY, t: performance.now() }; if (COIN.turn) { COIN.yaw += easeIO(Math.min(1, COIN.turn / TURN_MS)) * 360; COIN.turn = 0; } COIN.vy = 0; try { s.setPointerCapture(e.pointerId); } catch (_) { } wakeCoin(); });
+  s.addEventListener('pointermove', e => { const d = COIN.drag; if (!d) return; const now = performance.now(), dx = e.clientX - d.x; COIN.yaw += dx * .6; COIN.pitch = clamp(COIN.pitch - (e.clientY - d.y) * .3, -25, 25); COIN.vy = dx * .6 / Math.max(8, now - d.t); COIN.drag = { x: e.clientX, y: e.clientY, t: now }; });
+  const up = () => { COIN.drag = null; wakeCoin(); }; s.addEventListener('pointerup', up); s.addEventListener('pointercancel', up); }
 const cardFileName = () => lang === 'en' ? 'my-house.png' : 'miy-fakultet.png';
 async function makeCard() {
   try { await document.fonts.ready; } catch (_) { }

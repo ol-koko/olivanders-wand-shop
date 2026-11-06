@@ -4,8 +4,8 @@ A small winter-themed web app (fan project, Harry Potter world). The user enters
 waves trial wands, and one of 16 character wands eventually chooses them.
 
 ## Current state
-- Static site, no build step. `index.html` holds the page and the shop's styles. `core.js` and `core.css` hold what every screen shares: helpers, language, depth, sound, the parchment note, logging. `shop.js` holds the shop's drawing, FX and flow. `logic.js` holds the game logic with no DOM (wands, metrics, choosing, camera motion), shared with `tools/`.
-- The scripts are plain `<script>` tags in that order (`logic.js`, `core.js`, `shop.js`) and share top-level names. `core.js` expects each page's script to declare `st` and add its strings to `S`.
+- Static site, no build step. `index.html` holds the page and the shop's styles. `core.js` and `core.css` hold what every screen shares: helpers, language, depth, sound, the parchment note, logging. `wands.js` holds the wands' looks: `SHAPES`, the 2D drawing and the 3D view. `shop.js` holds the shop's drawing, FX and flow. `logic.js` holds the game logic with no DOM (wands, metrics, choosing, camera motion), shared with `tools/`.
+- The scripts are plain `<script>` tags in that order (`logic.js`, `core.js`, `wands.js`, `shop.js`) and share top-level names. `core.js` expects each page's script to declare `st` and add its strings to `S`.
 - Visuals are drawn in code: SVG street scene, canvas shop interior, canvas FX layer. The only image files are `og.jpg`, `favicon.svg` and `apple-touch-icon.png`, for link previews and icons, and the only audio files are the Hat's voice in `audio/hat`; `tools/make-og.mjs` generates them from the game's own drawing.
 - `tools/` is local only and never ships: balance simulator, wave recorder, Playwright tests. See `tools/README.md`.
 - Sound is generated with WebAudio. It starts on the tap that enters the shop, because browsers allow sound only after a tap. The toggle is top-right and the person's choice is remembered.
@@ -42,6 +42,8 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - The Hat is answered by tapping an option. `hat-seen` keeps asked questions and `wand-last` keeps the last wand's traits for a day, both only in the browser. No counters or hints about how many questions remain.
 - After the questions comes one wish screen: 4 banners, and not wanting a house is an action on that screen. Each house is an ornate crest from `crests.js`: gold scrollwork, a crown, a shield in its colours and our own drawing of its animal (lion, snake, raven, badger), not the official crests. The card shares like the wand card, from `core.js`. A finished ceremony logs one row to `sorting_results`: house, wish, unwanted house, whether the wand counted, device, language, no answers.
 - Targets: about 25% per house on random answers, 60–70% for a wished house, under 10% for an unwanted one. After any change to the pool or the weights, re-run `node tools/simulate-sorting.js`.
+
+- The house card shows the crest as a medal you can turn in 3D (CSS 3D: the live crest in front, layered copies for the edge, a darker back): one slow turn after the stamp, then drag to spin with a little momentum. The wand isn't shown; a line names it if there is one, otherwise the link to the shop. The crest stamps down like a wax seal with a small card shake and a soft thud (sound on only), then a gold shimmer sweeps across it every few seconds. Reduced motion: it fades in, no shimmer, no automatic turn.
 
 ## Result logging
 - The live site sends one anonymous row per finished game to Supabase, project `ollivanders-wand-shop`, table `wand_results`: wand, attempts, input mode, language, device type, the 5 averaged traits, average wave length (in screen widths) and duration. No names, IDs or cookies, and `created_at` is cut to the hour. Previews, localhost and tests send nothing.
