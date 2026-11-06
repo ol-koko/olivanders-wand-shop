@@ -3,3 +3,5 @@ CLAUDE.md
 .claude/
 LICENSE
 README.md
+scripts/
+.env
