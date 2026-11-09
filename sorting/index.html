@@ -57,6 +57,9 @@
 @keyframes hatSway{from{transform:rotate(-2.5deg)}to{transform:rotate(3deg)}}
 @media (prefers-reduced-motion:reduce){#hat,#hatTip,.spirit{animation:none}#hat{transition:opacity .9s}}
 #nBtns .btn{font-size:16px;line-height:1.2;padding:9px 14px;border-radius:16px}
+#hall,#note{touch-action:pinch-zoom}
+#nBtns .btn.aim{border-color:#b07c38;background:rgba(176,124,56,.26);box-shadow:0 0 18px rgba(255,190,100,.6)}
+@media (prefers-reduced-motion:no-preference){#nBtns .btn.aim{transform:scale(1.04)}}
 #nBtns.wish{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 #nBtns .ban{display:flex;flex-direction:column;align-items:center;gap:3px;background:transparent;border:2px solid transparent;color:#2a170b;padding:3px 0;font-size:14px;border-radius:10px}
 #nBtns .ban svg{height:70px;width:auto;filter:drop-shadow(0 2px 3px rgba(40,20,5,.45))}
