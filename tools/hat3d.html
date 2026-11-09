@@ -6,7 +6,7 @@
 <script src="/hat3d.js"></script>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
-const POSES = [['спокій', {}, 0], ['говорить', { open: .75, browUp: .5 }, .16], ['усмішка', { smile: 1, browUp: .55, open: .15 }, -.14], ['думає', { furrow: 1, droop: 1, lookX: -.9, lookY: .9, open: .08 }, -.26], ['кліпнув', { blink: 1, smile: .4 }, .1], ['вирішив', { perk: 1, browUp: 1, open: .95, smile: .5 }, 0]];
+const POSES = [['спокій', {}, 0], ['говорить', { open: .55, browUp: .5 }, .16], ['«о»', { open: .5, pucker: 1 }, 0], ['думає', { furrow: 1, droop: 1, lookX: -.9, lookY: .9, open: .08 }, -.26], ['усмішка', { smile: .5, browUp: .55 }, -.14], ['вирішив', { perk: 1, browUp: 1, open: .4, smile: .42 }, 0]];
 for (const [name, pose, yaw] of POSES) { const f = document.createElement('figure'), c = document.createElement('canvas'), t = document.createElement('figcaption'); t.textContent = name; f.append(c, t); m.append(f); const h = await Hat3D.create(THREE, c); h.size(380); h.set(pose); h.turn(yaw); h.render(); }
 window.__ready = true;
 </script>

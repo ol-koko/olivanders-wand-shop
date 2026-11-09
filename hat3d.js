@@ -1,13 +1,13 @@
 // The Hat in 3D, built in code: one crumpled cloth surface whose folds make the face. Every expression is a morph of that surface.
 // await Hat3D.create(three, canvas) returns { set(pose), turn(yaw, pitch), render(), size(px), ratio(r), dispose() }. Building yields often, so the page stays smooth. A pose holds any of the values in MORPHS, from 0 to 1 (look and turn run from -1 to 1).
 const Hat3D = (() => {
-  const MORPHS = ['blink', 'browUp', 'furrow', 'open', 'smile', 'lookX', 'lookY', 'droop', 'perk'];
+  const MORPHS = ['blink', 'browUp', 'furrow', 'open', 'pucker', 'smile', 'lookX', 'lookY', 'droop', 'perk'];
   const H = 2.8, R0 = .9, TAU = Math.PI * 2;
   const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const g = (dx, dy, sx, sy) => Math.exp(-(dx * dx) / (sx * sx) - (dy * dy) / (sy * sy));
   const browY = (x, s, m) => { const inner = 1 - smooth(.03, .15, s * x); return .545 + .04 * m.browUp - .015 * m.furrow - .055 * m.furrow * inner + .024 * m.browUp * (1 - inner) - .05 * Math.pow(s * x / .17 - .5, 2); };
   const pause = () => new Promise(r => setTimeout(r));
-  const clear = m => Object.assign({ blink: 0, browUp: 0, furrow: 0, open: 0, smile: 0, lookX: 0, lookY: 0, droop: 0, perk: 0 }, m);
+  const clear = m => Object.assign({ blink: 0, browUp: 0, furrow: 0, open: 0, pucker: 0, smile: 0, lookX: 0, lookY: 0, droop: 0, perk: 0 }, m);
 
   // Creases: sharp valleys rather than soft waves. ao is how deep in shadow the cloth sits there.
   function folds(x, v) {
@@ -24,12 +24,12 @@ const Hat3D = (() => {
     for (const s of [-1, 1]) {
       const by = browY(x, s, m);
       d += .17 * g(x - s * .086, v - by, .1, .02) - .085 * g(x - s * .08, v - .445, .066, .04) * (1 - .4 * m.blink);
-      d += .034 * g(ax - .165, v - .33, .05, .055) * m.smile;
+      d += .034 * g(ax - .135, v - .33, .05, .055) * m.smile;
     }
     d += m.furrow * .03 * Math.sin((v - .6) * 120) * g(x, v - .645, .11, .05);
-    const curve = m.smile * Math.pow(x / .125, 2) * .05, my = .275 + curve;
-    d -= .11 * g(x, v - my, .135, .03 + .055 * m.open);
-    d += .062 * g(x, v - (my - .058 - .05 * m.open), .12, .022) + .05 * g(x, v - (my + .05 + .03 * m.open), .13, .018);
+    const curve = m.smile * Math.pow(x / .1, 2) * .034, my = .275 + curve, wide = 1 - .25 * m.pucker;
+    d -= .11 * g(x, v - my, .108 * wide, .03 + .055 * m.open);
+    d += .062 * g(x, v - (my - .058 - .05 * m.open), .098 * wide, .022) + .05 * g(x, v - (my + .05 + .03 * m.open), .104 * wide, .018);
     r += d * (1 - v * .4) + lift;
     const sx = (.68 + .3 * m.droop - .36 * m.perk) * bend * bend, sy = v * H - (.5 + .36 * m.droop - .4 * m.perk) * bend * bend * bend, sz = -.12 * bend;
     return [sx + Math.sin(a) * r, sy, sz + Math.cos(a) * r];
@@ -63,7 +63,7 @@ const Hat3D = (() => {
 
   async function create(THREE, canvas) {
     const gl = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true }); gl.setPixelRatio(Math.min(2, devicePixelRatio || 1)); gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.15;
-    const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(26, 1, .1, 40); cam.position.set(0, 1.6, 8.1); cam.lookAt(.12, 1.14, 0);
+    const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(26, 1, .1, 40); cam.position.set(0, 1.6, 8.1); cam.lookAt(0, 1.14, 0);
     const key = new THREE.DirectionalLight(0xfff1dd, 4.6); key.position.set(-3.2, 4, 5); const rim = new THREE.DirectionalLight(0xffc27a, 5); rim.position.set(3.6, 2.4, -4); const rim2 = new THREE.DirectionalLight(0x9db4ff, 5); rim2.position.set(-4, 1.2, -3.5); const front = new THREE.DirectionalLight(0xffe2bd, 2.3); front.position.set(.4, 1.2, 8); scene.add(key, rim, rim2, front, new THREE.HemisphereLight(0x9aa4c8, 0x201816, .85));
     const { tex, bump } = cloth(THREE), group = new THREE.Group(); scene.add(group); const meshes = [];
     const add = (geo, mat) => { const m = new THREE.Mesh(geo, mat); group.add(m); meshes.push(m); return m; };
@@ -80,7 +80,7 @@ const Hat3D = (() => {
     await eye(-1); await eye(1);
     const brow = async s => dark(await grid(THREE, 24, 3, (i, j, m) => { const q = i * 2 - 1, wid = Math.pow(1 - q * q, .5), x = s * .088 + q * .082; return point(x, browY(x, s, m) - .027 + (j * 2 - 1) * wid * .0085, m, .02); }));
     await brow(-1); await brow(1);
-    dark(await grid(THREE, 36, 8, (i, j, m) => { const q = i * 2 - 1, t = j * 2 - 1, wid = Math.pow(1 - q * q, .55), x = q * .128, cur = m.smile * q * q * .05, y = .275 + cur + t * wid * (.012 + .062 * m.open); return point(x, y, m, .012); }));
+    dark(await grid(THREE, 36, 8, (i, j, m) => { const q = i * 2 - 1, t = j * 2 - 1, wid = Math.pow(1 - q * q, .55), x = q * .102 * (1 - .32 * m.pucker), cur = m.smile * q * q * .034, y = .275 + cur + t * wid * (.012 + .06 * m.open); return point(x, y, m, .012); }));
     const api = { pose: clear(), set(p) { Object.assign(api.pose, p); meshes.forEach(k => { if (k.morphTargetInfluences) MORPHS.forEach((n, i) => { k.morphTargetInfluences[i] = api.pose[n]; }); }); }, turn(y, x = 0) { group.rotation.y = y; group.rotation.x = x; }, render() { gl.render(scene, cam); }, size(px) { gl.setSize(px, px, false); }, ratio(r) { gl.setPixelRatio(r); }, dispose() { gl.dispose(); } };
     return api;
   }

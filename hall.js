@@ -312,7 +312,7 @@ addEventListener('click', e => { if (e.isTrusted && performance.now() < SWIPE.sw
 // three.js and the model load in the background once the page has settled. The drawn Hat stays underneath: it remains if WebGL or the CDN fails, on Save-Data, or if the phone can't keep up.
 // The face follows the same signals as the drawing, so everything that moves the drawn Hat moves this one.
 const HAT3D_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
-const H3 = { api: null, on: false, canvas: null, px: 0, ratio: 2, last: 0, frames: [], yaw: 0, pitch: 0, pose: { blink: 0, browUp: 0, furrow: 0, open: 0, smile: .12, lookX: 0, lookY: 0, droop: 0, perk: 0 } };
+const H3 = { api: null, on: false, canvas: null, px: 0, ratio: 2, last: 0, frames: [], yaw: 0, pitch: 0, pose: { blink: 0, browUp: 0, furrow: 0, open: 0, pucker: 0, smile: .1, lookX: 0, lookY: 0, droop: 0, perk: 0 } };
 function sizeHat3D(px) { px = Math.round(px); if (H3.api && px && px !== H3.px) { H3.px = px; H3.api.size(px); } }
 async function loadHat3D() {
   try {
@@ -323,12 +323,17 @@ async function loadHat3D() {
   } catch (_) { H3.api = null; }
 }
 function dropHat3D() { H3.on = false; $('#hat').classList.remove('d3'); const a = H3.api, c = H3.canvas; H3.api = null; setTimeout(() => { try { a && a.dispose(); } catch (_) { } if (c) c.remove(); }, 600); }
+// Rounder lips for low sounds (о, у), wider for bright ones (е, и), read from the voice itself.
+function vowel() {
+  if (!FACE.level || !VOICE.playing) return 0; if (!FACE.bins) FACE.bins = new Uint8Array(FACE.level.frequencyBinCount); FACE.level.getByteFrequencyData(FACE.bins);
+  let low = 0, high = 0; for (let i = 2; i < 60; i++) { if (i < 13) low += FACE.bins[i]; else high += FACE.bins[i]; } low /= 11; high /= 47; return low + high < 12 ? 0 : clamp((low / (low + high) - .52) / .12, 0, 1); // the range measured on the Hat's recordings
+}
 function tickHat3D(t, h) {
   if (!H3.on || $('#result').classList.contains('show')) return;
-  const p = H3.pose, c = h.classList, ease = (k, to, r = .16) => { p[k] += (to - p[k]) * r; }, ponder = c.contains('ponder'), crowned = c.contains('crowned'), raise = c.contains('raise');
-  ease('blink', c.contains('blink') ? 1 : 0, .55); ease('browUp', crowned ? 1 : raise ? .85 : 0); ease('furrow', ponder ? 1 : c.contains('furrow') ? .7 : 0); ease('smile', crowned ? .6 : raise ? .35 : .12);
+  const p = H3.pose, c = h.classList, ease = (k, to, r = .16) => { p[k] += (to - p[k]) * r; }, brow = (k, to) => ease(k, to, to > p[k] ? .14 : .03), ponder = c.contains('ponder'), crowned = c.contains('crowned'), raise = c.contains('raise');
+  ease('blink', c.contains('blink') ? 1 : 0, .55); brow('browUp', crowned ? 1 : raise ? .85 : 0); brow('furrow', ponder ? 1 : c.contains('furrow') ? .7 : 0); ease('smile', crowned ? .42 : raise ? .2 : .1, .07); // the brows rise quickly and settle slowly, so they don't drop when a line ends
   ease('perk', crowned ? 1 : 0, .07); ease('droop', ponder ? .85 : reduceMotion ? 0 : .12 * Math.sin(t / 1500), .08);
-  p.open = Math.min(1, FACE.open * .82); p.lookX = FACE.x; p.lookY = (.35 - FACE.y) * .9;
+  p.open = Math.min(.6, FACE.open * .5); ease('pucker', vowel(), .25); p.lookX = FACE.x; p.lookY = (.35 - FACE.y) * .9;
   const yaw = reduceMotion ? 0 : FACE.x * .24 + .05 * Math.sin(t / 2300), pitch = reduceMotion ? 0 : (FACE.y - .35) * .07; H3.yaw += (yaw - H3.yaw) * .08; H3.pitch += (pitch - H3.pitch) * .08;
   H3.api.set(p); H3.api.turn(H3.yaw, H3.pitch); H3.api.render();
   // A phone that can't keep up: first fewer pixels, then the drawn Hat.
