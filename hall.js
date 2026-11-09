@@ -258,12 +258,14 @@ function faceTick(t) {
   if (SWIPE.aim && FACE.focus) FACE.focus.at = t; // keeps looking for as long as the finger holds the option
   const f = FACE.focus && t - FACE.focus.at < 1600 ? FACE.focus : t - FACE.moved < 1400 ? { x: FACE.mx, y: FACE.my } : null;
   if (f) { gx = clamp((f.x - ex) / (W * .35), -1, 1); gy = clamp((f.y - ey) / (H * .35), -1, 1); }
+  if (PONDER.on) { if (t > PONDER.next) lookAround(t); gx = PONDER.x; gy = PONDER.y; orbitCrests(t); }
   FACE.x += (gx - FACE.x) * .14; FACE.y += (gy - FACE.y) * .14;
   const tr = `translate(${(FACE.x * 4.6).toFixed(2)} ${(FACE.y * 2.6).toFixed(2)})`; $('#pupL').setAttribute('transform', tr); $('#pupR').setAttribute('transform', tr);
   if (t > FACE.blinkAt) { if (FACE.blinkAt) { h.classList.add('blink'); setTimeout(() => h.classList.remove('blink'), 130); } FACE.blinkAt = t + (Math.random() < .15 ? 260 : 2400 + Math.random() * 4200); }
   // the mouth opens with the voice's loudness and rests closed when there's no voice
   // Bytes, not floats: every browser fills them. If the level stays silent while a line plays, the mouth moves on its own.
   let target = 0; if (FACE.level && VOICE.src && VOICE.playing) { FACE.level.getByteTimeDomainData(FACE.buf); let sum = 0; for (const v of FACE.buf) sum += ((v - 128) / 128) ** 2; const rms = Math.sqrt(sum / FACE.buf.length); if (rms > .004) FACE.heard = t; target = t - (FACE.heard || 0) < 400 ? Math.min(1.25, rms * 9) : .45 + .4 * Math.sin(t / 70) * Math.sin(t / 113); }
+  if (PONDER.on && !VOICE.playing && !reduceMotion) target = .1 + .09 * Math.sin(t / 95) * Math.sin(t / 151); // mumbling to itself between the lines
   FACE.open += (target - FACE.open) * (target > FACE.open ? .55 : .25);
   $('#hatMouth').style.transform = `scaleY(${(.32 + FACE.open).toFixed(3)})`;
 }
@@ -338,6 +340,63 @@ const UA_HOUSE_TAKE = { G: 3, H: 2, R: 3, S: 3 };
 const take = id => { const h = /^house([GSRH])$/.exec(id); return `${id}-${h && lang === 'ua' ? UA_HOUSE_TAKE[h[1]] : st.take}`; };
 sndBtn.addEventListener('click', () => { if (!A.on) stopVoice(); });
 
+/* ================= the Hat decides ================= */
+// While it thinks: brows down, eyes searching, the tip drooping, and the four crests circling it and flaring in turn, slower and slower. They go out before the verdict, so they give nothing away.
+// When it has decided: it rises, a golden glow opens behind it and magic dust spirals up around it. Reduced motion: no flaring, no searching, no rise, no dust; the glow only fades in.
+const PONDER = { on: false, next: 0, x: 0, y: -.8, run: null, up: 0, rise: 0 };
+const LOOKS = [[-.85, -.8], [.85, -.8], [-1, .1], [1, .1], [0, -1], [.5, -.9], [-.5, -.9]];
+function lookAround(t) {
+  PONDER.next = t + 420 + Math.random() * 480; if (reduceMotion) return;
+  const l = LOOKS[Math.floor(Math.random() * LOOKS.length)]; PONDER.x = l[0]; PONDER.y = l[1]; $('#hat').style.rotate = (l[0] * 3.5).toFixed(1) + 'deg';
+}
+const hatSpot = () => { const h = $('#hat'); return { size: parseFloat(h.style.width) || 0, bottom: parseFloat(h.style.bottom) || 0 }; };
+function startPonder() {
+  const h = $('#hat'); h.style.rotate = '0deg'; h.classList.add('ponder'); PONDER.on = true; PONDER.next = 0; PONDER.x = 0; PONDER.y = -.8;
+  const box = $('#hatCrests'), me = PONDER.run = {}; PONDER.orbit = null; if (reduceMotion || h.classList.contains('none')) return;
+  const { size, bottom } = hatSpot(), c = Math.round(clamp(size * .3, 52, 96)), tall = c * 1.09, cy = H - bottom - size * .48, barB = $('.topbar').getBoundingClientRect().bottom;
+  box.innerHTML = SortingLogic.shuffled(['G', 'S', 'R', 'H']).map(house => `<div class="crest" style="width:${c}px">${Crests.svg(house)}</div>`).join('');
+  const all = [...box.children];
+  PONDER.orbit = { all, c, tall, cy, a: Math.random() * 6.283, t0: 0, last: 0, rx: Math.min(size * .66, W / 2 - c / 2 - 5), ry: Math.max(0, Math.min(size * .66, cy - barB - tall / 2 - 4, note.getBoundingClientRect().top - 8 - tall / 2 - cy)) };
+  placeCrests(); requestAnimationFrame(() => box.classList.add('on'));
+  let i = 0, gap = 150;
+  const flare = () => { if (PONDER.run !== me) return; all.forEach(x => x.classList.remove('lit')); all[i++ % 4].classList.add('lit'); gap = Math.min(560, gap * 1.1); setTimeout(flare, gap); };
+  flare();
+}
+// The crests circle behind the Hat, so they never cover its face, fast at first and then settling.
+function placeCrests() { const o = PONDER.orbit; o.all.forEach((e, i) => { const a = o.a + i * Math.PI / 2; e.style.translate = `${(W / 2 + Math.cos(a) * o.rx - o.c / 2).toFixed(1)}px ${(o.cy + Math.sin(a) * o.ry - o.tall / 2).toFixed(1)}px`; }); }
+function orbitCrests(t) { const o = PONDER.orbit; if (!o) return; if (!o.last) o.last = o.t0 = t; const dt = Math.min(50, t - o.last) / 1000; o.last = t; o.a += (.8 + 1.9 * Math.exp(-(t - o.t0) / 2000)) * dt; placeCrests(); }
+function stopPonder() { PONDER.on = false; PONDER.run = null; PONDER.orbit = null; const h = $('#hat'); h.classList.remove('ponder'); h.style.rotate = '0deg'; const box = $('#hatCrests'); box.classList.remove('on'); [...box.children].forEach(x => x.classList.remove('lit')); }
+function crownHat() {
+  const h = $('#hat'), a = $('#hatAura'); if (h.classList.contains('none')) return;
+  const { size, bottom } = hatSpot(), barB = $('.topbar').getBoundingClientRect().bottom, up = reduceMotion ? 0 : Math.round(clamp(H - bottom - size - barB, 0, Math.min(72, H * .09)));
+  PONDER.up = up; h.classList.add('crowned');
+  const w = size * 2.1; a.style.width = a.style.height = w + 'px'; a.style.marginLeft = -w / 2 + 'px'; a.style.bottom = bottom + up + size / 2 - w / 2 + 'px';
+  if (!a.children.length) a.innerHTML = '<div class="glow"></div>';
+  requestAnimationFrame(() => a.classList.add('on')); if (!reduceMotion) startDust(size, bottom, up);
+}
+function uncrownHat() { $('#hat').classList.remove('crowned'); PONDER.up = 0; $('#hatAura').classList.remove('on'); endDust(); }
+// Magic dust climbing around the Hat in two spirals, from the brim to above the tip. Dust on the far side is drawn behind the Hat, on the near side in front of it.
+const DUST = { on: false, raf: 0, stop: 0 };
+function dustSprite() { const s = document.createElement('canvas'); s.width = s.height = 32; const x = s.getContext('2d'), g = x.createRadialGradient(16, 16, 0, 16, 16, 16); g.addColorStop(0, 'rgba(255,244,210,1)'); g.addColorStop(.28, 'rgba(255,214,130,.85)'); g.addColorStop(1, 'rgba(255,190,90,0)'); x.fillStyle = g; x.fillRect(0, 0, 32, 32); return s; }
+function startDust(size, bottom, up) {
+  clearTimeout(DUST.stop); const w = Math.min(W, size * 2.2), h = size * 1.75, ratio = Math.min(2, devicePixelRatio || 1), back = $('#dustBack'), front = $('#dustFront');
+  for (const c of [back, front]) { c.width = w * ratio; c.height = h * ratio; c.style.width = w + 'px'; c.style.height = h + 'px'; c.style.left = (W - w) / 2 + 'px'; c.style.bottom = bottom + up - size * .25 + 'px'; c.classList.add('on'); c.getContext('2d').setTransform(ratio, 0, 0, ratio, 0, 0); c.getContext('2d').globalCompositeOperation = 'lighter'; }
+  Object.assign(DUST, { on: true, w, h, size, up, t0: 0, bx: back.getContext('2d'), fx: front.getContext('2d'), sprite: DUST.sprite || dustSprite(), parts: Array.from({ length: W < 768 ? 130 : 180 }, (_, i) => ({ strand: i % 2 * Math.PI, off: Math.random(), speed: .26 + Math.random() * .1, jit: (Math.random() - .5) * size * .09, spin: (Math.random() - .5) * .5, r: 2.4 + Math.random() * 4.2, tw: 3 + Math.random() * 7, ph: Math.random() * 6.283 })) });
+  cancelAnimationFrame(DUST.raf); DUST.raf = requestAnimationFrame(dustFrame);
+}
+function dustFrame(t) {
+  if (!DUST.on) return; DUST.raf = requestAnimationFrame(dustFrame); if (!DUST.t0) DUST.t0 = t;
+  const { w, h, size, up, bx, fx, parts, sprite } = DUST, age = (t - DUST.t0) / 1000, base = h - size * .25 + up - PONDER.rise, cx = w / 2, reached = Math.min(1, age / 1.15); // the spiral climbs up from the brim as it appears
+  bx.clearRect(0, 0, w, h); fx.clearRect(0, 0, w, h);
+  for (const p of parts) {
+    const u = (age * p.speed + p.off) % 1; if (u > reached) continue;
+    const r = size * (.58 - .4 * u) + p.jit, th = p.strand + p.spin + u * 10 + age * .9, depth = Math.sin(th), near = (depth + 1) / 2;
+    const alpha = Math.min(1, u * 7) * Math.min(1, (1 - u) * 4) * (.42 + .58 * near) * (.62 + .38 * Math.sin(age * p.tw + p.ph)), s = p.r * (.7 + .4 * near), c = depth > 0 ? fx : bx;
+    c.globalAlpha = alpha; c.drawImage(sprite, cx + Math.cos(th) * r - s, base - u * size * 1.22 + depth * r * .16 - s, s * 2, s * 2);
+  }
+}
+function endDust() { $('#dustBack').classList.remove('on'); $('#dustFront').classList.remove('on'); clearTimeout(DUST.stop); DUST.stop = setTimeout(() => { DUST.on = false; cancelAnimationFrame(DUST.raf); }, 800); }
+
 /* ================= the ceremony ================= */
 function recall(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (_) { return null; } }
 function loadWand() { const w = recall('wand-last'), ok = w && w.traits && Date.now() - w.at < 864e5; st.wandId = ok ? w.id : null; return ok ? SortingLogic.wandImpression(w.traits) : null; }
@@ -352,7 +411,7 @@ function beginQuestions() {
   try { localStorage.setItem('hat-seen', JSON.stringify(p.seen)); } catch (_) { }
   st.questions = p.questions.map(q => ({ ...q, o: SortingLogic.shuffled(q.o) })); st.step = 0; st.answers = []; st.house = null; st.wish = st.avoid = null; st.avoiding = st.deciding = false;
   st.take = 1 + Math.floor(Math.random() * 3);
-  prefetch([...st.questions.flatMap(q => [q.id, q.id + 'r1', q.id + 'r2', ...q.o.filter(o => o.r).map(o => o.r[2])]), 'wish', 'unwant', 'think', 'decide1', ...HAT.build.map((_, i) => take('build' + (i + 1))), ...'GSRH'.split('').map(h => take('house' + h)), 'got1', 'got2', 'denied1', 'denied2', 'denied3', 'avoided1', 'overruled1']);
+  prefetch([...st.questions.flatMap(q => [q.id, q.id + 'r1', q.id + 'r2', ...q.o.filter(o => o.r).map(o => o.r[2])]), 'wish', 'unwant', 'think', 'decide1', ...HAT.build.map((_, i) => take('build' + (i + 1))), ...'GSRH'.split('').map(h => take('house' + h)), 'got2', 'denied1', 'denied2', 'denied3', 'avoided1', 'overruled1']);
   ask();
 }
 function ask() {
@@ -381,16 +440,18 @@ function tapHouse(h) {
 async function decide() {
   if (st.deciding) return; st.deciding = true;
   const open = !st.wish && !st.avoid, first = open ? pick(HAT.decide) : null;
-  setNote(() => ({ kicker: T('hatK'), hand: first ? pickLang(first[0], first[1]) : T('thinkH') }));
+  setNote(() => ({ kicker: T('hatK'), hand: first ? pickLang(first[0], first[1]) : T('thinkH') })); startPonder();
   await sayStep(first ? 'decide1' : 'think', 1400, reduceMotion ? 500 : 2000);
   const bi = Math.floor(Math.random() * HAT.build.length), build = HAT.build[bi]; setNote(() => ({ kicker: T('hatK'), hand: pickLang(build[0], build[1]) }));
   await sayStep(take('build' + (bi + 1)), 1300, reduceMotion ? 500 : 1800);
   st.house = SortingLogic.sortHouse({ answers: st.answers, wand: st.wand, wish: st.wish, avoid: st.avoid });
-  const kind = st.wish ? (st.house === st.wish ? 'got' : 'denied') : st.avoid ? (st.house === st.avoid ? 'overruled' : 'avoided') : null, li = kind ? Math.floor(Math.random() * HAT[kind].length) : -1, line = kind ? HAT[kind][li] : null;
-  setNote(() => ({ kicker: T('doneK'), hand: houseName(st.house) + '!', instr: line ? pickLang(line[0], line[1]) : '' }));
+  const kind = st.wish ? (st.house === st.wish ? 'got' : 'denied') : st.avoid ? (st.house === st.avoid ? 'overruled' : 'avoided') : null, li = kind === 'got' ? 1 : kind ? Math.floor(Math.random() * HAT[kind].length) : -1, line = kind ? HAT[kind][li] : null; // a granted wish always hears «Ти просиш. І це в тобі є»
+  stopPonder();
   postRow('sorting_results', { house: st.house, wish: st.wish, unwanted: st.avoid, wand_prior: !!st.wand, device_type: deviceType(), language: lang });
-  // The house, then the Hat's line about the wish if there is one, then the card with its chime.
-  await Promise.all([wait(reduceMotion ? 1200 : 2200), (async () => { await say(take('house' + st.house), 1500); if (line) { await wait(GAP + 350); await say(kind + (li + 1), 1200); } await wait(GAP); })()]);
+  // The Hat's line about the wish if there is one, a held breath, then the house as it rises in gold with the chime, then the card.
+  if (line) { setNote(() => ({ kicker: T('hatK'), hand: pickLang(line[0], line[1]) })); await Promise.all([wait(reduceMotion ? 800 : 1300), say(kind + (li + 1), 1200)]); await wait(reduceMotion ? 250 : GAP + 200); }
+  setNote(() => ({ kicker: T('doneK'), hand: houseName(st.house) + '!' })); crownHat(); if (A.on && A.ctx) SFX.reveal();
+  await Promise.all([wait(reduceMotion ? 1200 : 2100), say(take('house' + st.house), 1500).then(() => wait(450))]);
   showCard();
 }
 
@@ -408,16 +469,14 @@ function fillCard() {
   $('#bShare').textContent = T('share'); $('#bDown').textContent = T('download'); $('#bAgain').textContent = T('bAgain'); $('#rSavedCap').textContent = T('saveHold');
   refreshCard();
 }
-// The card opens after the verdict, with a chime as the crest lands.
+// The card opens after the verdict. The chime has already played, with the rising dust.
 function showCard() {
-  const me = st.cardRun = {};
-  const after = () => { if (st.cardRun === me && A.on && A.ctx) SFX.reveal(); };
-  fillCard(); setShareMode(canShareFiles());
+  endDust(); fillCard(); setShareMode(canShareFiles());
   const res = $('#result'), seal = $('#rSeal'), card = $('.rcard'); res.hidden = false; res.scrollTop = 0; note.classList.remove('show'); st.noteFn = null;
   seal.classList.remove('stamp', 'fade'); card.classList.remove('thud');
   requestAnimationFrame(() => {
     res.classList.add('show');
-    stampSeal(seal, card, after);
+    stampSeal(seal, card);
   });
 }
 // The emblem drops onto the card like a wax seal: a squash on impact, a small shake and a soft thud. Reduced motion: it just fades in.
@@ -429,7 +488,7 @@ function stampSeal(seal, card, landed = () => { }) {
   }, 380);
 }
 $('#bAgain').addEventListener('click', () => {
-  stopVoice(); st.cardRun = null; COIN.turn = 0; $('.topbar').classList.remove('away'); const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
+  stopVoice(); uncrownHat(); COIN.turn = 0; $('.topbar').classList.remove('away'); const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
   $('#rSaved').hidden = true; setTimeout(beginQuestions, 500);
 });
 // Turning the crest: one slow turn after the stamp, then drag to spin it, with a little momentum. It stops drawing when still.
@@ -495,7 +554,7 @@ async function enterHall() {
     fl.style.opacity = clamp((t - .5) / .42); drawSnow(performance.now(), 1 - z);
   });
   // the snow keeps falling inside
-  $('#haMid').after($('#snowBack')); $('#haFront').after($('#snowFront')); $('#haFront').after($('#hallDim')); $('#hallDim').after($('#snowFront')); $('#snowFront').after($('#hat'));
+  $('#haMid').after($('#snowBack')); $('#haFront').after($('#snowFront')); $('#haFront').after($('#hallDim')); $('#hallDim').after($('#snowFront')); $('#snowFront').after($('#hatAura'), $('#hatCrests'), $('#dustBack'), $('#hat'), $('#dustFront'));
   $('#castle').hidden = true; hall.style.opacity = 1; placeHat();
   await run(reduceMotion ? 400 : 1300, t => { const e = easeOut(t); if (!reduceMotion) inn.forEach((id, i) => { layers[id].s = 1 + (.3 + i * .1) * (1 - e); }); fl.style.opacity = 1 - easeOut(clamp(t / .75)); });
   await establish(inn);
@@ -523,7 +582,8 @@ buildSky(); buildFar(); buildMain(); buildFg(); buildHat(); setViewBoxes(); init
 function frame(t) {
   requestAnimationFrame(frame); // first, so an error in one frame can't stop the page
   now = t; updatePar(t); faceTick(t);
-  $('#hat').style.translate = `${(-par.x * MIN * .035).toFixed(1)}px ${(-par.y * MIN * .022).toFixed(1)}px`;
+  PONDER.rise += (PONDER.up - PONDER.rise) * .06; // eased here, because this line sets the Hat's position every frame
+  $('#hat').style.translate = `${(-par.x * MIN * .035).toFixed(1)}px ${(-par.y * MIN * .022 - PONDER.rise).toFixed(1)}px`;
   if (st.phase === 'castle') drawSnow(t); else if ($('#castle').hidden) drawSnow(t, .75);
 }
 requestAnimationFrame(frame);
