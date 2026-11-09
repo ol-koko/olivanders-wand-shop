@@ -40,7 +40,27 @@
 #hat.in{opacity:1}
 #hat.none{display:none}
 @keyframes hatFloat{from{transform:translateY(-7px) rotate(-.8deg) scale(1)}to{transform:translateY(7px) rotate(.8deg) scale(1.016)}}
-#hat{transition:opacity .9s,rotate .5s cubic-bezier(.3,.7,.3,1)}
+#hat{transition:opacity .9s,rotate .5s cubic-bezier(.3,.7,.3,1),filter .9s}
+#hat.crowned{filter:drop-shadow(0 0 22px rgba(255,205,120,.6))}
+#hat.ponder #browL{transform:translateY(4px) rotate(11deg)}#hat.ponder #browR{transform:translateY(4px) rotate(-11deg)}
+#hat.crowned .brow{transform:translateY(-6px)}
+#hatTip{transition:rotate .7s cubic-bezier(.3,.7,.3,1)}
+#hat.ponder #hatTip{rotate:-10deg}
+#hat.crowned #hatTip{rotate:6deg}
+#hatCrests{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .5s}
+#hatCrests.on{opacity:1}
+#hatCrests .crest{position:absolute;opacity:.16;transform:scale(.88);transition:opacity .16s,transform .16s}
+#hatCrests .crest.lit{opacity:1;transform:scale(1.06);filter:drop-shadow(0 0 12px rgba(255,205,120,.85))}
+#hatCrests svg{width:100%;height:auto;display:block}
+#hatAura{position:absolute;left:50%;pointer-events:none;opacity:0;transform:scale(.55);transition:opacity 1s ease,transform 1.3s cubic-bezier(.2,.8,.2,1);container-type:inline-size}
+#hatAura.on{opacity:1;transform:scale(1)}
+#hatAura .glow,#hatAura .rays{position:absolute;inset:0;border-radius:50%}
+#hatAura .glow{background:radial-gradient(closest-side,rgba(255,221,150,.72),rgba(217,180,106,.36) 42%,rgba(217,180,106,0) 72%)}
+#hatAura .rays{background:repeating-conic-gradient(rgba(255,226,165,.2) 0 7deg,rgba(255,226,165,0) 7deg 22deg);-webkit-mask:radial-gradient(closest-side,#000 18%,transparent 78%);mask:radial-gradient(closest-side,#000 18%,transparent 78%);animation:auraTurn 26s linear infinite}
+#hatAura i{position:absolute;width:5px;height:5px;margin:-2.5px;border-radius:50%;background:#ffe3a6;box-shadow:0 0 9px 2px rgba(255,205,120,.85);opacity:0;animation:auraSpark 2.4s ease-out infinite}
+@keyframes auraTurn{to{transform:rotate(360deg)}}
+@keyframes auraSpark{0%{opacity:0;transform:translate(0,0) scale(.4)}18%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1)}}
+@media (prefers-reduced-motion:reduce){#hatAura .rays{animation:none}#hatAura{transform:none}}
 #hat svg{width:100%;height:100%;display:block;overflow:visible}
 #hatTip,#hatMouth,.eye,.brow,.spirit{transform-box:fill-box}
 #hatTip{transform-origin:18% 100%;animation:hatSway 5s ease-in-out infinite alternate}
@@ -112,6 +132,8 @@
     <div class="pl" id="haMid" data-d=".7"><svg id="svgHaMid" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMin slice"></svg></div>
     <div class="pl" id="haFront" data-d="1.05"><svg id="svgHaFront" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMin slice"></svg></div>
     <div id="hallDim"></div>
+    <div id="hatAura" aria-hidden="true"></div>
+    <div id="hatCrests" aria-hidden="true"></div>
     <div id="hat" aria-hidden="true"></div>
   </section>
 

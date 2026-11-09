@@ -45,7 +45,8 @@ console.log('== with a wish: house, the wish line, then the card with its chime'
   const t = await page.evaluate(() => ({ ...__t, osc: __osc.filter(x => x > (__t.land || 0) - 50 && x < (__t.land || 0) + 400).length, kind: Object.keys(__t).find(k => /^(got|denied)\d$/.test(k)), house: Object.keys(__t).find(k => /^house[GSRH]/.test(k)) }));
   check(t.house && t[t.house] < t.card, `the house is said before the card opens (${t.house})`);
   check(t.osc >= 4, `a chime as the crest lands: ${t.osc} tones`);
-  check(t.kind && t[t.house] < t[t.kind] && t[t.kind] < t.card, `the wish line "${t.kind}" comes after the house and before the card`);
+  check(t.kind && t[t.kind] < t[t.house] && t[t.house] < t.card, `the wish line "${t.kind}" comes before the house, the house before the card`);
+  check(t.kind !== 'got1', 'a granted wish always hears got2');
   check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close(); }
 await closeAll(); srv.close();
 console.log(fails.length ? `\n${fails.length} FAILED:\n- ${fails.join('\n- ')}` : '\nall passed');
