@@ -1,0 +1,12 @@
+<!doctype html>
+<!-- A look at the 3D Hat's expressions. Local only: tools/ never ships. -->
+<meta charset="utf-8">
+<style>body{margin:0;background:radial-gradient(70% 60% at 50% 40%,#3a2c28,#0c0c16);color:#d9b46a;font:17px Georgia,serif}main{display:grid;grid-template-columns:repeat(3,1fr);gap:0}figure{margin:0;text-align:center}canvas{width:100%;display:block}figcaption{margin:-6px 0 12px}</style>
+<main id="m"></main>
+<script src="/hat3d.js"></script>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
+const POSES = [['спокій', {}, 0], ['говорить', { open: .75, browUp: .5 }, .16], ['усмішка', { smile: 1, browUp: .55, open: .15 }, -.14], ['думає', { furrow: 1, droop: 1, lookX: -.9, lookY: .9, open: .08 }, -.26], ['кліпнув', { blink: 1, smile: .4 }, .1], ['вирішив', { perk: 1, browUp: 1, open: .95, smile: .5 }, 0]];
+for (const [name, pose, yaw] of POSES) { const f = document.createElement('figure'), c = document.createElement('canvas'), t = document.createElement('figcaption'); t.textContent = name; f.append(c, t); m.append(f); const h = await Hat3D.create(THREE, c); h.size(380); h.set(pose); h.turn(yaw); h.render(); }
+window.__ready = true;
+</script>

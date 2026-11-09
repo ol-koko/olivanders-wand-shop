@@ -42,6 +42,10 @@
 @keyframes hatFloat{from{transform:translateY(-7px) rotate(-.8deg) scale(1)}to{transform:translateY(7px) rotate(.8deg) scale(1.016)}}
 #hat{transition:opacity .9s,rotate .5s cubic-bezier(.3,.7,.3,1),filter .9s}
 #hat.crowned{filter:drop-shadow(0 0 22px rgba(255,205,120,.6))}
+#hat3d{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity .5s;background:radial-gradient(closest-side,rgba(255,217,160,.38),rgba(255,201,138,.13) 58%,rgba(255,201,138,0))}
+#hat svg{transition:opacity .5s}
+#hat.d3 #hat3d{opacity:1}#hat.d3 svg{opacity:0}
+#hat.d3,#hat.d3.crowned{filter:none}
 #hat.ponder #browL{transform:translateY(4px) rotate(11deg)}#hat.ponder #browR{transform:translateY(4px) rotate(-11deg)}
 #hat.crowned .brow{transform:translateY(-6px)}
 #hatTip{transition:rotate .7s cubic-bezier(.3,.7,.3,1)}
@@ -172,6 +176,7 @@
 <script src="/sorting-logic.js"></script>
 <script src="/sorting-questions.js"></script>
 <script src="/crests.js"></script>
+<script src="/hat3d.js"></script>
 <script src="/hall.js"></script>
 </body>
 </html>

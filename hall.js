@@ -237,7 +237,7 @@ function placeHat() {
   const h = $('#hat'); if ($('#hall').hidden) return;
   const barB = $('.topbar').getBoundingClientRect().bottom + 2, base = H - note.offsetHeight - note.offsetTop, line = tallestNote() + base + 6, room = H - line - barB;
   const size = Math.min(room, 340, W * .7);
-  h.classList.toggle('none', size < 90); h.style.width = h.style.height = size + 'px'; h.style.marginLeft = -size / 2 + 'px'; h.style.bottom = line + 'px';
+  h.classList.toggle('none', size < 90); h.style.width = h.style.height = size + 'px'; h.style.marginLeft = -size / 2 + 'px'; h.style.bottom = line + 'px'; sizeHat3D(size);
   $('#hallDim').style.setProperty('--hy', (H - line - size * .5) + 'px');
 }
 let talkT = 0;
@@ -268,6 +268,7 @@ function faceTick(t) {
   if (PONDER.on && !VOICE.playing && !reduceMotion) target = .1 + .09 * Math.sin(t / 95) * Math.sin(t / 151); // mumbling to itself between the lines
   FACE.open += (target - FACE.open) * (target > FACE.open ? .55 : .25);
   $('#hatMouth').style.transform = `scaleY(${(.32 + FACE.open).toFixed(3)})`;
+  tickHat3D(t, h);
 }
 // Leans a little toward the option the player picked, until the next question.
 function leanTo(o) { const b = [...document.querySelectorAll('#nBtns button')].find(x => x.textContent === pickLang(o.u, o.e)), h = $('#hat'); if (!b || reduceMotion) return; const r = b.getBoundingClientRect(), hb = h.getBoundingClientRect(); h.style.rotate = clamp((r.left + r.width / 2 - (hb.left + hb.width / 2)) / W * 22, -7, 7).toFixed(1) + 'deg'; }
@@ -306,6 +307,34 @@ addEventListener('pointerdown', e => {
 addEventListener('pointermove', e => { if (e.pointerId !== SWIPE.id || (!SWIPE.moved && Math.hypot(e.clientX - SWIPE.x, e.clientY - SWIPE.y) < SWIPE_MIN)) return; SWIPE.moved = true; aimAt(e.clientX, e.clientY); }, { passive: true });
 addEventListener('pointerup', e => endSwipe(e, true)); addEventListener('pointercancel', e => endSwipe(e, false));
 addEventListener('click', e => { if (e.isTrusted && performance.now() < SWIPE.swallow) { SWIPE.swallow = 0; e.stopPropagation(); e.preventDefault(); } }, true); // the browser's own click after a slide isn't a tap
+
+/* ================= the Hat in 3D ================= */
+// three.js and the model load in the background once the page has settled. The drawn Hat stays underneath: it remains if WebGL or the CDN fails, on Save-Data, or if the phone can't keep up.
+// The face follows the same signals as the drawing, so everything that moves the drawn Hat moves this one.
+const HAT3D_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
+const H3 = { api: null, on: false, canvas: null, px: 0, ratio: 2, last: 0, frames: [], yaw: 0, pitch: 0, pose: { blink: 0, browUp: 0, furrow: 0, open: 0, smile: .12, lookX: 0, lookY: 0, droop: 0, perk: 0 } };
+function sizeHat3D(px) { px = Math.round(px); if (H3.api && px && px !== H3.px) { H3.px = px; H3.api.size(px); } }
+async function loadHat3D() {
+  try {
+    if (!window.WebGLRenderingContext || (navigator.connection && navigator.connection.saveData)) return;
+    const THREE = await withTimeout(import(HAT3D_URL), 15000), c = document.createElement('canvas'); c.id = 'hat3d'; c.setAttribute('aria-hidden', 'true');
+    H3.api = await Hat3D.create(THREE, c); H3.canvas = c; c.addEventListener('webglcontextlost', dropHat3D);
+    const h = $('#hat'); h.appendChild(c); H3.ratio = Math.min(2, devicePixelRatio || 1); sizeHat3D(parseFloat(h.style.width) || 300); H3.api.set(H3.pose); H3.api.render(); H3.on = true; h.classList.add('d3');
+  } catch (_) { H3.api = null; }
+}
+function dropHat3D() { H3.on = false; $('#hat').classList.remove('d3'); const a = H3.api, c = H3.canvas; H3.api = null; setTimeout(() => { try { a && a.dispose(); } catch (_) { } if (c) c.remove(); }, 600); }
+function tickHat3D(t, h) {
+  if (!H3.on || $('#result').classList.contains('show')) return;
+  const p = H3.pose, c = h.classList, ease = (k, to, r = .16) => { p[k] += (to - p[k]) * r; }, ponder = c.contains('ponder'), crowned = c.contains('crowned'), raise = c.contains('raise');
+  ease('blink', c.contains('blink') ? 1 : 0, .55); ease('browUp', crowned ? 1 : raise ? .85 : 0); ease('furrow', ponder ? 1 : c.contains('furrow') ? .7 : 0); ease('smile', crowned ? .6 : raise ? .35 : .12);
+  ease('perk', crowned ? 1 : 0, .07); ease('droop', ponder ? .85 : reduceMotion ? 0 : .12 * Math.sin(t / 1500), .08);
+  p.open = Math.min(1, FACE.open * .82); p.lookX = FACE.x; p.lookY = (.35 - FACE.y) * .9;
+  const yaw = reduceMotion ? 0 : FACE.x * .24 + .05 * Math.sin(t / 2300), pitch = reduceMotion ? 0 : (FACE.y - .35) * .07; H3.yaw += (yaw - H3.yaw) * .08; H3.pitch += (pitch - H3.pitch) * .08;
+  H3.api.set(p); H3.api.turn(H3.yaw, H3.pitch); H3.api.render();
+  // A phone that can't keep up: first fewer pixels, then the drawn Hat.
+  if (H3.last && t - H3.last < 250) H3.frames.push(t - H3.last); H3.last = t;
+  if (H3.frames.length >= 60) { const mid = H3.frames.sort((a, b) => a - b)[30]; H3.frames.length = 0; if (mid > 38) { if (H3.ratio > 1) { H3.ratio = 1; H3.api.ratio(1); H3.px = 0; sizeHat3D(parseFloat(h.style.width)); } else dropHat3D(); } }
+}
 
 /* ================= the Hat's voice ================= */
 // Recordings in /audio/hat (English) and /audio/hat/ua (Ukrainian), named by the ids in scripts/hat-lines-short.md. The Hat speaks the page's language; a switch mid-game applies from the next line.
@@ -578,7 +607,7 @@ $('#cta').addEventListener('click', e => { e.stopPropagation(); enterHall(); });
 /* ================= boot ================= */
 function onResize() { W = innerWidth; H = innerHeight; MIN = Math.min(W, H); setViewBoxes(); initSnow(); placeHat(); }
 let resizeT = 0; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(onResize, 120); });
-buildSky(); buildFar(); buildMain(); buildFg(); buildHat(); setViewBoxes(); initSnow(); applyLang();
+buildSky(); buildFar(); buildMain(); buildFg(); buildHat(); setViewBoxes(); initSnow(); applyLang(); setTimeout(loadHat3D, 1200);
 function frame(t) {
   requestAnimationFrame(frame); // first, so an error in one frame can't stop the page
   now = t; updatePar(t); faceTick(t);
