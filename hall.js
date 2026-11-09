@@ -247,7 +247,7 @@ function hatTalk(ms = 1200, tap = true, mood = null) { const h = $('#hat'); h.cl
 // Eyes follow the pointer or the option under it and come back to the player; random blinks; brows by the line's mood; the mouth by the voice's level.
 const FACE = { tx: 0, ty: 0, x: 0, y: 0, moved: -1e9, focus: null, blinkAt: 0, open: 0, level: null };
 addEventListener('pointermove', e => { FACE.mx = e.clientX; FACE.my = e.clientY; FACE.moved = now; }, { passive: true });
-const focusOn = el => { const b = el && el.closest && el.closest('#nBtns button'); if (b) { const r = b.getBoundingClientRect(); FACE.focus = { x: r.left + r.width / 2, y: r.top + r.height / 2, at: now }; } };
+const focusOn = el => { if (SWIPE.aim) return; const b = el && el.closest && el.closest('#nBtns button'); if (b) { const r = b.getBoundingClientRect(); FACE.focus = { x: r.left + r.width / 2, y: r.top + r.height / 2, at: now }; } };
 addEventListener('pointerover', e => focusOn(e.target)); addEventListener('focusin', e => focusOn(e.target));
 // Which way the brows go for a line: up for questions and surprises, down while thinking.
 const moodOf = id => /^(think|build|any1$|w5r2|t3r2)/.test(id) ? 'furrow' : /^(any3|any4|denied|overruled|house|wish|unwant|[tsw]\d+$|s4r1|w3rat|s7forget)/.test(id) ? 'raise' : null;
@@ -255,6 +255,7 @@ function faceTick(t) {
   const h = $('#hat'); if ($('#hall').hidden || !h.classList.contains('in')) return;
   const hb = h.getBoundingClientRect(), ex = hb.left + hb.width * .52, ey = hb.top + hb.height * .51;
   let gx = 0, gy = .35; // looking at the player
+  if (SWIPE.aim && FACE.focus) FACE.focus.at = t; // keeps looking for as long as the finger holds the option
   const f = FACE.focus && t - FACE.focus.at < 1600 ? FACE.focus : t - FACE.moved < 1400 ? { x: FACE.mx, y: FACE.my } : null;
   if (f) { gx = clamp((f.x - ex) / (W * .35), -1, 1); gy = clamp((f.y - ey) / (H * .35), -1, 1); }
   FACE.x += (gx - FACE.x) * .14; FACE.y += (gy - FACE.y) * .14;
@@ -268,6 +269,41 @@ function faceTick(t) {
 }
 // Leans a little toward the option the player picked, until the next question.
 function leanTo(o) { const b = [...document.querySelectorAll('#nBtns button')].find(x => x.textContent === pickLang(o.u, o.e)), h = $('#hat'); if (!b || reduceMotion) return; const r = b.getBoundingClientRect(), hb = h.getBoundingClientRect(); h.style.rotate = clamp((r.left + r.width / 2 - (hb.left + hb.width / 2)) / W * 22, -7, 7).toFixed(1) + 'deg'; }
+
+/* ================= answering by swipe ================= */
+// Press anywhere and slide toward an option: it lights up and the Hat looks at it. Letting go picks it; sliding back or away picks nothing. A tap on a button works as before.
+// Works on the questions and the four banners. The other buttons of the wish screen are tap only.
+const SWIPE = { id: null, x: 0, y: 0, from: null, moved: false, aim: null, swallow: 0 };
+const SWIPE_MIN = 22, SWIPE_CONE = .4; // px before a slide counts; cosine of how far off the slide's direction an option may lie
+const swipeItems = () => st.phase !== 'hall' || st.deciding ? [] : [...document.querySelectorAll(st.picking ? '#nBtns button' : '#nBtns.wish .ban')];
+function setAim(b) {
+  if (b !== SWIPE.aim) { if (SWIPE.aim) SWIPE.aim.classList.remove('aim'); SWIPE.aim = b; if (b) b.classList.add('aim'); else FACE.focus = null; }
+  if (b) { const r = b.getBoundingClientRect(); FACE.focus = { x: r.left + r.width / 2, y: r.top + r.height / 2, at: now }; }
+}
+// The option nearest the finger, among those in the slide's direction. Measured to the nearest edge of each button, so a wide button counts right above the finger, not only at its centre.
+function aimAt(x, y) {
+  const dx = x - SWIPE.x, dy = y - SWIPE.y, d = Math.hypot(dx, dy); if (d < SWIPE_MIN) return setAim(null);
+  let best = null, bestD = Infinity;
+  for (const b of swipeItems()) {
+    if (b === SWIPE.from) continue; // a slide that starts on an option means another one
+    const r = b.getBoundingClientRect(), qx = clamp(x, r.left, r.right), qy = clamp(y, r.top, r.bottom), vx = qx - SWIPE.x, vy = qy - SWIPE.y;
+    if ((dx * vx + dy * vy) / (d * (Math.hypot(vx, vy) || 1)) < SWIPE_CONE) continue;
+    const dist = Math.hypot(x - qx, y - qy) - (b === SWIPE.aim ? 10 : 0); if (dist < bestD) { bestD = dist; best = b; } // the small bonus stops the light flickering between neighbours
+  }
+  setAim(best);
+}
+function endSwipe(e, pick) {
+  if (e.pointerId !== SWIPE.id) return; SWIPE.id = null; const b = SWIPE.aim, f = FACE.focus; setAim(null); if (!SWIPE.moved) return;
+  SWIPE.swallow = performance.now() + 400; if (pick && b && b.isConnected) { FACE.focus = f; b.click(); } // the eyes stay on the picked option
+}
+addEventListener('pointerdown', e => {
+  SWIPE.swallow = 0; if (!e.isPrimary || e.button) return; setAim(null); SWIPE.id = null;
+  if (e.target.closest('.topbar, a, #result') || !swipeItems().length) return;
+  SWIPE.id = e.pointerId; SWIPE.x = e.clientX; SWIPE.y = e.clientY; SWIPE.from = e.target.closest('#nBtns button'); SWIPE.moved = false;
+});
+addEventListener('pointermove', e => { if (e.pointerId !== SWIPE.id || (!SWIPE.moved && Math.hypot(e.clientX - SWIPE.x, e.clientY - SWIPE.y) < SWIPE_MIN)) return; SWIPE.moved = true; aimAt(e.clientX, e.clientY); }, { passive: true });
+addEventListener('pointerup', e => endSwipe(e, true)); addEventListener('pointercancel', e => endSwipe(e, false));
+addEventListener('click', e => { if (e.isTrusted && performance.now() < SWIPE.swallow) { SWIPE.swallow = 0; e.stopPropagation(); e.preventDefault(); } }, true); // the browser's own click after a slide isn't a tap
 
 /* ================= the Hat's voice ================= */
 // Recordings in /audio/hat (English) and /audio/hat/ua (Ukrainian), named by the ids in scripts/hat-lines-short.md. The Hat speaks the page's language; a switch mid-game applies from the next line.
