@@ -15,8 +15,10 @@ for (const [w, h] of [[390, 844], [1440, 900]]) {
   const { browser, page, errors } = await quiet(url + 'sorting', { viewport: { width: w, height: h }, mobile: w < 768 });
   await enterHall(page); await begin(page, { wish: 'S', house: 'S' }); await sleep(700);
   const seen = new Set(), eyes = new Set(); let lit = true, g;
+  const where = () => page.evaluate(() => document.querySelector('#hatCrests .crest').style.translate), p0 = await where();
   for (let i = 0; i < 16; i++) { const s = await page.evaluate(() => { const c = [...document.querySelectorAll('#hatCrests .crest')], on = c.filter(x => x.classList.contains('lit')); return { n: c.length, lit: on.length, at: c.indexOf(on[0]), eye: document.querySelector('#pupL').getAttribute('transform') }; }); if (s.lit > 1) lit = false; seen.add(s.at); eyes.add(s.eye); await sleep(110); }
   g = await page.evaluate(() => { const n = document.querySelector('#note').getBoundingClientRect(), c = [...document.querySelectorAll('#hatCrests .crest')].map(x => x.getBoundingClientRect()); return { ponder: document.querySelector('#hat').classList.contains('ponder'), four: c.length === 4, inside: c.every(r => r.left >= 0 && r.right <= innerWidth && r.top >= 0), clear: c.every(r => r.bottom <= n.top) }; });
+  check(await where() !== p0, 'the crests circle the Hat');
   check(g.ponder, 'the Hat is thinking'); check(g.four && g.inside && g.clear, `four crests around it, on screen and clear of the note: ${JSON.stringify(g)}`);
   check(lit && seen.size >= 3, `one crest at a time, moving around: ${seen.size} places`); check(eyes.size >= 3, `the eyes search around: ${eyes.size} positions`);
   await page.waitForFunction(() => document.querySelector('#hat').classList.contains('crowned'), null, { timeout: 15000 });

@@ -258,7 +258,7 @@ function faceTick(t) {
   if (SWIPE.aim && FACE.focus) FACE.focus.at = t; // keeps looking for as long as the finger holds the option
   const f = FACE.focus && t - FACE.focus.at < 1600 ? FACE.focus : t - FACE.moved < 1400 ? { x: FACE.mx, y: FACE.my } : null;
   if (f) { gx = clamp((f.x - ex) / (W * .35), -1, 1); gy = clamp((f.y - ey) / (H * .35), -1, 1); }
-  if (PONDER.on) { if (t > PONDER.next) lookAround(t); gx = PONDER.x; gy = PONDER.y; }
+  if (PONDER.on) { if (t > PONDER.next) lookAround(t); gx = PONDER.x; gy = PONDER.y; orbitCrests(t); }
   FACE.x += (gx - FACE.x) * .14; FACE.y += (gy - FACE.y) * .14;
   const tr = `translate(${(FACE.x * 4.6).toFixed(2)} ${(FACE.y * 2.6).toFixed(2)})`; $('#pupL').setAttribute('transform', tr); $('#pupR').setAttribute('transform', tr);
   if (t > FACE.blinkAt) { if (FACE.blinkAt) { h.classList.add('blink'); setTimeout(() => h.classList.remove('blink'), 130); } FACE.blinkAt = t + (Math.random() < .15 ? 260 : 2400 + Math.random() * 4200); }
@@ -341,7 +341,7 @@ const take = id => { const h = /^house([GSRH])$/.exec(id); return `${id}-${h && 
 sndBtn.addEventListener('click', () => { if (!A.on) stopVoice(); });
 
 /* ================= the Hat decides ================= */
-// While it thinks: brows down, eyes searching, the tip drooping, and the four crests flaring around it in turn, slower and slower. They go out before the verdict, so they give nothing away.
+// While it thinks: brows down, eyes searching, the tip drooping, and the four crests circling it and flaring in turn, slower and slower. They go out before the verdict, so they give nothing away.
 // When it has decided: it rises and a golden glow opens around it. Reduced motion: no flaring, no searching, no rise; the glow only fades in.
 const PONDER = { on: false, next: 0, x: 0, y: -.8, run: null, up: 0, rise: 0 };
 const LOOKS = [[-.85, -.8], [.85, -.8], [-1, .1], [1, .1], [0, -1], [.5, -.9], [-.5, -.9]];
@@ -352,15 +352,20 @@ function lookAround(t) {
 const hatSpot = () => { const h = $('#hat'); return { size: parseFloat(h.style.width) || 0, bottom: parseFloat(h.style.bottom) || 0 }; };
 function startPonder() {
   const h = $('#hat'); h.style.rotate = '0deg'; h.classList.add('ponder'); PONDER.on = true; PONDER.next = 0; PONDER.x = 0; PONDER.y = -.8;
-  const box = $('#hatCrests'), me = PONDER.run = {}; if (reduceMotion || h.classList.contains('none')) return;
-  const { size, bottom } = hatSpot(), c = Math.round(clamp(size * .3, 52, 96)), top = H - bottom - size;
-  box.innerHTML = SortingLogic.shuffled(['G', 'S', 'R', 'H']).map((house, i) => { const [side, y] = [[-1, .04], [1, .04], [1, .5], [-1, .5]][i], x = clamp(W / 2 + side * (size * .5 + c * .1) - c / 2, 4, W - 4 - c); return `<div class="crest" style="left:${Math.round(x)}px;top:${Math.round(top + y * size)}px;width:${c}px">${Crests.svg(house)}</div>`; }).join('');
-  requestAnimationFrame(() => box.classList.add('on'));
-  const all = [...box.children]; let i = 0, gap = 150;
+  const box = $('#hatCrests'), me = PONDER.run = {}; PONDER.orbit = null; if (reduceMotion || h.classList.contains('none')) return;
+  const { size, bottom } = hatSpot(), c = Math.round(clamp(size * .3, 52, 96)), tall = c * 1.09, cy = H - bottom - size * .48, barB = $('.topbar').getBoundingClientRect().bottom;
+  box.innerHTML = SortingLogic.shuffled(['G', 'S', 'R', 'H']).map(house => `<div class="crest" style="width:${c}px">${Crests.svg(house)}</div>`).join('');
+  const all = [...box.children];
+  PONDER.orbit = { all, c, tall, cy, a: Math.random() * 6.283, t0: 0, last: 0, rx: Math.min(size * .66, W / 2 - c / 2 - 5), ry: Math.max(0, Math.min(size * .66, cy - barB - tall / 2 - 4, note.getBoundingClientRect().top - 8 - tall / 2 - cy)) };
+  placeCrests(); requestAnimationFrame(() => box.classList.add('on'));
+  let i = 0, gap = 150;
   const flare = () => { if (PONDER.run !== me) return; all.forEach(x => x.classList.remove('lit')); all[i++ % 4].classList.add('lit'); gap = Math.min(560, gap * 1.1); setTimeout(flare, gap); };
   flare();
 }
-function stopPonder() { PONDER.on = false; PONDER.run = null; const h = $('#hat'); h.classList.remove('ponder'); h.style.rotate = '0deg'; const box = $('#hatCrests'); box.classList.remove('on'); [...box.children].forEach(x => x.classList.remove('lit')); }
+// The crests circle behind the Hat, so they never cover its face, fast at first and then settling.
+function placeCrests() { const o = PONDER.orbit; o.all.forEach((e, i) => { const a = o.a + i * Math.PI / 2; e.style.translate = `${(W / 2 + Math.cos(a) * o.rx - o.c / 2).toFixed(1)}px ${(o.cy + Math.sin(a) * o.ry - o.tall / 2).toFixed(1)}px`; }); }
+function orbitCrests(t) { const o = PONDER.orbit; if (!o) return; if (!o.last) o.last = o.t0 = t; const dt = Math.min(50, t - o.last) / 1000; o.last = t; o.a += (.8 + 1.9 * Math.exp(-(t - o.t0) / 2000)) * dt; placeCrests(); }
+function stopPonder() { PONDER.on = false; PONDER.run = null; PONDER.orbit = null; const h = $('#hat'); h.classList.remove('ponder'); h.style.rotate = '0deg'; const box = $('#hatCrests'); box.classList.remove('on'); [...box.children].forEach(x => x.classList.remove('lit')); }
 function crownHat() {
   const h = $('#hat'), a = $('#hatAura'); if (h.classList.contains('none')) return;
   const { size, bottom } = hatSpot(), barB = $('.topbar').getBoundingClientRect().bottom, up = reduceMotion ? 0 : Math.round(clamp(H - bottom - size - barB, 0, Math.min(72, H * .09)));
