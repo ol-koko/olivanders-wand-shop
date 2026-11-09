@@ -27,9 +27,9 @@ const Hat3D = (() => {
       d += .034 * g(ax - .135, v - .33, .05, .055) * m.smile;
     }
     d += m.furrow * .03 * Math.sin((v - .6) * 120) * g(x, v - .645, .11, .05);
-    const curve = m.smile * Math.pow(x / .1, 2) * .034, my = .275 + curve, wide = 1 - .25 * m.pucker;
-    d -= .11 * g(x, v - my, .108 * wide, .03 + .055 * m.open);
-    d += .062 * g(x, v - (my - .058 - .05 * m.open), .098 * wide, .022) + .05 * g(x, v - (my + .05 + .03 * m.open), .104 * wide, .018);
+    const curve = m.smile * Math.pow(x / .08, 2) * .024, my = .275 + curve, wide = 1 - .25 * m.pucker;
+    d -= .05 * g(x, v - my, .086 * wide, .03 + .03 * m.open);
+    d += .018 * g(x, v - (my - .05 - .04 * m.open), .076 * wide, .024) + .012 * g(x, v - (my + .045 + .025 * m.open), .08 * wide, .02);
     r += d * (1 - v * .4) + lift;
     const sx = (.68 + .3 * m.droop - .36 * m.perk) * bend * bend, sy = v * H - (.5 + .36 * m.droop - .4 * m.perk) * bend * bend * bend, sz = -.12 * bend;
     return [sx + Math.sin(a) * r, sy, sz + Math.cos(a) * r];
@@ -68,7 +68,7 @@ const Hat3D = (() => {
     const { tex, bump } = cloth(THREE), group = new THREE.Group(); scene.add(group); const meshes = [];
     const add = (geo, mat) => { const m = new THREE.Mesh(geo, mat); group.add(m); meshes.push(m); return m; };
     const cl = new THREE.MeshPhysicalMaterial({ map: tex, bumpMap: bump, bumpScale: 3, roughness: .92, metalness: 0, side: THREE.DoubleSide, vertexColors: true, sheen: .22, sheenRoughness: .6, sheenColor: new THREE.Color(0x4a4d62) });
-    add(await grid(THREE, 150, 110, (i, j, m) => point(i - .5, j, m), (i, j) => [i, j], (i, j) => 1 - folds(i - .5, j).ao), cl);
+    add(await grid(THREE, 150, 110, (i, j, m) => point(i - .5, j, m), (i, j) => [i, j], (i, j) => (1 - folds(i - .5, j).ao) * (1 - .22 * g(i - .5, j - .275, .1, .07))), cl);
     // the brim: heavy cloth with a sagging, rolled edge
     const brimY = (a, t) => (.09 * Math.sin(a * 3 + 1) + .06 * Math.sin(a * 7 + .5) + .03 * Math.sin(a * 13)) * t - .16 * t * t * t + .02, brimR = (a, t) => R0 + .13 + t * .6 + .03 * Math.sin(a * 5 + 1) * t;
     const felt = new THREE.MeshPhysicalMaterial({ map: tex, bumpMap: bump, bumpScale: 2, roughness: 1, color: 0x3a3b46, side: THREE.DoubleSide, vertexColors: true, sheen: .1, sheenRoughness: .8, sheenColor: new THREE.Color(0x4a4d62) });
@@ -80,7 +80,7 @@ const Hat3D = (() => {
     await eye(-1); await eye(1);
     const brow = async s => dark(await grid(THREE, 24, 3, (i, j, m) => { const q = i * 2 - 1, wid = Math.pow(1 - q * q, .5), x = s * .088 + q * .082; return point(x, browY(x, s, m) - .027 + (j * 2 - 1) * wid * .0085, m, .02); }));
     await brow(-1); await brow(1);
-    dark(await grid(THREE, 36, 8, (i, j, m) => { const q = i * 2 - 1, t = j * 2 - 1, wid = Math.pow(1 - q * q, .55), x = q * .102 * (1 - .32 * m.pucker), cur = m.smile * q * q * .034, y = .275 + cur + t * wid * (.012 + .06 * m.open); return point(x, y, m, .012); }));
+    dark(await grid(THREE, 36, 8, (i, j, m) => { const q = i * 2 - 1, t = j * 2 - 1, wid = Math.pow(1 - q * q, .55), x = q * .08 * (1 - .3 * m.pucker), cur = m.smile * q * q * .024, y = .275 + cur + t * wid * (.012 + .06 * m.open); return point(x, y, m, .012); }));
     const api = { pose: clear(), set(p) { Object.assign(api.pose, p); meshes.forEach(k => { if (k.morphTargetInfluences) MORPHS.forEach((n, i) => { k.morphTargetInfluences[i] = api.pose[n]; }); }); }, turn(y, x = 0) { group.rotation.y = y; group.rotation.x = x; }, render() { gl.render(scene, cam); }, size(px) { gl.setSize(px, px, false); }, ratio(r) { gl.setPixelRatio(r); }, dispose() { gl.dispose(); } };
     return api;
   }
