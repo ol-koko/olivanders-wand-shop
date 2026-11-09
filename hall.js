@@ -342,7 +342,7 @@ sndBtn.addEventListener('click', () => { if (!A.on) stopVoice(); });
 
 /* ================= the Hat decides ================= */
 // While it thinks: brows down, eyes searching, the tip drooping, and the four crests circling it and flaring in turn, slower and slower. They go out before the verdict, so they give nothing away.
-// When it has decided: it rises and a golden glow opens around it. Reduced motion: no flaring, no searching, no rise; the glow only fades in.
+// When it has decided: it rises, a golden glow opens behind it and magic dust spirals up around it. Reduced motion: no flaring, no searching, no rise, no dust; the glow only fades in.
 const PONDER = { on: false, next: 0, x: 0, y: -.8, run: null, up: 0, rise: 0 };
 const LOOKS = [[-.85, -.8], [.85, -.8], [-1, .1], [1, .1], [0, -1], [.5, -.9], [-.5, -.9]];
 function lookAround(t) {
@@ -371,10 +371,31 @@ function crownHat() {
   const { size, bottom } = hatSpot(), barB = $('.topbar').getBoundingClientRect().bottom, up = reduceMotion ? 0 : Math.round(clamp(H - bottom - size - barB, 0, Math.min(72, H * .09)));
   PONDER.up = up; h.classList.add('crowned');
   const w = size * 2.1; a.style.width = a.style.height = w + 'px'; a.style.marginLeft = -w / 2 + 'px'; a.style.bottom = bottom + up + size / 2 - w / 2 + 'px';
-  if (!a.children.length) a.innerHTML = '<div class="glow"></div><div class="rays"></div>' + (reduceMotion ? '' : Array.from({ length: 18 }, () => { const ang = Math.random() * 6.283, far = 26 + Math.random() * 22; return `<i style="left:${50 + Math.cos(ang) * 16}%;top:${50 + Math.sin(ang) * 16}%;--dx:${(Math.cos(ang) * far).toFixed(1)}cqw;--dy:${(Math.sin(ang) * far - 8).toFixed(1)}cqw;animation-delay:${(-Math.random() * 2.4).toFixed(2)}s"></i>`; }).join(''));
-  requestAnimationFrame(() => a.classList.add('on'));
+  if (!a.children.length) a.innerHTML = '<div class="glow"></div>';
+  requestAnimationFrame(() => a.classList.add('on')); if (!reduceMotion) startDust(size, bottom, up);
 }
-function uncrownHat() { $('#hat').classList.remove('crowned'); PONDER.up = 0; $('#hatAura').classList.remove('on'); }
+function uncrownHat() { $('#hat').classList.remove('crowned'); PONDER.up = 0; $('#hatAura').classList.remove('on'); endDust(); }
+// Magic dust climbing around the Hat in two spirals, from the brim to above the tip. Dust on the far side is drawn behind the Hat, on the near side in front of it.
+const DUST = { on: false, raf: 0, stop: 0 };
+function dustSprite() { const s = document.createElement('canvas'); s.width = s.height = 32; const x = s.getContext('2d'), g = x.createRadialGradient(16, 16, 0, 16, 16, 16); g.addColorStop(0, 'rgba(255,244,210,1)'); g.addColorStop(.28, 'rgba(255,214,130,.85)'); g.addColorStop(1, 'rgba(255,190,90,0)'); x.fillStyle = g; x.fillRect(0, 0, 32, 32); return s; }
+function startDust(size, bottom, up) {
+  clearTimeout(DUST.stop); const w = Math.min(W, size * 2.2), h = size * 1.75, ratio = Math.min(2, devicePixelRatio || 1), back = $('#dustBack'), front = $('#dustFront');
+  for (const c of [back, front]) { c.width = w * ratio; c.height = h * ratio; c.style.width = w + 'px'; c.style.height = h + 'px'; c.style.left = (W - w) / 2 + 'px'; c.style.bottom = bottom + up - size * .25 + 'px'; c.classList.add('on'); c.getContext('2d').setTransform(ratio, 0, 0, ratio, 0, 0); c.getContext('2d').globalCompositeOperation = 'lighter'; }
+  Object.assign(DUST, { on: true, w, h, size, up, t0: 0, bx: back.getContext('2d'), fx: front.getContext('2d'), sprite: DUST.sprite || dustSprite(), parts: Array.from({ length: W < 768 ? 130 : 180 }, (_, i) => ({ strand: i % 2 * Math.PI, off: Math.random(), speed: .26 + Math.random() * .1, jit: (Math.random() - .5) * size * .09, spin: (Math.random() - .5) * .5, r: 2.4 + Math.random() * 4.2, tw: 3 + Math.random() * 7, ph: Math.random() * 6.283 })) });
+  cancelAnimationFrame(DUST.raf); DUST.raf = requestAnimationFrame(dustFrame);
+}
+function dustFrame(t) {
+  if (!DUST.on) return; DUST.raf = requestAnimationFrame(dustFrame); if (!DUST.t0) DUST.t0 = t;
+  const { w, h, size, up, bx, fx, parts, sprite } = DUST, age = (t - DUST.t0) / 1000, base = h - size * .25 + up - PONDER.rise, cx = w / 2, reached = Math.min(1, age / 1.15); // the spiral climbs up from the brim as it appears
+  bx.clearRect(0, 0, w, h); fx.clearRect(0, 0, w, h);
+  for (const p of parts) {
+    const u = (age * p.speed + p.off) % 1; if (u > reached) continue;
+    const r = size * (.58 - .4 * u) + p.jit, th = p.strand + p.spin + u * 10 + age * .9, depth = Math.sin(th), near = (depth + 1) / 2;
+    const alpha = Math.min(1, u * 7) * Math.min(1, (1 - u) * 4) * (.42 + .58 * near) * (.62 + .38 * Math.sin(age * p.tw + p.ph)), s = p.r * (.7 + .4 * near), c = depth > 0 ? fx : bx;
+    c.globalAlpha = alpha; c.drawImage(sprite, cx + Math.cos(th) * r - s, base - u * size * 1.22 + depth * r * .16 - s, s * 2, s * 2);
+  }
+}
+function endDust() { $('#dustBack').classList.remove('on'); $('#dustFront').classList.remove('on'); clearTimeout(DUST.stop); DUST.stop = setTimeout(() => { DUST.on = false; cancelAnimationFrame(DUST.raf); }, 800); }
 
 /* ================= the ceremony ================= */
 function recall(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (_) { return null; } }
@@ -452,7 +473,7 @@ function fillCard() {
 function showCard() {
   const me = st.cardRun = {};
   const after = () => { if (st.cardRun === me && A.on && A.ctx) SFX.reveal(); };
-  fillCard(); setShareMode(canShareFiles());
+  endDust(); fillCard(); setShareMode(canShareFiles());
   const res = $('#result'), seal = $('#rSeal'), card = $('.rcard'); res.hidden = false; res.scrollTop = 0; note.classList.remove('show'); st.noteFn = null;
   seal.classList.remove('stamp', 'fade'); card.classList.remove('thud');
   requestAnimationFrame(() => {
@@ -535,7 +556,7 @@ async function enterHall() {
     fl.style.opacity = clamp((t - .5) / .42); drawSnow(performance.now(), 1 - z);
   });
   // the snow keeps falling inside
-  $('#haMid').after($('#snowBack')); $('#haFront').after($('#snowFront')); $('#haFront').after($('#hallDim')); $('#hallDim').after($('#snowFront')); $('#snowFront').after($('#hatAura'), $('#hatCrests'), $('#hat'));
+  $('#haMid').after($('#snowBack')); $('#haFront').after($('#snowFront')); $('#haFront').after($('#hallDim')); $('#hallDim').after($('#snowFront')); $('#snowFront').after($('#hatAura'), $('#hatCrests'), $('#dustBack'), $('#hat'), $('#dustFront'));
   $('#castle').hidden = true; hall.style.opacity = 1; placeHat();
   await run(reduceMotion ? 400 : 1300, t => { const e = easeOut(t); if (!reduceMotion) inn.forEach((id, i) => { layers[id].s = 1 + (.3 + i * .1) * (1 - e); }); fl.style.opacity = 1 - easeOut(clamp(t / .75)); });
   await establish(inn);
