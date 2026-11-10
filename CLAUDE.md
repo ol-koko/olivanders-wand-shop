@@ -55,6 +55,7 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 ## Camera mode
 - The video shows inside a vintage portrait frame (`#camBox`, SVG drawn in code), like the magical portraits at Hogwarts.
 - MediaPipe Tasks Vision HandLandmarker 0.10.14 from jsDelivr, model from storage.googleapis.com.
+- Hand tracking runs on its own thread (`hand-worker.js`, a classic worker because MediaPipe uses importScripts), so preparing the model can't freeze the game or stop its sound. One frame at a time. A graphics card that stays slower than 120 ms a frame hands over to the processor. If the worker can't start it runs on the page as before. Check with `node tools/e2e/camworker.mjs`.
 - Tracks landmark 8 (index fingertip), mirrored. A wave starts when the hand speeds up, ends when it stops.
 - Requires https or localhost (getUserMedia). Falls back to finger/mouse on any error, and the game never waits forever:
   loading offers the pointer at 6 s and falls back 15 s after permission (30 s for an unanswered prompt), a capture with no wave gives a hint at 8 s and falls back at 25 s.

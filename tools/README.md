@@ -20,6 +20,7 @@ Then:
     node tools/e2e/hat.mjs             # the Hat: full games, every question on small screens, first impression
     node tools/e2e/swipe.mjs           # answering the Hat by swipe, finger and mouse
     node tools/e2e/verdict.mjs         # the Hat deciding: thinking, crests, wish line, house, rise and glow
+    node tools/e2e/camworker.mjs       # hand tracking on its own thread, and the fallback when it can't start
     node tools/e2e/hat3d.mjs           # the 3D Hat: takes over from the drawing, follows the same signals, falls back
     node tools/e2e/face.mjs            # the Hall's first look, the Hat's eyes, blinks, brows, mouth and lean, frame rate
     node tools/e2e/voice.mjs           # the Hat's voice: what loads and plays, muted, missing files
