@@ -652,10 +652,39 @@ function liveTick(t) {
 /* ================= input: camera (MediaPipe) ================= */
 const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
-const cam = { on: false, hl: null, loading: null, video: $('#camv'), stream: null, token: 0, fresh: false, lastT: -1, lastTs: 0, lastFrame: 0, errs: 0, fps: 0, fpsN: 0, fpsT: 0, sm: null, seen: -1e9, firstSeen: 0, hist: [] };
+const cam = { on: false, hl: null, worker: null, busy: false, sentAt: 0, warmed: null, loading: null, video: $('#camv'), stream: null, token: 0, fresh: false, lastT: -1, lastTs: 0, lastFrame: 0, errs: 0, fps: 0, fpsN: 0, fpsT: 0, sm: null, seen: -1e9, firstSeen: 0, hist: [] };
+// Hand tracking runs on its own thread (hand-worker.js), so preparing the model can't freeze the game or stop its sound. If the worker can't start, it runs on the page as before.
+function loadWorker() {
+  return new Promise(resolve => {
+    let w, timer; const done = ok => { clearTimeout(timer); if (ok) { cam.worker = w; w.onmessage = onWorker; w.onerror = workerLost; } else if (w) w.terminate(); resolve(ok); };
+    try { w = new Worker('/hand-worker.js'); } catch (_) { w = null; return done(false); }
+    timer = setTimeout(() => done(false), 25000);
+    w.onmessage = e => done(e.data.type === 'ready'); w.onerror = () => done(false);
+    w.postMessage({ type: 'init', MP, MODEL });
+  });
+}
+function workerLost() { const w = cam.worker; cam.worker = null; cam.busy = false; cam.loading = null; if (w) w.terminate(); toPointer('camLost'); }
+function onWorker(e) {
+  const m = e.data; if (m.type !== 'result') return;
+  cam.delegate = m.delegate;
+  if (m.warm) { if (cam.warmed) cam.warmed(); return; }
+  cam.busy = false; if (m.tok !== cam.token || !cam.on || !st.cap) return;
+  if (m.err) { if (++cam.errs >= 5) toPointer('camLost'); return; }
+  cam.errs = 0; camHand(m.marks, m.t);
+}
+function sendFrame(v, t) {
+  cam.busy = true; cam.sentAt = t; const tok = cam.token;
+  createImageBitmap(v).then(frame => { if (!cam.worker) { frame.close(); cam.busy = false; return; } cam.lastTs = Math.max(t, cam.lastTs + 1); cam.worker.postMessage({ type: 'frame', frame, ts: cam.lastTs, t, tok }, [frame]); })
+    .catch(() => { cam.busy = false; if (++cam.errs >= 5) toPointer('camLost'); });
+}
+async function warmWorker() {
+  try { const frame = await createImageBitmap(cam.video); cam.lastTs = Math.max(performance.now(), cam.lastTs + 1); await withTimeout(new Promise(r => { cam.warmed = r; cam.worker.postMessage({ type: 'frame', frame, ts: cam.lastTs, warm: true }, [frame]); }), 8000); } catch (_) { }
+  cam.warmed = null;
+}
 function loadHand() {
-  if (cam.hl) return Promise.resolve();
+  if (cam.hl || cam.worker) return Promise.resolve();
   if (!cam.loading) cam.loading = (async () => {
+    if (await loadWorker()) return;
     const mod = await withTimeout(import(MP + '/vision_bundle.mjs'), 30000);
     const files = await withTimeout(mod.FilesetResolver.forVisionTasks(MP + '/wasm'), 30000);
     const opts = d => ({ baseOptions: { modelAssetPath: MODEL, delegate: d }, runningMode: 'VIDEO', numHands: 1, minHandDetectionConfidence: .5, minHandPresenceConfidence: .5, minTrackingConfidence: .5 });
@@ -675,13 +704,15 @@ async function openStream(tok) {
   // video.currentTime of a live stream advances with the clock, so it can't tell new frames apart at full rate; this callback can
   if (cam.video.requestVideoFrameCallback) { const onFrame = () => { if (cam.stream === stream) { cam.fresh = true; cam.video.requestVideoFrameCallback(onFrame); } }; cam.video.requestVideoFrameCallback(onFrame); }
   await cam.video.play();
+  if (A.on && A.ctx && A.ctx.state !== 'running') A.ctx.resume().catch(() => { }); // phones can interrupt the page's sound when the camera starts
 }
 async function startCamera() {
   const tok = ++cam.token;
   await Promise.all([openStream(tok), loadHand()]);
   if (tok !== cam.token) return false;
   // the first detection compiles the model and can freeze the page for seconds: do it now, while the "loading" note is up
-  try { cam.lastTs = Math.max(performance.now(), cam.lastTs + 1); cam.hl.detectForVideo(cam.video, cam.lastTs); } catch (_) { }
+  if (cam.worker) { await warmWorker(); if (tok !== cam.token) return false; }
+  else try { cam.lastTs = Math.max(performance.now(), cam.lastTs + 1); cam.hl.detectForVideo(cam.video, cam.lastTs); } catch (_) { }
   Object.assign(cam, { on: true, lastFrame: performance.now(), errs: 0, fps: 0, fpsN: 0, fpsT: 0, sm: null, seen: -1e9, hist: [] });
   if (document.hidden) suspendCamera();
   return true;
@@ -713,16 +744,21 @@ document.addEventListener('visibilitychange', () => {
   withTimeout(startCamera(), 8000).catch(() => toPointer('camLost'));
 });
 function camTick(t) {
-  if (!cam.on || !cam.hl) return; const v = cam.video;
+  if (!cam.on || !(cam.hl || cam.worker)) return; const v = cam.video;
   if (!st.cap) { cam.lastFrame = t; cam.fpsT = 0; return; } // nothing to capture: leave the frame budget to the reaction effects
+  if (cam.busy) { if (t - cam.sentAt > 5000) workerLost(); return; } // one frame at a time, and the game never waits forever
   // new-frame callback when the browser fires it; otherwise check a few times a second that the video is still moving
   const moved = v.currentTime !== cam.lastT, fresh = cam.fresh || (moved && t - cam.lastFrame > 200);
   if (v.readyState < 2 || !fresh) { if (!moved && t - cam.lastFrame > 4000 && !document.hidden) toPointer('camLost'); return; }
   cam.fresh = false; cam.lastT = v.currentTime; cam.lastFrame = t;
   if (!cam.fpsT) { cam.fpsT = t; cam.fpsN = 0; } else { cam.fpsN++; if (t - cam.fpsT >= 1000) { cam.fps = cam.fpsN * 1000 / (t - cam.fpsT); cam.fpsN = 0; cam.fpsT = t; } }
+  if (cam.worker) return sendFrame(v, t);
   cam.lastTs = Math.max(t, cam.lastTs + 1);
   let r; try { r = cam.hl.detectForVideo(v, cam.lastTs); cam.errs = 0; } catch (e) { if (++cam.errs >= 5) toPointer('camLost'); return; }
-  const lm = r && r.landmarks && r.landmarks[0];
+  camHand(r && r.landmarks && r.landmarks[0], t);
+}
+function camHand(lm, t) {
+  const v = cam.video;
   $('#camBox').classList.toggle('seen', !!lm);
   if (lm) {
     const { x, y } = camMap(lm[8], v.videoWidth || 4, v.videoHeight || 3, W, H, MIN);
