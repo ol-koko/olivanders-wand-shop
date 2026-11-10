@@ -1,28 +1,23 @@
-// Prototype: turns head angles into "this option is highlighted" and "picked". No DOM, so it can be tested with made-up angles.
-// update(t, { side, pitch }) takes the time in ms and the angles in degrees, and returns { aim, picked }.
-// side is the head's roll or yaw, pitch its nod. Both are relative to where the head was at calibration.
+// Prototype: turns the head's tilt into "this option is highlighted" and "picked". No DOM, so it can be tested with made-up angles.
+// update(t, { side }) takes the time in ms and the angle in degrees, relative to where the head was at calibration. It returns { aim, fill, picked }.
+// Holding a tilt fills the option, and a full option is picked. Straightening the head cancels, and the next pick has to start from a straight head.
 (function (root) {
-  const SWITCH = 2.5, START = 3, NOD = 9, BACK = 4, NOD_RISE = 350, NOD_FALL = 700, HOLD = 300, STILL = 6, REST = 1000;
+  const SWITCH = 2.5, START = 3, TILT = 5, HOLD = 1000;
   function createTracker({ options = 4, range = 20 } = {}) {
-    let aim = null, aimAt = 0, base = null, lastT = 0, nod = null, restUntil = 0;
+    let aim = null, armed = true, last = 0, held = 0;
     const zone = a => Math.min(options - 1, Math.max(0, Math.floor((a + range) / (2 * range) * options)));
     // Hysteresis: a boundary has to be passed by a few degrees, so the light doesn't flicker on it.
-    const edge = (i, a) => { const w = 2 * range / options, lo = -range + i * w, hi = lo + w; return a >= lo - SWITCH && a <= hi + SWITCH; };
+    const inside = (i, a) => { const w = 2 * range / options, lo = -range + i * w, hi = lo + w; return a >= lo - SWITCH && a <= hi + SWITCH; };
     return {
       get aim() { return aim; },
-      reset() { aim = null; base = null; nod = null; restUntil = 0; },
-      update(t, { side, pitch }) {
-        const dt = lastT ? Math.min(100, t - lastT) : 33; lastT = t; if (base === null) base = pitch;
-        if (aim === null ? Math.abs(side) > START : !edge(aim, side)) { const next = zone(side); if (next !== aim) { aim = next; aimAt = t; } }
-        const off = pitch - base; let picked = null;
-        // A nod is quick and comes back. The direction isn't checked: which way the sign runs depends on the camera. Looking down slowly only moves the baseline.
-        if (!nod) { if (Math.abs(off) > START) nod = { t, side, peak: false, peakAt: 0 }; else base += (pitch - base) * Math.min(1, dt / 1200); }
-        else {
-          if (Math.abs(side - nod.side) > STILL || (!nod.peak && t - nod.t > NOD_RISE) || (nod.peak && t - nod.peakAt > NOD_FALL)) { nod = null; base = pitch; }
-          else if (!nod.peak && Math.abs(off) > NOD) { nod.peak = true; nod.peakAt = t; }
-          else if (nod.peak && Math.abs(off) < BACK) { nod = null; if (aim !== null && t - aimAt >= HOLD && t >= restUntil) { picked = aim; restUntil = t + REST; } }
-        }
-        return { aim, picked };
+      reset() { aim = null; held = 0; armed = true; },
+      update(t, { side }) {
+        const dt = last ? Math.min(100, t - last) : 0; last = t;
+        if (Math.abs(side) < START) { aim = null; held = 0; armed = true; return { aim, fill: 0, picked: null }; }
+        if (aim === null || !inside(aim, side)) { const next = zone(side); if (next !== aim) { aim = next; held = 0; } }
+        if (!armed || Math.abs(side) < TILT) return { aim, fill: armed ? held / HOLD : 0, picked: null };
+        held += dt; if (held < HOLD) return { aim, fill: held / HOLD, picked: null };
+        armed = false; held = 0; return { aim, fill: 1, picked: aim };
       },
     };
   }

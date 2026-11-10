@@ -4,20 +4,20 @@ import { createRequire } from 'node:module';
 import { closeAll, serve, open, sleep } from './lib.mjs';
 const { createTracker, anglesFrom } = createRequire(import.meta.url)('../headpose.js'), fails = [];
 const check = (ok, what) => { console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${what}`); if (!ok) fails.push(what); };
-// Plays a list of [milliseconds, side, pitch] keyframes at 30 fps, moving smoothly between them.
-function play(keys, o) { const tr = createTracker(o), out = { picks: [], aims: [] }; let t = 1000; for (let k = 1; k < keys.length; k++) { const [d0, s0, p0] = keys[k - 1], [d, s1, p1] = keys[k]; void d0; for (let e = 0; e < d; e += 33) { const u = e / d, r = tr.update(t, { side: s0 + (s1 - s0) * u, pitch: p0 + (p1 - p0) * u }); t += 33; if (r.picked !== null) out.picks.push(r.picked); if (out.aims.at(-1) !== r.aim) out.aims.push(r.aim); } } return out; }
-const nod = (s, depth = 14) => [[150, s, depth], [150, s, 0]];
+// Plays a list of [milliseconds, side] keyframes at 30 fps, moving smoothly between them.
+function play(keys, o) { const tr = createTracker(o), out = { picks: [], aims: [], fills: [] }; let t = 1000; for (let k = 1; k < keys.length; k++) { const [, s0] = keys[k - 1], [d, s1] = keys[k]; for (let e = 0; e < d; e += 33) { const r = tr.update(t, { side: s0 + (s1 - s0) * e / d }); t += 33; out.fills.push(r.fill); if (r.picked !== null) out.picks.push(r.picked); if (out.aims.at(-1) !== r.aim) out.aims.push(r.aim); } } return out; }
 console.log('== the gesture');
-let r = play([[0, 0, 0], [400, 15, 0], [500, 15, 0]]); check(r.aims.at(-1) === 3 && !r.picks.length, `tilting right lights the last option: ${r.aims.join()}`);
-r = play([[0, 0, 0], [400, -15, 0], [500, -15, 0]]); check(r.aims.at(-1) === 0, `tilting left lights the first: ${r.aims.join()}`);
-r = play([[0, 0, 0], [400, -6, 0], [500, -6, 0]]); check(r.aims.at(-1) === 1, `a small tilt lights the option next to the middle: ${r.aims.join()}`);
-r = play([[0, 0, 0], [400, 15, 0], [500, 15, 0], ...nod(15)]); check(r.picks.length === 1 && r.picks[0] === 3, `a nod picks it: ${r.picks.join()}`);
-r = play([[0, 0, 0], [300, 0, 0], ...nod(0)]); check(!r.picks.length, 'a nod with nothing lit picks nothing');
-r = play([[0, 0, 0], [400, 15, 0], [40, 15, 0], ...nod(15)]); check(r.picks.length <= 1, 'one nod is one pick');
-r = play([[0, 0, 0], [400, 15, 0], [500, 15, 0], [2500, 15, 18], [800, 15, 18], [2500, 15, 0]]); check(!r.picks.length, 'looking down slowly and back picks nothing');
-r = play([[0, 0, 0], [400, 15, 0], [500, 15, 0], [180, -10, 14], [180, -10, 0]]); check(!r.picks.length, 'turning the head during a dip picks nothing');
-r = play([[0, 0, 0], [400, 15, 0], [500, 15, 0], [150, 15, 5], [150, 15, 0]]); check(!r.picks.length, 'a small dip picks nothing');
-r = play([[0, 0, 0], [400, 15, 0], [500, 15, 0], ...nod(15), [120, 15, 0], ...nod(15)]); check(r.picks.length === 1, 'a second quick nod is ignored');
+let r = play([[0, 0], [300, 15], [500, 15]]); check(r.aims.at(-1) === 3 && !r.picks.length, `tilting right lights the last option, and half a second picks nothing: ${r.aims.join()}`);
+check(Math.max(...r.fills) > .4 && Math.max(...r.fills) < 1, `it fills as it is held: ${Math.max(...r.fills).toFixed(2)}`);
+r = play([[0, 0], [300, -15], [300, -15]]); check(r.aims.at(-1) === 0, `tilting left lights the first: ${r.aims.join()}`);
+r = play([[0, 0], [300, -7], [300, -7]]); check(r.aims.at(-1) === 1, `a small tilt lights the option next to the middle: ${r.aims.join()}`);
+r = play([[0, 0], [300, 15], [1300, 15]]); check(r.picks.length === 1 && r.picks[0] === 3, `holding the tilt picks it: ${r.picks.join()}`);
+r = play([[0, 0], [300, 15], [4000, 15]]); check(r.picks.length === 1, 'holding on picks only once');
+r = play([[0, 0], [300, 15], [1300, 15], [300, 0], [300, 0], [300, 15], [1300, 15]]); check(r.picks.length === 2, 'straightening up allows the next pick');
+r = play([[0, 0], [3000, 0]]); check(!r.picks.length && r.aims.every(a => a === null), 'a straight head lights and picks nothing');
+r = play([[0, 0], [300, 15], [500, 15], [300, 0], [1500, 0]]); check(!r.picks.length, 'straightening up cancels');
+r = play([[0, 0], [200, 3.8], [2500, 3.8]]); check(!r.picks.length, 'a slight lean picks nothing');
+r = play([[0, 0], [300, 15], [650, 15], [200, -15], [650, -15]]); check(!r.picks.length, 'moving to another option starts the fill again');
 { const a = anglesFrom([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); check(Math.abs(a.roll) + Math.abs(a.yaw) + Math.abs(a.pitch) < 1e-6, 'a head facing straight reads zero'); }
 
 console.log('== the page, with a fake camera');

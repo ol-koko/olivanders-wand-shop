@@ -9,7 +9,7 @@ main{width:min(94vw,560px);padding:18px 0;text-align:center}
 h1{font-size:26px;font-weight:400;color:#d9b46a;margin:12px 0}
 #opts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 #opts div{padding:18px 4px;border:1px solid #7a5428;border-radius:14px;transition:background .12s,transform .12s}
-#opts .aim{background:rgba(217,180,106,.35);border-color:#d9b46a;transform:scale(1.05)}
+#opts .aim{background:linear-gradient(90deg,rgba(217,180,106,.9) calc(var(--f,0)*100%),rgba(217,180,106,.22) 0);border-color:#d9b46a;transform:scale(1.05)}
 #opts .pick{background:#d9b46a;color:#2a170b}
 #st{min-height:26px;margin:14px 0;color:#d9b46a}
 button{font:inherit;background:#2b1a0e;color:#e8cf97;border:1px solid #7a5428;border-radius:999px;padding:8px 16px;margin:4px;cursor:pointer}
@@ -50,11 +50,11 @@ function loop(t) {
   const r = P.face.detectForVideo($('#cam'), t), m = r.facialTransformationMatrixes && r.facialTransformationMatrixes[0];
   if (!m) { if (++P.lost > 12) st('Не бачу обличчя'); return; } P.lost = 0;
   const a = HeadPose.anglesFrom(m.data);
-  if (!P.zero) { P.samples.push(a); if (P.samples.length >= 40) { const avg = k => P.samples.reduce((s, x) => s + x[k], 0) / P.samples.length; P.zero = { roll: avg('roll'), yaw: avg('yaw'), pitch: avg('pitch') }; st('Нахили голову до варіанта й кивни'); } return; }
-  const side = (a[P.mode] - P.zero[P.mode]) * P.flip, pitch = a.pitch - P.zero.pitch, u = P.tracker.update(t, { side, pitch });
-  opts.forEach((o, i) => o.classList.toggle('aim', i === u.aim));
+  if (!P.zero) { P.samples.push(a); if (P.samples.length >= 40) { const avg = k => P.samples.reduce((s, x) => s + x[k], 0) / P.samples.length; P.zero = { roll: avg('roll'), yaw: avg('yaw'), pitch: avg('pitch') }; st('Нахили голову до варіанта й потримай'); } return; }
+  const side = (a[P.mode] - P.zero[P.mode]) * P.flip, u = P.tracker.update(t, { side });
+  opts.forEach((o, i) => { o.classList.toggle('aim', i === u.aim); o.style.setProperty('--f', i === u.aim ? u.fill.toFixed(3) : 0); });
   if (u.picked !== null) { const o = opts[u.picked]; o.classList.add('pick'); st('Обрано: ' + o.textContent); setTimeout(() => o.classList.remove('pick'), 900); }
-  $('#num').textContent = `${P.mode} ${side.toFixed(1)}°  кивок ${pitch.toFixed(1)}°`;
+  $('#num').textContent = `${P.mode} ${side.toFixed(1)}°`;
 }
 window.__ready = true;
 </script>
