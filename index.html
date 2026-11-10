@@ -30,7 +30,9 @@
 <link rel="stylesheet" href="core.css">
 <style>
 /* street */
-#street{cursor:pointer;touch-action:none}
+#street{cursor:pointer;touch-action:none;opacity:0;transition:opacity .35s}
+#street.ready{opacity:1}
+@media (prefers-reduced-motion:reduce){#street{transition:none}}
 .leak{animation:leak 3s ease-in-out infinite}
 #postHall{cursor:pointer;outline:none}
 #postHall .glow{opacity:.18;animation:postGlow 3.4s ease-in-out infinite alternate;transition:opacity .3s}
