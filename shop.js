@@ -969,9 +969,10 @@ async function enterShop() {
   const dr = $('#doorHit').getBoundingClientRect(), cx = dr.left + dr.width / 2, cy = dr.top + dr.height * .55;
   ['stSky', 'stTown', 'stShop', 'stFg'].map(id => layers[id]).forEach(Ly => { const r = Ly.el.getBoundingClientRect(); Ly.el.style.transformOrigin = `${(cx - r.left) / Ly.s}px ${(cy - r.top) / Ly.s}px`; });
   const fl = $('#flash'); fl.style.setProperty('--fx', cx + 'px'); fl.style.setProperty('--fy', cy + 'px');
-  const leaf = $('#doorLeaf'), dur = 1900, t0 = performance.now();
-  const shop = $('#shop'); shop.hidden = false; st.shopVisible = true; buildInterior();
+  const leaf = $('#doorLeaf'), dur = 1900;
+  const shop = $('#shop'); shop.hidden = false; st.shopVisible = true; readyInterior();
   ['shBack', 'shMid', 'shFront'].forEach(id => layers[id].s = 1.32); shop.style.opacity = 0; fx.style.opacity = 0;
+  const t0 = performance.now(); // after the drawing above, so a slow phone doesn't lose the start of the door
   await new Promise(res => {
     const step = () => {
       const t = clamp((performance.now() - t0) / dur);
@@ -1016,6 +1017,10 @@ async function chooseCam() {
   finally { clearTimeout(t6); clearTimeout(limit); cam.onGrant = null; }
 }
 function buildInterior() { drawBack(); drawMid(); drawFront(); initFX(); }
+// Drawing the shop takes a noticeable moment, so it happens before the tap on the door, not during it.
+let interiorFor = '';
+function readyInterior() { const k = W + 'x' + H; if (k !== interiorFor) { buildInterior(); interiorFor = k; } }
+addEventListener('load', () => setTimeout(() => { if (st.phase === 'street') readyInterior(); }, 700));
 // A tap enters the shop. A drag moves the scene instead, like the mouse on desktop, and eases back to the drift on release.
 const street = $('#street');
 dragDepth(street);
