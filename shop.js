@@ -1051,6 +1051,9 @@ function onResize() {
 }
 let rT = 0; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(onResize, 120); });
 buildSky(); buildTown(); buildFg(); buildPost(); buildGarland(); setViewBoxes(); initSnow(); applyLang();
+// The street waits for the title's real font, because the title's height sets the street's scale. Shown after that, nothing jumps. A slow font doesn't hold it up for long.
+Promise.race([document.fonts.ready, wait(900)]).then(() => { setViewBoxes(); $('#street').classList.add('ready'); });
+document.fonts.ready.then(() => { if (st.phase === 'street') setViewBoxes(); });
 let last = performance.now();
 function frame(t) {
   requestAnimationFrame(frame); // first, so an error in one frame can't stop the game
