@@ -969,7 +969,7 @@ async function enterShop() {
   const dr = $('#doorHit').getBoundingClientRect(), cx = dr.left + dr.width / 2, cy = dr.top + dr.height * .55;
   ['stSky', 'stTown', 'stShop', 'stFg'].map(id => layers[id]).forEach(Ly => { const r = Ly.el.getBoundingClientRect(); Ly.el.style.transformOrigin = `${(cx - r.left) / Ly.s}px ${(cy - r.top) / Ly.s}px`; });
   const fl = $('#flash'); fl.style.setProperty('--fx', cx + 'px'); fl.style.setProperty('--fy', cy + 'px');
-  ['stSky', 'stTown', 'stShop', 'stFg'].forEach(id => { layers[id].el.style.willChange = 'transform'; }); // drawn once and only moved after that: zooming a whole street frame by frame is too much for many screens
+  if (matchMedia('(hover:hover) and (pointer:fine)').matches) ['stSky', 'stTown', 'stShop', 'stFg'].forEach(id => { layers[id].el.style.willChange = 'transform'; }); // drawn once and only moved after that, which keeps a computer smooth. On phones it made the door frame stutter.
   const leaf = $('#doorLeaf'), dur = 1900;
   const shop = $('#shop'); shop.hidden = false; st.shopVisible = true; readyInterior();
   ['shBack', 'shMid', 'shFront'].forEach(id => layers[id].s = 1.32); shop.style.opacity = 0; fx.style.opacity = 0;
