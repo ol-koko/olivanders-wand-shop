@@ -18,7 +18,7 @@ for (const [w, h] of [[390, 844], [1440, 900]]) {
   check(!a.dim && !a.hat && !a.note, `${w}: a clear look at the Hall first, no blur, no Hat, no note`);
   check(b > a.s + .01, `${w}: a slow push-in: ${a.s.toFixed(3)} → ${b.toFixed(3)}`);
   await hatIn(page); const held = Date.now() - t0; await ready(page);
-  check(held > 1700 && held < 3300, `${w}: then the Hat comes in after about ${(held / 1000).toFixed(1)} s`);
+  check(held > 1000 && held < 2400, `${w}: then the Hat comes in after about ${(held / 1000).toFixed(1)} s`);
   check(await page.evaluate(() => document.querySelector('#hallDim').classList.contains('in') && document.querySelector('#hat').classList.contains('in')), `${w}: the background dims behind the Hat`);
   check(await page.evaluate(() => document.querySelectorAll('.spirit').length === 4), `${w}: ghosts drift in the Hall`);
   check(await page.evaluate(() => [...document.querySelectorAll('#nBtns button, #note')].every(b => getComputedStyle(b).animationName === 'none')), `${w}: the note and its buttons never drift`);
@@ -29,7 +29,7 @@ for (const [w, h] of [[390, 844], [1440, 900]]) {
   await hatIn(page); check(Date.now() - t0 < 1400, `a tap skips the wait: the Hat is in after ${Date.now() - t0} ms`); await browser.close(); }
 { const { browser, page } = await open(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, init: QUIET + `const m = window.matchMedia; window.matchMedia = q => /reduced-motion/.test(q) ? { matches: true, addEventListener() { } } : m.call(window, q);` });
   await fly(page); await page.waitForFunction(() => __hall.st.phase === 'establish', null, { timeout: 20000 }); const t0 = Date.now(); await sleep(600); const s = await page.evaluate(() => __hall.layers.haBack.s);
-  await ready(page); check(s === 1 && Date.now() - t0 < 2200, `reduced motion: no push-in, a shorter hold (${Date.now() - t0} ms)`); await browser.close(); }
+  await ready(page); check(s === 1 && Date.now() - t0 < 1800, `reduced motion: no push-in, a shorter hold (${Date.now() - t0} ms)`); await browser.close(); }
 await closeAll();
 
 console.log('== the face');

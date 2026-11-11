@@ -179,9 +179,10 @@ function buildHall() {
     roof += `<path d="${c}" fill="none" stroke="#1a0e06" stroke-width="${w * 1.5}"/><path d="${c}" fill="none" stroke="#4d2f16" stroke-width="${w}"/><path d="${c}" fill="none" stroke="#7a5128" stroke-width="${w * .22}" opacity=".85" transform="translate(0 ${(-w * .22).toFixed(1)})"/>`;
     for (const s of [-1, 1]) { const kx = VX + s * hw * .86, ky = ap + (sp - ap) * .66; roof += `<path d="M${kx.toFixed(0)} ${(ky - w).toFixed(0)}l${(s * w * .9).toFixed(0)} ${(w * 1.8).toFixed(0)}l${(-s * w * 1.1).toFixed(0)} ${(w * .55).toFixed(0)}z" fill="#6b4522"/>`; } }
   let can = ''; for (let i = 0; i < 52; i++) { const x = 40 + R() * 920, y = 80 + R() * 400, s = .55 + R() * 1; can += `<g${R() < .35 ? ' class="tw"' : ''}><circle cx="${x.toFixed(0)}" cy="${(y - 8 * s).toFixed(0)}" r="${(20 * s).toFixed(1)}" fill="url(#gCandle)"/><rect x="${(x - 1.7 * s).toFixed(1)}" y="${y.toFixed(0)}" width="${(3.4 * s).toFixed(1)}" height="${(17 * s).toFixed(1)}" fill="#f0e6cf"/><ellipse cx="${x.toFixed(0)}" cy="${(y - 3 * s).toFixed(1)}" rx="${(1.9 * s).toFixed(1)}" ry="${(4.2 * s).toFixed(1)}" fill="#ffd787"/></g>`; }
-  const ghost = (x, y, s, k) => `<g transform="translate(${x} ${y}) scale(${s})"><g class="spirit g${k}"><path d="M-22 32c0-22 10-36 22-36s22 14 22 36v42l-7-6-7 8-8-8-7 8-8-8-7 6z" fill="url(#gGhost)"/><path d="M-22 40c-10 6-16 16-14 26M22 40c10 4 16 12 16 22" fill="none" stroke="#eaf2ff" stroke-width="5" stroke-linecap="round" opacity=".28"/><ellipse cx="-7" cy="16" rx="3" ry="4.4" fill="#0b1630" opacity=".45"/><ellipse cx="7" cy="16" rx="3" ry="4.4" fill="#0b1630" opacity=".45"/><path d="M-5 28q5 4 10 0" fill="none" stroke="#0b1630" stroke-width="1.6" opacity=".35"/></g></g>`;
+  // quiet presences: a head, shoulders and a robe that thins out to nothing, with no face
+  const ghost = (x, y, s, k) => `<g transform="translate(${x} ${y}) scale(${s})"><g class="spirit g${k}"><ellipse cx="0" cy="34" rx="30" ry="46" fill="url(#gGhost)" opacity=".3"/><path d="M-5 13C-7 19-19 20-22 30C-25 44-21 60-17 78Q-8 70 0 78Q9 71 17 78C21 60 25 44 22 30C19 20 7 19 5 13Z" fill="url(#gShade)"/><ellipse cx="0" cy="4" rx="7.6" ry="9.6" fill="#eef4ff" opacity=".5"/><path d="M-21 34c-5 12-5 24-2 36M21 34c5 12 5 24 2 36" fill="none" stroke="#eaf2ff" stroke-width="3" stroke-linecap="round" opacity=".16"/></g></g>`;
   const ghosts = ghost(352, 300, 1.25, 1) + ghost(676, 262, 1, 2) + ghost(150, 360, .9, 3) + ghost(860, 380, .85, 4);
-  $('#svgHaMid').innerHTML = `<defs><radialGradient id="gGhost" cx=".5" cy=".3" r=".8"><stop offset="0" stop-color="#f4f8ff" stop-opacity=".62"/><stop offset=".7" stop-color="#cfdcff" stop-opacity=".22"/><stop offset="1" stop-color="#cfdcff" stop-opacity="0"/></radialGradient><linearGradient id="gSide" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#20160e"/><stop offset=".5" stop-color="#6b4728"/><stop offset="1" stop-color="#8a5c31"/></linearGradient>
+  $('#svgHaMid').innerHTML = `<defs><radialGradient id="gGhost" cx=".5" cy=".3" r=".8"><stop offset="0" stop-color="#f4f8ff" stop-opacity=".62"/><stop offset=".7" stop-color="#cfdcff" stop-opacity=".22"/><stop offset="1" stop-color="#cfdcff" stop-opacity="0"/></radialGradient><linearGradient id="gShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f8ff" stop-opacity=".58"/><stop offset=".55" stop-color="#cfdcff" stop-opacity=".26"/><stop offset="1" stop-color="#cfdcff" stop-opacity="0"/></linearGradient><linearGradient id="gSide" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#20160e"/><stop offset=".5" stop-color="#6b4728"/><stop offset="1" stop-color="#8a5c31"/></linearGradient>
     <radialGradient id="gFire"><stop offset="0" stop-color="#ffb65f" stop-opacity=".6"/><stop offset="1" stop-color="#ffb65f" stop-opacity="0"/></radialGradient>
     <radialGradient id="gCandle"><stop offset="0" stop-color="#ffd38c" stop-opacity=".42"/><stop offset="1" stop-color="#ffd38c" stop-opacity="0"/></radialGradient></defs>
     ${wall(-1)}${wall(1)}${sideTree(210, 632, 220)}${sideTree(790, 632, 220)}${roof}${ghosts}${can}`;
@@ -611,11 +612,11 @@ async function enterHall() {
   $('#hallDim').classList.add('in'); await wait(reduceMotion ? 150 : 550); void $('#hat').offsetWidth; $('#hat').classList.add('in');
   startCeremony();
 }
-// A clear look at the Hall before the Hat: a slow push-in for a few seconds. A tap or a key skips it.
+// A clear look at the Hall before the Hat: a slow push-in for about a second. A tap or a key skips it.
 async function establish(inn) {
   st.phase = 'establish'; let skip; const skipped = new Promise(r => { skip = r; });
   const end = () => skip(); addEventListener('pointerdown', end, { once: true }); addEventListener('keydown', end, { once: true });
-  const hold = reduceMotion ? 800 : 1800, t0 = performance.now(); let going = true;
+  const hold = reduceMotion ? 400 : 900, t0 = performance.now(); let going = true;
   if (!reduceMotion) { const step = () => { if (!going) return; const k = easeIO(clamp((performance.now() - t0) / hold)); inn.forEach((id, i) => { layers[id].s = 1 + (.04 + i * .025) * k; }); requestAnimationFrame(step); }; step(); }
   await Promise.race([wait(hold), skipped]); going = false;
   removeEventListener('pointerdown', end); removeEventListener('keydown', end);
