@@ -91,17 +91,25 @@
 #nBtns .wide{grid-column:1/-1}
 @media (max-width:360px){#nBtns .ban{font-size:11.5px}#nBtns .ban svg{height:50px}#nBtns.wish{gap:3px}}
 @media (max-height:480px){#nBtns .ban svg{height:30px}#nBtns .wide{grid-column:span 2}#nBtns .btn{padding:6px 10px;font-size:15px}.hand{font-size:22px}}
-/* answering with the head: the answers keep their places; an hourglass on the one held runs out as it's held */
+/* answering with the head: the answer pointed at gets the usual highlight; the timer lives in the mirror (ring filling, hourglass pouring) */
 #nBtns .btn,#nBtns .ban{position:relative}
-#nBtns .hglass{position:absolute;right:10px;top:50%;width:18px;height:27px;translate:0 -50%;pointer-events:none;filter:drop-shadow(0 0 4px rgba(255,200,110,.8))}
-#nBtns .ban .hglass{top:4px;right:2px;translate:none;width:15px;height:22px}
-#nBtns .hglass svg{width:100%;height:100%;display:block;overflow:visible}
-.hglass .sand{transform-box:fill-box;transform-origin:50% 100%}
-.hglass .top{transform:scaleY(calc(1 - var(--f,0)))}.hglass .bot{transform:scaleY(var(--f,0))}
-.hglass .fall{opacity:0}.hglass.run .fall{opacity:1}
-#nBtns .btn.tapLink{grid-column:1/-1;justify-self:center;background:none;border:0;box-shadow:none;color:#7a5428;font-size:15px;padding:4px 6px;text-decoration:underline;text-underline-offset:3px}
-#headCam{position:fixed;left:14px;top:14px;z-index:30;width:64px;height:64px;border-radius:50%;object-fit:cover;transform:scaleX(-1);border:2px solid rgba(217,180,106,.5);background:#000;opacity:.9;transition:border-color .3s,box-shadow .3s}
+#headMirror{position:fixed;left:14px;top:14px;z-index:30;width:64px;height:64px;pointer-events:none}
+#headCam{width:100%;height:100%;border-radius:50%;object-fit:cover;transform:scaleX(-1);border:2px solid rgba(217,180,106,.5);background:#000;opacity:.9;transition:border-color .3s,box-shadow .3s;display:block}
 #headCam.seen{border-color:#d9b46a;box-shadow:0 0 14px rgba(255,200,120,.45)}
+#headMirror .ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+#headMirror .ring circle{fill:none;stroke:#f6d27e;stroke-width:3.2;stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--f,0));opacity:0;filter:drop-shadow(0 0 3px rgba(255,200,110,.95));transition:opacity .15s}
+#headMirror.hold .ring circle{opacity:1}
+#headMirror .hglass{position:absolute;left:50%;top:50%;width:22px;height:33px;translate:-50% -50%;opacity:0;transition:opacity .15s;filter:drop-shadow(0 0 3px rgba(0,0,0,.6))}
+#headMirror.hold .hglass{opacity:.82}
+#headMirror .sand{fill:#ecc46a;transform-box:fill-box;transform-origin:50% 100%}
+#headMirror .top{transform:scaleY(calc(1 - var(--f,0)))}#headMirror .bot{transform:scaleY(var(--f,0))}
+#headMirror .fall{stroke:#ecc46a;stroke-width:1.3;stroke-dasharray:1.6 1.4;animation:hgPour .35s linear infinite}
+@keyframes hgPour{to{stroke-dashoffset:-3}}
+@media (prefers-reduced-motion:reduce){#headMirror .hglass{display:none}#headMirror .ring circle{transition:none}}
+/* TEMPORARY: ?debug=head overlay, remove before merge */
+#headDebug{position:fixed;left:8px;top:86px;z-index:40;max-width:calc(100vw - 16px);background:rgba(10,8,6,.82);color:#f3e6c8;font:11px/1.35 ui-monospace,Menlo,monospace;padding:6px 8px;border:1px solid #d9b46a;border-radius:8px}
+#headDebug b{color:#ff8a5a}#headDebug pre{margin:4px 0;white-space:pre}#headDebug button{font:11px ui-monospace,Menlo,monospace;margin:2px 4px 0 0;padding:3px 7px;border-radius:6px;border:1px solid #d9b46a;background:#2b1a0e;color:#f3e6c8}
+#nBtns .btn.tapLink{grid-column:1/-1;justify-self:center;background:none;border:0;box-shadow:none;color:#7a5428;font-size:15px;padding:4px 6px;text-decoration:underline;text-underline-offset:3px}
 #rSeal{position:relative;margin:clamp(6px,1.4vh,14px) auto 0;height:clamp(150px,calc(150px + (var(--h) - 568px)*.22),230px);aspect-ratio:240/300;opacity:0;transform-origin:50% 92%}
 #rSeal{perspective:900px;touch-action:none;cursor:grab}
 #rSeal:active{cursor:grabbing}
@@ -180,7 +188,7 @@
     <div id="rSaved" hidden><img id="rSavedImg" alt=""><p class="cap" id="rSavedCap"></p></div>
   </div></div>
 
-  <video id="headCam" playsinline muted hidden aria-hidden="true"></video>
+  <div id="headMirror" hidden aria-hidden="true"><video id="headCam" playsinline muted></video></div>
   <div class="topbar"><div id="lang" role="group" aria-label="Language"><button data-l="ua">UA</button><button data-l="en">EN</button></div><button id="snd" aria-label="Sound"></button></div>
 </div>
 <script src="/logic.js"></script>

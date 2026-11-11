@@ -1,31 +1,48 @@
-// Turns the head's tilt into "this option is highlighted" and "picked". No DOM, so it can be tested with made-up angles.
-// update(t, { side }) takes the time in ms and the angle in degrees, relative to where the head was at calibration. It returns { aim, fill, picked }.
-// Holding a tilt fills the option, and a full option is picked. Straightening the head cancels, and the next pick has to start from a straight head.
+// Turns where the head points into "this option is highlighted" and "picked". No DOM, so it can be tested with made-up angles.
+// createPointer({ cols, rows }) follows a grid of options laid out as the page shows them. update(t, { dx, dy }) takes the time in ms and the head's turn (dx, right +)
+// and lift (dy, up +) in degrees, relative to the neutral pose. It returns { col, row, fill, picked } with picked as { col, row } once.
+// Pointing at a cell and holding still fills it, and a full cell is picked. The neutral pose points at nothing, and after a pick the head comes back to neutral first.
 (function (root) {
-  const SWITCH = 2.5, START = 3, TILT = 5, GRACE = 600, HOLD = 1000; // GRACE: time on an option before it starts to fill, so there's room to move on to another
-  function createTracker({ options = 4, range = 20, armed: startArmed = true } = {}) {
-    let aim = null, armed = startArmed, last = 0, held = 0, on = 0;
-    // Three options use the zones of four, with the middle option on both inner ones: a straight head picks nothing, so no option can live there.
-    const zones = options === 3 ? 4 : options, shown = i => options === 3 ? [0, 1, 1, 2][i] : i;
-    const cell = a => Math.min(zones - 1, Math.max(0, Math.floor((a + range) / (2 * range) * zones))), zone = a => shown(cell(a));
-    // Hysteresis: a boundary has to be passed by a few degrees, so the light doesn't flicker on it.
-    const inside = (i, a) => { const w = 2 * range / zones; return Array.from({ length: zones }, (_, k) => k).some(k => { if (shown(k) !== i) return false; const lo = -range + k * w, hi = lo + w; return a >= lo - SWITCH && a <= hi + SWITCH; }); };
+  const DEAD = 3.5, SWITCH = 2.5, GRACE = 450, HOLD = 1000; // degrees around neutral that point at nothing; degrees past a border before the light moves; ms before the fill starts, ms of fill
+  const RANGE_X = 18, RANGE_Y = 14; // degrees from neutral to the outer edge of the outermost option: a head turns further than it nods
+  // One axis: n cells side by side over [-range, range]. With an even n, neutral sits on a border. Hysteresis keeps the current cell until a border is passed by SWITCH.
+  function axis(n, range) {
+    const w = 2 * range / n, cellOf = a => Math.min(n - 1, Math.max(0, Math.floor((a + range) / w))), side = c => Math.sign(-range + c * w + w / 2);
+    return (a, cur) => {
+      if (n === 1) return 0;
+      if (Math.abs(a) < DEAD) return null;
+      if (cur !== null) { const lo = -range + cur * w, hi = lo + w; if (a >= lo - SWITCH && a <= hi + SWITCH && (n % 2 || Math.sign(a) === side(cur))) return cur; } // never across neutral
+      return cellOf(a);
+    };
+  }
+  function createPointer({ cols = 1, rows = 4, rangeX = RANGE_X, rangeY = RANGE_Y, armed: startArmed = false } = {}) {
+    const ax = axis(cols, rangeX), ay = axis(rows, rangeY);
+    let col = null, row = null, armed = startArmed, last = 0, on = 0, held = 0;
+    const calm = (dx, dy) => (cols === 1 || Math.abs(dx) < DEAD) && (rows === 1 || Math.abs(dy) < DEAD);
     return {
-      get aim() { return aim; },
-      reset() { aim = null; held = 0; on = 0; armed = true; },
-      update(t, { side }) {
+      reset() { col = row = null; on = held = 0; },
+      update(t, { dx, dy }) {
         const dt = last ? Math.min(100, t - last) : 0; last = t;
-        if (Math.abs(side) < START) { aim = null; held = 0; on = 0; armed = true; return { aim, fill: 0, picked: null }; }
-        if (aim === null || !inside(aim, side)) { const next = zone(side); if (next !== aim) { aim = next; held = 0; on = 0; } }
-        if (!armed || Math.abs(side) < TILT) return { aim, fill: armed ? held / HOLD : 0, picked: null };
-        on += dt; if (on < GRACE) return { aim, fill: 0, picked: null };
-        held += dt; if (held < HOLD) return { aim, fill: held / HOLD, picked: null };
-        armed = false; held = 0; on = 0; return { aim, fill: 1, picked: aim };
+        if (calm(dx, dy)) armed = true;
+        const nc = ax(dx, col), nr = ay(-dy, row); // rows count from the top, and looking up is +dy
+        if (nc === null || nr === null) { col = row = null; on = held = 0; return { col, row, fill: 0, picked: null }; }
+        if (nc !== col || nr !== row) { col = nc; row = nr; on = held = 0; }
+        if (!armed) return { col, row, fill: 0, picked: null };
+        on += dt; if (on < GRACE) return { col, row, fill: 0, picked: null };
+        held += dt; if (held < HOLD) return { col, row, fill: held / HOLD, picked: null };
+        armed = false; on = held = 0; return { col, row, fill: 1, picked: { col, row } };
       },
     };
   }
   // Roll, yaw and pitch in degrees from MediaPipe's 4×4 matrix, which is stored column by column.
   function anglesFrom(d) { const deg = 180 / Math.PI; return { roll: Math.atan2(d[1], d[5]) * deg, yaw: Math.atan2(d[8], d[10]) * deg, pitch: Math.atan2(-d[9], Math.hypot(d[8], d[10])) * deg }; }
-  const api = { createTracker, anglesFrom };
+  // The grid the page shows: options grouped into columns and rows by where they stand. Returns { cols, rows, at(col, row) -> index or -1 }.
+  function gridOf(rects, tol = 12) {
+    const group = vals => { const s = [...vals].sort((a, b) => a - b), out = []; for (const v of s) if (!out.length || v - out[out.length - 1] > tol) out.push(v); return out; };
+    const xs = group(rects.map(r => r.x)), ys = group(rects.map(r => r.y)), near = (list, v) => list.reduce((b, x, i) => Math.abs(x - v) < Math.abs(list[b] - v) ? i : b, 0);
+    const cells = rects.map(r => ({ col: near(xs, r.x), row: near(ys, r.y) }));
+    return { cols: xs.length, rows: ys.length, at: (c, r) => cells.findIndex(k => k.col === c && k.row === r) };
+  }
+  const api = { createPointer, anglesFrom, gridOf, DEAD };
   if (typeof module !== 'undefined') module.exports = api; else root.HeadLogic = api;
 })(typeof window !== 'undefined' ? window : globalThis);
