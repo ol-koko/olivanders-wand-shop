@@ -4,3 +4,4 @@ node_modules/
 tools/e2e/fixtures/
 tools/e2e/shots/
 .env
+scripts/.align-cache/

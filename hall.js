@@ -244,8 +244,8 @@ let talkT = 0;
 function hatTalk(ms = 1200, tap = true, mood = null) { const h = $('#hat'); h.classList.remove('raise', 'furrow'); if (mood) h.classList.add(mood); clearTimeout(talkT); talkT = setTimeout(() => h.classList.remove('raise', 'furrow'), ms + 300); if (A.on && tap) noise(.05, { vol: .035, freq: 1500, q: .6 }); } // a soft tap of cloth, neutral: the low tones in core.js mean a wand said no
 
 /* ================= the Hat's face ================= */
-// Eyes follow the pointer or the option under it and come back to the player; random blinks; brows by the line's mood; the mouth by the voice's level.
-const FACE = { tx: 0, ty: 0, x: 0, y: 0, moved: -1e9, focus: null, blinkAt: 0, open: 0, level: null };
+// Eyes follow the pointer or the option under it and come back to the player; random blinks; brows by the line's mood; the mouth by the words, or by the voice's level.
+const FACE = { tx: 0, ty: 0, x: 0, y: 0, moved: -1e9, focus: null, blinkAt: 0, open: 0, level: null, mouth: { open: 0, wide: 0, pucker: 0 }, lips: false, last: 0 };
 addEventListener('pointermove', e => { FACE.mx = e.clientX; FACE.my = e.clientY; FACE.moved = now; }, { passive: true });
 const focusOn = el => { if (SWIPE.aim) return; const b = el && el.closest && el.closest('#nBtns button'); if (b) { const r = b.getBoundingClientRect(); FACE.focus = { x: r.left + r.width / 2, y: r.top + r.height / 2, at: now }; } };
 addEventListener('pointerover', e => focusOn(e.target)); addEventListener('focusin', e => focusOn(e.target));
@@ -264,11 +264,23 @@ function faceTick(t) {
   if (t > FACE.blinkAt) { if (FACE.blinkAt) { h.classList.add('blink'); setTimeout(() => h.classList.remove('blink'), 130); } FACE.blinkAt = t + (Math.random() < .15 ? 260 : 2400 + Math.random() * 4200); }
   // the mouth opens with the voice's loudness and rests closed when there's no voice
   // Bytes, not floats: every browser fills them. If the level stays silent while a line plays, the mouth moves on its own.
-  let target = 0; if (FACE.level && VOICE.src && VOICE.playing) { FACE.level.getByteTimeDomainData(FACE.buf); let sum = 0; for (const v of FACE.buf) sum += ((v - 128) / 128) ** 2; const rms = Math.sqrt(sum / FACE.buf.length); if (rms > .004) FACE.heard = t; target = t - (FACE.heard || 0) < 400 ? Math.min(1.25, rms * 9) : .45 + .4 * Math.sin(t / 70) * Math.sin(t / 113); }
+  let target = 0, rms = 0; if (FACE.level && VOICE.src && VOICE.playing) { FACE.level.getByteTimeDomainData(FACE.buf); let sum = 0; for (const v of FACE.buf) sum += ((v - 128) / 128) ** 2; rms = Math.sqrt(sum / FACE.buf.length); if (rms > .004) FACE.heard = t; target = t - (FACE.heard || 0) < 400 ? Math.min(1.25, rms * 9) : .45 + .4 * Math.sin(t / 70) * Math.sin(t / 113); }
   if (PONDER.on && !VOICE.playing && !reduceMotion) target = .1 + .09 * Math.sin(t / 95) * Math.sin(t / 151); // mumbling to itself between the lines
-  FACE.open += (target - FACE.open) * (target > FACE.open ? .55 : .25);
+  const dt = Math.min(100, t - (FACE.last || t)); FACE.last = t;
+  FACE.lips = !!(VOICE.lips && VOICE.src && VOICE.playing && A.ctx);
+  if (FACE.lips) lipsTick(dt, t - (FACE.heard || 0) < 400 ? rms : 0); else { FACE.open += (target - FACE.open) * (target > FACE.open ? .55 : .25); FACE.mouth.open = FACE.open / 2; }
   $('#hatMouth').style.transform = `scaleY(${(.32 + FACE.open).toFixed(3)})`;
   tickHat3D(t, h);
+}
+// The mouth by the words: the line's keyframes (audio/hat/<id>.lips.json, from scripts/align-hat.mjs) read at the voice's own clock, a little ahead,
+// because lips move before the sound is heard. The voice's level only makes the shape bigger or smaller.
+const LIPS_LEAD = .05;
+function lipsTick(dt, rms) {
+  const c = A.ctx, at = c.currentTime - VOICE.t0 - (c.outputLatency || c.baseLatency || 0) + LIPS_LEAD, k = VOICE.lips.k;
+  let i = 0; while (i + 1 < k.length && k[i + 1][0] <= at) i++;
+  const to = Hat3D.MOUTH[at < 0 ? 'X' : k[i][1]] || Hat3D.MOUTH.X, loud = rms ? clamp(.55 + rms * 4.5, .7, 1.2) : 1, m = FACE.mouth;
+  for (const n of ['open', 'wide', 'pucker']) { const goal = (to[n] || 0) * (n === 'open' ? loud : 1); m[n] += (goal - m[n]) * (1 - Math.exp(-dt / (goal > m[n] ? 38 : 50))); }
+  FACE.open = m.open * 2; // the drawn Hat opens by the same amount
 }
 // Leans a little toward the option the player picked, until the next question.
 function leanTo(o) { const b = [...document.querySelectorAll('#nBtns button')].find(x => x.textContent === pickLang(o.u, o.e)), h = $('#hat'); if (!b || reduceMotion) return; const r = b.getBoundingClientRect(), hb = h.getBoundingClientRect(); h.style.rotate = clamp((r.left + r.width / 2 - (hb.left + hb.width / 2)) / W * 22, -7, 7).toFixed(1) + 'deg'; }
@@ -312,7 +324,7 @@ addEventListener('click', e => { if (e.isTrusted && performance.now() < SWIPE.sw
 // three.js and the model load in the background once the page has settled. The drawn Hat stays underneath: it remains if WebGL or the CDN fails, on Save-Data, or if the phone can't keep up.
 // The face follows the same signals as the drawing, so everything that moves the drawn Hat moves this one.
 const HAT3D_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
-const H3 = { api: null, on: false, canvas: null, px: 0, ratio: 2, last: 0, frames: [], yaw: 0, pitch: 0, pose: { blink: 0, browUp: 0, furrow: 0, open: 0, pucker: 0, smile: .1, lookX: 0, lookY: 0, droop: 0, perk: 0 } };
+const H3 = { api: null, on: false, canvas: null, px: 0, ratio: 2, last: 0, frames: [], yaw: 0, pitch: 0, pose: { blink: 0, browUp: 0, furrow: 0, open: 0, pucker: 0, wide: 0, smile: .1, lookX: 0, lookY: 0, droop: 0, perk: 0 } };
 function sizeHat3D(px) { px = Math.round(px); if (H3.api && px && px !== H3.px) { H3.px = px; H3.api.size(px); } }
 async function loadHat3D() {
   try {
@@ -333,7 +345,7 @@ function tickHat3D(t, h) {
   const p = H3.pose, c = h.classList, ease = (k, to, r = .16) => { p[k] += (to - p[k]) * r; }, brow = (k, to) => ease(k, to, to > p[k] ? .14 : .03), ponder = c.contains('ponder'), crowned = c.contains('crowned'), raise = c.contains('raise');
   ease('blink', c.contains('blink') ? 1 : 0, .55); brow('browUp', crowned ? 1 : raise ? .85 : 0); brow('furrow', ponder ? 1 : c.contains('furrow') ? .7 : 0); ease('smile', crowned ? .42 : raise ? .2 : .1, .07); // the brows rise quickly and settle slowly, so they don't drop when a line ends
   ease('perk', crowned ? 1 : 0, .07); ease('droop', ponder ? .85 : reduceMotion ? 0 : .12 * Math.sin(t / 1500), .08);
-  p.open = Math.min(.6, FACE.open * .5); ease('pucker', vowel(), .25); p.lookX = FACE.x; p.lookY = (.35 - FACE.y) * .9;
+  if (FACE.lips) { p.open = FACE.mouth.open; p.wide = FACE.mouth.wide; p.pucker = FACE.mouth.pucker; } else { p.open = Math.min(.6, FACE.open * .5); ease('pucker', vowel(), .25); ease('wide', 0, .25); } p.lookX = FACE.x; p.lookY = (.35 - FACE.y) * .9;
   const yaw = reduceMotion ? 0 : FACE.x * .24 + .05 * Math.sin(t / 2300), pitch = reduceMotion ? 0 : (FACE.y - .35) * .07; H3.yaw += (yaw - H3.yaw) * .08; H3.pitch += (pitch - H3.pitch) * .08;
   H3.api.set(p); H3.api.turn(H3.yaw, H3.pitch); H3.api.render();
   // A phone that can't keep up: first fewer pixels, then the drawn Hat.
@@ -344,10 +356,14 @@ function tickHat3D(t, h) {
 /* ================= the Hat's voice ================= */
 // Recordings in /audio/hat (English) and /audio/hat/ua (Ukrainian), named by the ids in scripts/hat-lines-short.md. The Hat speaks the page's language; a switch mid-game applies from the next line.
 // The voice plays through the page's sound, so the sound button mutes it. Without sound, or if a file is slow, the Hat stays silent and the game goes on.
-const VOICE = { files: new Map(), buffers: new Map(), src: null, n: 0, chain: null, played: [] };
-const voiceUrl = id => `/audio/hat/${lang === 'ua' ? 'ua/' : ''}${id}.mp3`;
-function prefetch(ids) { if (A.on) ids.forEach(id => { const k = voiceUrl(id); if (!VOICE.files.has(k)) VOICE.files.set(k, fetch(k).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)); }); }
-function stopVoice() { VOICE.n++; VOICE.playing = false; if (VOICE.src) { try { VOICE.src.stop(); } catch (_) { } VOICE.src = null; } }
+// Each line may have its mouth keyframes next to it (<id>.lips.json). Without them the mouth follows the voice's level as before.
+const VOICE = { files: new Map(), buffers: new Map(), lipsFiles: new Map(), src: null, n: 0, chain: null, played: [], lips: null, t0: 0 };
+const LIPS_LANGS = ['en', 'ua']; // the voices that have .lips.json, from scripts/align-hat.mjs
+const voiceUrl = id => `/audio/hat/${lang === 'ua' ? 'ua/' : ''}${id}.mp3`, lipsUrl = id => voiceUrl(id).replace(/\.mp3$/, '.lips.json');
+const readLips = k => fetch(k).then(r => r.ok ? r.json() : null).then(j => j && Array.isArray(j.k) && j.k.length ? j : null).catch(() => null);
+function prefetch(ids) { if (A.on) ids.forEach(id => { const k = voiceUrl(id), l = lipsUrl(id); if (!VOICE.files.has(k)) VOICE.files.set(k, fetch(k).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)); if (!VOICE.lipsFiles.has(l)) VOICE.lipsFiles.set(l, LIPS_LANGS.includes(lang) ? readLips(l) : Promise.resolve(null)); }); }
+const lipsFor = id => { prefetch([id]); return Promise.race([VOICE.lipsFiles.get(lipsUrl(id)) || null, wait(800).then(() => null)]); };
+function stopVoice() { VOICE.n++; VOICE.playing = false; VOICE.lips = null; if (VOICE.src) { try { VOICE.src.stop(); } catch (_) { } VOICE.src = null; } }
 async function voiceBuffer(id) {
   const k = voiceUrl(id); if (VOICE.buffers.has(k)) return VOICE.buffers.get(k);
   prefetch([id]); const raw = await Promise.race([VOICE.files.get(k), wait(800).then(() => null)]); // a line that isn't there in time is skipped
@@ -357,11 +373,11 @@ async function voiceBuffer(id) {
 // Says one line and resolves when it ends. Text-only timing when there's no voice.
 async function say(id, fallback = 1200, chained = false) {
   if (!chained) VOICE.chain = null; stopVoice(); const n = VOICE.n;
-  const b = A.on && A.ctx ? await voiceBuffer(id) : null;
+  const [b, lips] = A.on && A.ctx ? await Promise.all([voiceBuffer(id), lipsFor(id)]) : [null, null];
   if (n !== VOICE.n) return; // another line started meanwhile
   if (!b) { hatTalk(fallback, true, moodOf(id)); return; }
   if (!FACE.level) { FACE.level = A.ctx.createAnalyser(); FACE.level.fftSize = 512; FACE.buf = new Uint8Array(FACE.level.fftSize); FACE.level.connect(A.master); } // in the chain, not a side branch: some browsers leave an unconnected analyser silent
-  const src = A.ctx.createBufferSource(), g = A.ctx.createGain(); g.gain.value = 2.2; src.buffer = b; src.connect(g); g.connect(FACE.level); src.start(); VOICE.src = src; VOICE.playing = true; FACE.heard = now; VOICE.played.push((lang === 'ua' ? 'ua/' : '') + id); if (VOICE.ended) (VOICE.gaps = VOICE.gaps || []).push(performance.now() - VOICE.ended);
+  const src = A.ctx.createBufferSource(), g = A.ctx.createGain(); g.gain.value = 2.2; src.buffer = b; src.connect(g); g.connect(FACE.level); src.start(); VOICE.src = src; VOICE.playing = true; VOICE.lips = lips; VOICE.t0 = A.ctx.currentTime; FACE.heard = now; VOICE.played.push((lang === 'ua' ? 'ua/' : '') + id); if (VOICE.ended) (VOICE.gaps = VOICE.gaps || []).push(performance.now() - VOICE.ended);
   hatTalk(b.duration * 1000, false, moodOf(id));
   await new Promise(r => { src.onended = r; setTimeout(r, b.duration * 1000 + 400); }); if (VOICE.src === src) VOICE.playing = false; VOICE.ended = n === VOICE.n ? performance.now() : 0; // 0: cut short by the next line
 }

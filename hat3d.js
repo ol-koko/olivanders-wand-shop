@@ -1,13 +1,13 @@
 // The Hat in 3D, built in code: one crumpled cloth surface whose folds make the face. Every expression is a morph of that surface.
 // await Hat3D.create(three, canvas) returns { set(pose), turn(yaw, pitch), render(), size(px), ratio(r), dispose() }. Building yields often, so the page stays smooth. A pose holds any of the values in MORPHS, from 0 to 1 (look and turn run from -1 to 1).
 const Hat3D = (() => {
-  const MORPHS = ['blink', 'browUp', 'furrow', 'open', 'pucker', 'smile', 'lookX', 'lookY', 'droop', 'perk'];
+  const MORPHS = ['blink', 'browUp', 'furrow', 'open', 'pucker', 'wide', 'smile', 'lookX', 'lookY', 'droop', 'perk'];
   const H = 2.8, R0 = .9, TAU = Math.PI * 2;
   const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const g = (dx, dy, sx, sy) => Math.exp(-(dx * dx) / (sx * sx) - (dy * dy) / (sy * sy));
   const browY = (x, s, m) => { const inner = 1 - smooth(.03, .15, s * x); return .545 + .04 * m.browUp - .015 * m.furrow - .055 * m.furrow * inner + .024 * m.browUp * (1 - inner) - .05 * Math.pow(s * x / .17 - .5, 2); };
   const pause = () => new Promise(r => setTimeout(r));
-  const clear = m => Object.assign({ blink: 0, browUp: 0, furrow: 0, open: 0, pucker: 0, smile: 0, lookX: 0, lookY: 0, droop: 0, perk: 0 }, m);
+  const clear = m => Object.assign({ blink: 0, browUp: 0, furrow: 0, open: 0, pucker: 0, wide: 0, smile: 0, lookX: 0, lookY: 0, droop: 0, perk: 0 }, m);
 
   // Creases: sharp valleys rather than soft waves. ao is how deep in shadow the cloth sits there.
   function folds(x, v) {
@@ -27,7 +27,7 @@ const Hat3D = (() => {
       d += .034 * g(ax - .135, v - .33, .05, .055) * m.smile;
     }
     d += m.furrow * .03 * Math.sin((v - .6) * 120) * g(x, v - .645, .11, .05);
-    const curve = m.smile * Math.pow(x / .08, 2) * .024, my = .275 + curve, wide = 1 - .25 * m.pucker;
+    const curve = m.smile * Math.pow(x / .08, 2) * .024, my = .275 + curve, wide = 1 - .4 * m.pucker + .38 * m.wide;
     d -= .05 * g(x, v - my, .086 * wide, .03 + .03 * m.open);
     d += .018 * g(x, v - (my - .05 - .04 * m.open), .076 * wide, .024) + .012 * g(x, v - (my + .045 + .025 * m.open), .08 * wide, .02);
     r += d * (1 - v * .4) + lift;
@@ -80,9 +80,11 @@ const Hat3D = (() => {
     await eye(-1); await eye(1);
     const brow = async s => dark(await grid(THREE, 24, 3, (i, j, m) => { const q = i * 2 - 1, wid = Math.pow(1 - q * q, .5), x = s * .088 + q * .082; return point(x, browY(x, s, m) - .027 + (j * 2 - 1) * wid * .0085, m, .02); }));
     await brow(-1); await brow(1);
-    dark(await grid(THREE, 36, 8, (i, j, m) => { const q = i * 2 - 1, t = j * 2 - 1, wid = Math.pow(1 - q * q, .55), x = q * .08 * (1 - .3 * m.pucker), cur = m.smile * q * q * .024, y = .275 + cur + t * wid * (.012 + .06 * m.open); return point(x, y, m, .012); }));
+    dark(await grid(THREE, 36, 8, (i, j, m) => { const q = i * 2 - 1, t = j * 2 - 1, wid = Math.pow(1 - q * q, .55), x = q * .08 * (1 - .45 * m.pucker + .42 * m.wide), cur = m.smile * q * q * .024, y = .275 + cur + t * wid * (.012 + .06 * m.open + .03 * m.pucker - .006 * m.wide); return point(x, y, m, .012); }));
     const api = { pose: clear(), set(p) { Object.assign(api.pose, p); meshes.forEach(k => { if (k.morphTargetInfluences) MORPHS.forEach((n, i) => { k.morphTargetInfluences[i] = api.pose[n]; }); }); }, turn(y, x = 0) { group.rotation.y = y; group.rotation.x = x; }, render() { gl.render(scene, cam); }, size(px) { gl.setSize(px, px, false); }, ratio(r) { gl.setPixelRatio(r); }, dispose() { gl.dispose(); } };
     return api;
   }
-  return { create, MORPHS };
+  // Mouth shapes for speech, by the letters of scripts/align-hat.mjs: X rest, M closed (m b p), A wide (a e i), O round (o u w), F teeth (f v), S small (other consonants).
+  const MOUTH = { X: {}, M: { open: -.15 }, A: { open: .75, wide: .9 }, O: { open: .5, pucker: 1 }, F: { open: .08, wide: .7 }, S: { open: .3, wide: .25 } };
+  return { create, MORPHS, MOUTH };
 })();
