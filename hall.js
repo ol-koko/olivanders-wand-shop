@@ -322,18 +322,37 @@ addEventListener('pointerup', e => endSwipe(e, true)); addEventListener('pointer
 addEventListener('click', e => { if (e.isTrusted && performance.now() < SWIPE.swallow) { SWIPE.swallow = 0; e.stopPropagation(); e.preventDefault(); } }, true); // the browser's own click after a slide isn't a tap
 
 /* ================= the Hat in 3D ================= */
-// three.js and the model load in the background once the page has settled. The drawn Hat stays underneath: it remains if WebGL or the CDN fails, on Save-Data, or if the phone can't keep up.
+// three.js starts downloading with the page and the model is built in the background. The drawn Hat stays underneath: it remains if WebGL or the CDN fails, on Save-Data, or if the phone can't keep up.
+// 3D or the drawing is chosen once, in settleHat just before the Hat is first shown, and never changes while the Hat is on screen (only a lost WebGL context still drops to the drawing).
 // The face follows the same signals as the drawing, so everything that moves the drawn Hat moves this one.
 const HAT3D_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
-const H3 = { api: null, on: false, canvas: null, px: 0, ratio: 2, last: 0, frames: [], yaw: 0, pitch: 0, pose: { blink: 0, browUp: 0, furrow: 0, open: 0, pucker: 0, wide: 0, smile: .1, lookX: 0, lookY: 0, droop: 0, perk: 0 } };
+const HAT3D_WAIT = 2500; // how long the Hall may wait for 3D with a glimmer in the Hat's place before the drawn Hat is used
+const H3 = { mode: '', done: false, why: '', t: {}, api: null, on: false, canvas: null, px: 0, ratio: 2, last: 0, frames: [], yaw: 0, pitch: 0, pose: { blink: 0, browUp: 0, furrow: 0, open: 0, pucker: 0, wide: 0, smile: .1, lookX: 0, lookY: 0, droop: 0, perk: 0 } };
 function sizeHat3D(px) { px = Math.round(px); if (H3.api && px && px !== H3.px) { H3.px = px; H3.api.size(px); } }
+let h3Settle; const h3Settled = new Promise(r => { h3Settle = r; });
+const h3Off = why => { H3.api = null; H3.why = H3.why || why; H3.done = true; h3Settle(); };
+const h3Can = !!window.WebGLRenderingContext && !(navigator.connection && navigator.connection.saveData);
+const h3Three = h3Can ? (H3.t.start = performance.now(), import(HAT3D_URL)) : null; if (h3Three) h3Three.catch(() => { });
 async function loadHat3D() {
   try {
-    if (!window.WebGLRenderingContext || (navigator.connection && navigator.connection.saveData)) return;
-    const THREE = await withTimeout(import(HAT3D_URL), 15000), c = document.createElement('canvas'); c.id = 'hat3d'; c.setAttribute('aria-hidden', 'true');
-    H3.api = await Hat3D.create(THREE, c); H3.canvas = c; c.addEventListener('webglcontextlost', dropHat3D);
-    const h = $('#hat'); h.appendChild(c); H3.ratio = Math.min(2, devicePixelRatio || 1); sizeHat3D(parseFloat(h.style.width) || 300); H3.api.set(H3.pose); H3.api.render(); H3.on = true; h.classList.add('d3');
-  } catch (_) { H3.api = null; }
+    if (!h3Can) return h3Off(window.WebGLRenderingContext ? 'Save-Data' : 'no WebGL');
+    const THREE = await withTimeout(h3Three, 15000), c = document.createElement('canvas'); c.id = 'hat3d'; c.setAttribute('aria-hidden', 'true'); H3.t.three = performance.now();
+    if (H3.mode) return; // the drawn Hat is already on screen
+    const api = await Hat3D.create(THREE, c); H3.t.built = performance.now();
+    if (H3.mode) { api.dispose(); return; }
+    H3.api = api; H3.canvas = c; c.addEventListener('webglcontextlost', dropHat3D);
+    const h = $('#hat'); h.appendChild(c); H3.ratio = Math.min(2, devicePixelRatio || 1); sizeHat3D(parseFloat(h.style.width) || 300); H3.api.set(H3.pose); H3.api.render(); H3.on = true; h.classList.add('d3'); H3.done = true; h3Settle();
+  } catch (e) { h3Off(e && e.message === 'timeout' ? 'timeout' : 'load failed'); }
+}
+// Called once, with the Hall dimmed and the Hat still hidden. If 3D is neither ready nor ruled out, a glimmer holds the Hat's place for up to HAT3D_WAIT.
+async function settleHat() {
+  H3.t.due = performance.now();
+  if (!H3.done) {
+    const g = $('#hatWait'), h = $('#hat'); for (const k of ['width', 'height', 'marginLeft', 'bottom']) g.style[k] = h.style[k];
+    g.classList.add('on'); await Promise.race([h3Settled, wait(HAT3D_WAIT)]); g.classList.remove('on');
+    if (!H3.done) { H3.why = 'not ready in time'; H3.done = true; }
+  }
+  H3.mode = H3.on ? '3d' : '2d'; H3.t.shown = performance.now();
 }
 function dropHat3D() { H3.on = false; $('#hat').classList.remove('d3'); const a = H3.api, c = H3.canvas; H3.api = null; setTimeout(() => { try { a && a.dispose(); } catch (_) { } if (c) c.remove(); }, 600); }
 // Rounder lips for low sounds (о, у), wider for bright ones (е, и), read from the voice itself.
@@ -349,9 +368,9 @@ function tickHat3D(t, h) {
   if (FACE.lips) { p.open = FACE.mouth.open; p.wide = FACE.mouth.wide; p.pucker = FACE.mouth.pucker; } else { p.open = Math.min(.6, FACE.open * .5); ease('pucker', vowel(), .25); ease('wide', 0, .25); } p.lookX = FACE.x; p.lookY = (.35 - FACE.y) * .9;
   const yaw = reduceMotion ? 0 : FACE.x * .24 + .05 * Math.sin(t / 2300), pitch = reduceMotion ? 0 : (FACE.y - .35) * .07; H3.yaw += (yaw - H3.yaw) * .08; H3.pitch += (pitch - H3.pitch) * .08;
   H3.api.set(p); H3.api.turn(H3.yaw, H3.pitch); H3.api.render();
-  // A phone that can't keep up: first fewer pixels, then the drawn Hat.
+  // A phone that can't keep up: first fewer pixels, then the drawn Hat, but only while the Hat is still hidden.
   if (H3.last && t - H3.last < 250) H3.frames.push(t - H3.last); H3.last = t;
-  if (H3.frames.length >= 60) { const mid = H3.frames.sort((a, b) => a - b)[30]; H3.frames.length = 0; if (mid > 38) { if (H3.ratio > 1) { H3.ratio = 1; H3.api.ratio(1); H3.px = 0; sizeHat3D(parseFloat(h.style.width)); } else dropHat3D(); } }
+  if (H3.frames.length >= 60) { const mid = H3.frames.sort((a, b) => a - b)[30]; H3.frames.length = 0; if (mid > 38) { if (H3.ratio > 1) { H3.ratio = 1; H3.api.ratio(1); H3.px = 0; sizeHat3D(parseFloat(h.style.width)); } else if (!H3.mode) dropHat3D(); } } // once the Hat is on screen it only lowers the pixel ratio
 }
 
 /* ================= the Hat's voice ================= */
@@ -605,11 +624,11 @@ async function enterHall() {
     fl.style.opacity = clamp((t - .5) / .42); drawSnow(performance.now(), 1 - z);
   });
   // the snow keeps falling inside
-  $('#haMid').after($('#snowBack')); $('#haFront').after($('#snowFront')); $('#haFront').after($('#hallDim')); $('#hallDim').after($('#snowFront')); $('#snowFront').after($('#hatAura'), $('#hatCrests'), $('#dustBack'), $('#hat'), $('#dustFront'));
+  $('#haMid').after($('#snowBack')); $('#haFront').after($('#snowFront')); $('#haFront').after($('#hallDim')); $('#hallDim').after($('#snowFront')); $('#snowFront').after($('#hatAura'), $('#hatWait'), $('#hatCrests'), $('#dustBack'), $('#hat'), $('#dustFront'));
   $('#castle').hidden = true; hall.style.opacity = 1; placeHat();
   await run(reduceMotion ? 400 : 1300, t => { const e = easeOut(t); if (!reduceMotion) inn.forEach((id, i) => { layers[id].s = 1 + (.3 + i * .1) * (1 - e); }); fl.style.opacity = 1 - easeOut(clamp(t / .75)); });
   await establish(inn);
-  $('#hallDim').classList.add('in'); await wait(reduceMotion ? 150 : 550); void $('#hat').offsetWidth; $('#hat').classList.add('in');
+  $('#hallDim').classList.add('in'); await wait(reduceMotion ? 150 : 550); await settleHat(); void $('#hat').offsetWidth; $('#hat').classList.add('in');
   startCeremony();
 }
 // A clear look at the Hall before the Hat: a slow push-in for about a second. A tap or a key skips it.
@@ -629,7 +648,7 @@ $('#cta').addEventListener('click', e => { e.stopPropagation(); enterHall(); });
 /* ================= boot ================= */
 function onResize() { W = innerWidth; H = innerHeight; MIN = Math.min(W, H); setViewBoxes(); initSnow(); placeHat(); }
 let resizeT = 0; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(onResize, 120); });
-buildSky(); buildFar(); buildMain(); buildFg(); buildHat(); setViewBoxes(); initSnow(); applyLang(); setTimeout(loadHat3D, 1200);
+buildSky(); buildFar(); buildMain(); buildFg(); buildHat(); setViewBoxes(); initSnow(); applyLang(); setTimeout(loadHat3D, 600);
 function frame(t) {
   requestAnimationFrame(frame); // first, so an error in one frame can't stop the page
   now = t; updatePar(t); faceTick(t);

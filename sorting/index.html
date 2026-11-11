@@ -25,6 +25,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;0,600;0,700;1,400;1,500;1,600&family=Marck+Script&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/core.css">
@@ -43,7 +44,7 @@
 #hat{transition:opacity .9s,rotate .5s cubic-bezier(.3,.7,.3,1),filter .9s}
 #hat.crowned{filter:drop-shadow(0 0 22px rgba(255,205,120,.6))}
 #hat3d{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity .5s;background:radial-gradient(closest-side,rgba(255,217,160,.38),rgba(255,201,138,.13) 58%,rgba(255,201,138,0))}
-#hat svg{transition:opacity .5s}
+#hat svg{transition:opacity .5s}#hat:not(.in) svg,#hat:not(.in) #hat3d{transition:none}
 #hat.d3 #hat3d{opacity:1}#hat.d3 svg{opacity:0}
 #hat.d3,#hat.d3.crowned{filter:none}
 #hat.ponder #browL{transform:translateY(4px) rotate(11deg)}#hat.ponder #browR{transform:translateY(4px) rotate(-11deg)}
@@ -63,6 +64,10 @@
 #dustBack,#dustFront{position:absolute;pointer-events:none;opacity:0;transition:opacity .7s}
 #dustBack.on,#dustFront.on{opacity:1}
 @media (prefers-reduced-motion:reduce){#hatAura{transform:none}}
+#hatWait{position:absolute;left:50%;pointer-events:none;opacity:0;transition:opacity .5s;background:radial-gradient(closest-side,rgba(255,221,150,.44),rgba(217,180,106,.18) 45%,rgba(217,180,106,0) 72%)}
+#hatWait.on{opacity:1;transition:opacity .6s .3s;animation:hatWait 1.6s ease-in-out infinite alternate}
+@keyframes hatWait{from{transform:scale(.82);filter:brightness(.8)}to{transform:scale(1);filter:brightness(1.25)}}
+@media (prefers-reduced-motion:reduce){#hatWait.on{animation:none}}
 #hat svg{width:100%;height:100%;display:block;overflow:visible}
 #hatTip,#hatMouth,.eye,.brow,.spirit{transform-box:fill-box}
 #hatTip{transform-origin:18% 100%;animation:hatSway 5s ease-in-out infinite alternate}
@@ -151,6 +156,7 @@
     <div class="pl" id="haFront" data-d="1.05"><svg id="svgHaFront" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMin slice"></svg></div>
     <div id="hallDim"></div>
     <div id="hatAura" aria-hidden="true"></div>
+    <div id="hatWait" aria-hidden="true"></div>
     <div id="hatCrests" aria-hidden="true"></div>
     <canvas id="dustBack" aria-hidden="true"></canvas>
     <div id="hat" aria-hidden="true"></div>
