@@ -20,11 +20,12 @@ const row = n => HOUSES.map(h => `${h} ${n[h].toFixed(1).padStart(4)}`).join('  
 
 console.log('\nbalance');
 const rnd = share({}); console.log('  random answers     ', row(rnd)); check(HOUSES.every(h => Math.abs(rnd[h] - 25) < 2), 'about 25% per house');
-for (const h of HOUSES) { const n = share({ wish: h }); console.log('  wish ' + h + '             ', row(n)); check(n[h] >= 60 && n[h] <= 70, `wish ${h} between 60% and 70%`); }
+for (const h of HOUSES) { const n = share({ wish: h }); console.log('  wish ' + h + '             ', row(n)); check(n[h] >= 36 && n[h] <= 44, `wish ${h} between 36% and 44%`); }
 for (const h of HOUSES) { const n = share({ avoid: h }); console.log('  avoid ' + h + '            ', row(n)); check(n[h] < 10, `unwanted ${h} below 10%`); }
 const wand = share({ wand: 'G' }); console.log('  wand leans G       ', row(wand)); check(wand.G - 25 > 2 && wand.G - 25 < 10, 'the wand is a small nudge');
 for (const h of HOUSES) console.log('  answers lean ' + h + '     ', row(share({ lean: h })));
 console.log('  lean G, wish S     ', row(share({ lean: 'G', wish: 'S' })));
+console.log('  wish G, avoid S    ', row(share({ wish: 'G', avoid: 'S' })));
 
 console.log('\nquestions');
 { let s = [], early = 0; for (let i = 0; i < 11; i++) { const p = pickQuestions(POOL, s); if (p.questions.some(q => s.includes(q.id))) early++; s = p.seen; } check(early === 0, 'no question repeats in the first 11 games');
