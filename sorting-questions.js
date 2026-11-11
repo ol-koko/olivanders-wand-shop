@@ -49,7 +49,7 @@ q('s1', 2, 'Вечірка. Ти нікого не знаєш.', 'A party. You k
   ['Знайомлюсь із господарем', 'I go and meet the host', 'S'], ['Шукаю найцікавішу книжку на полиці', 'I look for the best book on the shelf', 'R'], ['Допомагаю на кухні', 'I help in the kitchen', 'H'], ['Пропоную всім гру', 'I get everyone playing a game', 'G']],
   [['Пів Зали почувається так само.', 'Half this Hall feels the same.'], ['Цікаво, хто пішов першим.', 'Who left first, I wonder?']]),
 q('s2', 2, 'Друг просить збрехати за нього.', 'A friend asks you to lie.', [
-  ['Брешу, але потім усе йому скажу', 'I lie, then tell them what I think', 'HG'], ['Брешу, і красиво', 'I lie, and beautifully', 'S'], ['Відмовляюсь, зате придумаю кращий план', 'I say no, and come up with a better plan', 'R']],
+  ['Брешу, але потім усе йому скажу', 'I lie, then tell them what I think', 'HG'], ['Брешу, і красиво', 'I lie, and beautifully', 'S'], ['Відмовляюсь, зате придумаю кращий план', 'I say no, and come up with a better plan', 'R'], ['Не брешу, але й не видаю', 'I won’t lie. I won’t give them away either', 'H']],
   [['Я не суджу. Я розподіляю.', 'I don’t judge. I sort.'], ['Тут таких друзів повно.', 'This castle is full of such friends.']]),
 q('s3', 2, 'На тротуарі гаманець.', 'A wallet on the pavement.', [
   ['Шукаю власника, хоч би й цілий день', 'I look for the owner, even if it takes all day', 'H'], ['Дивлюсь, що в ньому можна дізнатись', 'I see what I can learn from it', 'RS'], ['Кричу на всю вулицю: «Чий?»', 'I shout down the street: “Whose is this?”', 'G'], ['Проходжу повз: раптом це пастка', 'I walk past. Could be a trap', '']],
@@ -58,7 +58,7 @@ q('s4', 2, 'Усі помиляються. Крім тебе.', 'Everyone’s wr
   ['Кажу вголос', 'I say so', 'G'], ['Показую, де це написано', 'I show them where it’s written', 'R'], ['Мовчу, поки це мені вигідно', 'I keep quiet while it suits me', 'S'], ['Тихо кажу одній людині, щоб не ніяковіла', 'I quietly tell one person, to spare them', 'H']],
   [['А як помиляєшся ти?', 'And if it’s you who’s wrong?'], ['Знайоме відчуття.', 'I know the feeling.']]),
 q('s5', 2, 'Ти запізнюєшся. Комусь потрібна допомога.', 'You’re late. Someone needs help.', [
-  ['Допомагаю. Запізнюсь, то й що', 'I help. So I’m late', 'HG'], ['Швидко кажу, кого покликати', 'I tell them who to call, fast', 'R'], ['Обіцяю повернутись', 'I promise to come back', 'S', ['І ти таки повернешся?', 'And will you come back?', 's5back']]],
+  ['Допомагаю. Запізнюсь, то й що', 'I help. So I’m late', 'HG'], ['Швидко кажу, кого покликати', 'I tell them who to call, fast', 'R'], ['Обіцяю повернутись', 'I promise to come back', 'S', ['І ти таки повернешся?', 'And will you come back?', 's5back']], ['Встигну і туди, і туди', 'I’ll make it to both, somehow', 'G']],
   [['Тут за запізнення знімають бали. Просто кажу.', 'Lateness costs points here. Just saying.'], ['З часом у цьому замку все складно.', 'Time is tricky in this castle.']]),
 q('s6', 2, 'Команда сперечається годину.', 'The team’s argued for an hour.', [
   ['Вирішую, а далі якось буде', 'I decide, and we’ll sort it out later', 'GS'], ['Малюю схему', 'I draw a diagram', 'R'], ['Приношу всім чай', 'I bring everyone tea', 'H'], ['Чекаю, хто втомиться першим', 'I wait to see who tires first', 'S']],
