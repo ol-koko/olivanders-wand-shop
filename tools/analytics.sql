@@ -35,3 +35,13 @@ select coalesce(device_type, 'all') as device, count(*) as games, count(*) filte
        round(100.0 * count(*) filter (where input_mode = 'head') / nullif(count(*), 0), 1) as head_pct
 from public.sorting_results where input_mode is not null
 group by rollup (device_type) order by 2 desc;
+
+-- 5. Where players came from, per game. NULL is a direct visit or unknown; Telegram is rarely seen without the ?s=tg tag.
+select 'wand' as game, coalesce(source, 'direct / unknown') as source, count(*) as games,
+       round(100.0 * count(*) / sum(count(*)) over (), 1) as pct
+from public.wand_results where play_no is not null group by 2
+union all
+select 'sorting', coalesce(source, 'direct / unknown'), count(*),
+       round(100.0 * count(*) / sum(count(*)) over (), 1)
+from public.sorting_results where play_no is not null group by 2
+order by 1, 3 desc;
