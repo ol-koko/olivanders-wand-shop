@@ -471,12 +471,14 @@ function endDust() { $('#dustBack').classList.remove('on'); $('#dustFront').clas
 function recall(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (_) { return null; } }
 function loadWand() { const w = recall('wand-last'), ok = w && w.traits && Date.now() - w.at < 864e5; st.wandId = ok ? w.id : null; return ok ? SortingLogic.wandImpression(w.traits) : null; }
 function startCeremony() {
+  logStep('sorting', 'hat');
   st.phase = 'hall'; st.step = 0; st.answers = []; st.heads = 0; st.picking = false; st.house = null; st.wand = loadWand();
   const wi = st.wand ? Math.floor(Math.random() * HAT.wand.length) : -1, line = wi >= 0 ? HAT.wand[wi] : null, ids = ['introH', ...(line ? ['wand' + (wi + 1)] : []), 'introI'];
   setNote(() => ({ kicker: T('hatK'), hand: T('introH'), instr: line ? pickLang(line[0], line[1]) + ' ' + T('introI') : T('introI'), btns: [{ label: T('bStart'), fn: beginQuestions }, ...(typeof headPossible === 'function' && headPossible() ? [{ label: T('bHead'), ghost: true, fn: () => startHead() }] : [])] })); // head mode lives in head.js
   prefetch(ids); sayAll(ids);
 }
 function beginQuestions() {
+  logStep('sorting', 'start');
   const seen = recall('hat-seen'), p = SortingLogic.pickQuestions(POOL, Array.isArray(seen) ? seen : []);
   try { localStorage.setItem('hat-seen', JSON.stringify(p.seen)); } catch (_) { }
   st.questions = p.questions.map(q => ({ ...q, o: SortingLogic.shuffled(q.o) })); st.step = 0; st.answers = []; st.heads = 0; st.house = null; st.wish = st.avoid = null; st.avoiding = st.deciding = false;
@@ -490,7 +492,7 @@ function ask() {
   say(q.id, 900);
 }
 async function answer(q, o) {
-  if (!st.picking) return; st.picking = false; st.answers.push(o.w); if (typeof HEAD !== 'undefined' && HEAD.on) st.heads++; leanTo(o); // heads: answers given with head mode on, for the log
+  if (!st.picking) return; st.picking = false; st.answers.push(o.w); logStep('sorting', 'q' + st.answers.length); if (typeof HEAD !== 'undefined' && HEAD.on) st.heads++; leanTo(o); // heads: answers given with head mode on, for the log
   let r, id; // a few lines answer one option only
   if (o.r) { r = o.r; id = o.r[2]; } else if (Math.random() < .85) { const i = Math.floor(Math.random() * q.r.length); r = q.r[i]; id = q.id + 'r' + (i + 1); } else { const i = Math.floor(Math.random() * SHARED.length); r = SHARED[i]; id = 'any' + (i + 1); }
   setNote(() => ({ kicker: T('hatK'), hand: pickLang(r[0], r[1]) }));
@@ -500,7 +502,7 @@ async function answer(q, o) {
 }
 function showWish(first) {
   setNote(() => ({ kicker: T('hatK'), hand: pickLang(HAT.yes.ua, HAT.yes.en), instr: st.avoiding ? pickLang(...HAT.no.hint) : '', cls: 'wish', btns: wishBtns() }), !first);
-  if (first) say('wish', 900);
+  if (first) { logStep('sorting', 'wish'); say('wish', 900); }
 }
 function tapHouse(h) {
   if (st.avoiding) { st.avoid = st.avoid === h ? null : h; if (st.wish === h) st.wish = null; }
@@ -517,7 +519,7 @@ async function decide() {
   st.house = SortingLogic.sortHouse({ answers: st.answers, wand: st.wand, wish: st.wish, avoid: st.avoid });
   const kind = st.wish ? (st.house === st.wish ? 'got' : 'denied') : st.avoid ? (st.house === st.avoid ? 'overruled' : 'avoided') : null, li = kind === 'got' ? 1 : kind ? Math.floor(Math.random() * HAT[kind].length) : -1, line = kind ? HAT[kind][li] : null; // a granted wish always hears «Ти просиш. І це в тобі є»
   stopPonder();
-  postRow('sorting_results', { house: st.house, wish: st.wish, unwanted: st.avoid, wand_prior: !!st.wand, device_type: deviceType(), language: lang, input_mode: st.answers.length && st.heads === st.answers.length ? 'head' : 'pointer' }, 'hat-plays');
+  postRow('sorting_results', { house: st.house, wish: st.wish, unwanted: st.avoid, wand_prior: !!st.wand, device_type: deviceType(), language: lang, input_mode: st.answers.length && st.heads === st.answers.length ? 'head' : 'pointer' }, 'hat-plays'); logStep('sorting', 'result');
   // The Hat's line about the wish if there is one, a held breath, then the house as it rises in gold with the chime, then the card.
   if (line) { setNote(() => ({ kicker: T('hatK'), hand: pickLang(line[0], line[1]) })); await Promise.all([wait(reduceMotion ? 800 : 1300), say(kind + (li + 1), 1200)]); await wait(reduceMotion ? 250 : GAP + 200); }
   setNote(() => ({ kicker: T('doneK'), hand: houseName(st.house) + '!' })); crownHat(); if (A.on && A.ctx) SFX.reveal();
@@ -558,6 +560,7 @@ function stampSeal(seal, card, landed = () => { }) {
   }, 380);
 }
 $('#bAgain').addEventListener('click', () => {
+  logStep('sorting', 'again');
   stopVoice(); uncrownHat(); COIN.turn = 0; $('.topbar').classList.remove('away'); const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
   $('#rSaved').hidden = true; setTimeout(() => typeof HEAD !== 'undefined' && HEAD.wanted && headPossible() ? startHead(true) : beginQuestions(), 500); // a head-mode game asks for the camera again, with no practice
 });
@@ -607,7 +610,7 @@ document.querySelectorAll('#lang button').forEach(b => b.addEventListener('click
 
 /* ================= into the hall ================= */
 async function enterHall() {
-  if (st.phase !== 'castle') return; st.phase = 'entering';
+  if (st.phase !== 'castle') return; st.phase = 'entering'; logStep('sorting', 'enter');
   // Browsers allow sound only after a tap, so the entry tap is what starts it.
   if (A.on) { audioInit(); if (A.ctx && A.ctx.state === 'suspended') A.ctx.resume(); SFX.bell(); }
   $('#cta').style.opacity = 0; $('#stFan').style.opacity = 0; $('#stTitle').style.opacity = 0; $('#stTitle').style.transform = 'translateY(-20px)';
@@ -657,3 +660,4 @@ function frame(t) {
   if (st.phase === 'castle') drawSnow(t); else if ($('#castle').hidden) drawSnow(t, .75);
 }
 requestAnimationFrame(frame);
+logStep('sorting', 'open');

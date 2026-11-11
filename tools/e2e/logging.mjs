@@ -6,7 +6,7 @@ const check = (ok, what) => { console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${what}`); 
 const LIVE = 'https://olivanders-wand-shop.vercel.app/', KEYS = 'amp,attempts,curl,device_type,flow,input_mode,language,play_no,sharp,source,speed,wand_id,wave_dur,wave_len';
 const live = (reqs, answer) => async page => {
   await page.route(u => u.hostname === 'olivanders-wand-shop.vercel.app', async r => { const res = await fetch(url + new URL(r.request().url()).pathname.slice(1)); await r.fulfill({ status: res.status, contentType: res.headers.get('content-type') || 'text/plain', body: Buffer.from(await res.arrayBuffer()) }); });
-  await page.route(u => u.hostname.endsWith('.supabase.co'), r => { if (r.request().method() === 'POST') reqs.push(r.request()); return answer(r); });
+  await page.route(u => u.hostname.endsWith('.supabase.co'), r => { if (r.request().method() === 'POST') (/game_steps$/.test(r.request().url()) ? (reqs.steps = reqs.steps || []) : reqs).push(r.request()); return answer(r); });
 };
 const play = async (target, opts, route) => { const s = await open(target, { ...opts, route }); await enter(s.page); await choosePointer(s.page); s.game = await pointerGame(s.page, opts.viewport); return s; };
 const OK = r => r.fulfill({ status: 201, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' } });
@@ -22,6 +22,9 @@ for (const [name, opts, device] of [['phone', { viewport: { width: 390, height: 
   check(row.wand_id === winner && row.attempts === attempts && row.input_mode === 'pointer' && row.language === 'ua' && row.device_type === device, 'wand, attempts, input, language and device are right');
   check(['speed', 'amp', 'sharp', 'flow', 'curl'].every(k => row[k] >= 0 && row[k] <= 1), 'traits are between 0 and 1');
   check(row.source === null, 'a direct visit has no source');
+  const steps = (reqs.steps || []).map(q => JSON.parse(q.postData()));
+  check(steps.map(x => x.step).join() === 'open,enter,input,warmup,attempt,result', `the steps reached, once each: ${steps.map(x => x.step).join()}`);
+  check(steps.every(x => Object.keys(x).sort().join() === 'device_type,game,language,source,step' && x.game === 'wand' && x.device_type === device && x.language === 'ua' && x.source === null), 'a step row holds only game, step, device, language and source');
   check(row.play_no === 1 && await s.page.evaluate(() => localStorage.getItem('wand-plays')) === '1', `a first game is play 1: ${row.play_no}`);
   check(row.wave_len > 0 && row.wave_dur > 0, `wave length and duration: ${row.wave_len}, ${row.wave_dur}`);
   check(!h.cookie && !h.authorization && h.prefer === 'return=minimal', 'no cookie, no authorization');
@@ -46,7 +49,7 @@ console.log('== a finger uses the touch scale, a mouse the pointer one');
 console.log('== the play counter');
 { const reqs = [], s = await play(LIVE, { ...PHONE, init: `if (!localStorage.getItem('wand-plays')) localStorage.setItem('wand-plays', '4');` }, live(reqs, OK)); const row = JSON.parse(reqs[0].postData());
   check(row.play_no === 5, `a fifth game is play 5: ${row.play_no}`); await s.page.reload({ waitUntil: 'load' }); await sleep(800);
-  check(reqs.length === 1 && await s.page.evaluate(() => localStorage.getItem('wand-plays')) === '5', 'a reload sends nothing and counts nothing'); await closeAll(); }
+  check(reqs.length === 1 && await s.page.evaluate(() => localStorage.getItem('wand-plays')) === '5', 'a reload sends no result and counts nothing'); await closeAll(); }
 { const reqs = [], s = await play(LIVE, { ...PHONE, init: `Object.defineProperty(window, 'localStorage', { get() { throw new Error('closed'); } });` }, live(reqs, OK)); const row = JSON.parse(reqs[0].postData());
   check(s.game.done && reqs.length === 1 && row.play_no === null, `storage closed: the game finishes and play_no is null`); check(!s.errors.length, 'no page errors ' + s.errors.join(' | ')); await closeAll(); }
 console.log('== where the visit came from');
