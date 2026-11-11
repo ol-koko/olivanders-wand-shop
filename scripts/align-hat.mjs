@@ -45,16 +45,17 @@ for (const [s, chars] of Object.entries({
 })) for (const c of chars) SHAPE[c] = s;
 const shapeOf = ch => { const c = ch.toLowerCase(); return SHAPE[c] || (/\p{L}/u.test(c) ? 'S' : null); };
 const GAP = 0.08;   // a pause between words longer than this closes the mouth to rest
-const MIN = 0.035;  // shorter segments merge into the one before, so the mouth doesn't flicker
+const MIN = 0.035;  // shorter segments merge into the one before, so the mouth doesn't flicker (except a closed mouth)
+const HOLD_M = 0.06; // the least time a closed mouth is held
 const r2 = x => Math.round(x * 100) / 100;
 
 // The alignment's characters → [[time, shape], ...]: each key holds until the next one; the last is always X.
 function toKeys(al) {
   const seg = [];
   const push = (t0, t1, s) => {
-    const last = seg[seg.length - 1];
+    let last = seg[seg.length - 1];
+    if (last && t0 - last.t1 > GAP && s !== 'X' && last.s !== 'X') { seg.push({ t0: last.t1, t1: t0, s: 'X' }); last = seg[seg.length - 1]; } // a pause first, even between two equal shapes
     if (last && last.s === s) { last.t1 = Math.max(last.t1, t1); return; }
-    if (last && t0 - last.t1 > GAP && s !== 'X' && last.s !== 'X') seg.push({ t0: last.t1, t1: t0, s: 'X' });
     seg.push({ t0, t1, s });
   };
   for (const c of al.characters || []) {
@@ -66,9 +67,11 @@ function toKeys(al) {
   const merged = [];
   for (const g of seg) {
     const last = merged[merged.length - 1];
-    if (last && (g.t1 - g.t0 < MIN || last.s === g.s)) { last.t1 = g.t1; continue; }
+    if (last && (last.s === g.s || (g.t1 - g.t0 < MIN && g.s !== 'M'))) { last.t1 = g.t1; continue; } // m, b, p are short but must be seen
     merged.push({ ...g });
   }
+  // A closed mouth holds long enough to show: the next shape starts a little later, never past its own end.
+  merged.forEach((g, i) => { const next = merged[i + 1]; if (g.s === 'M' && next && next.t0 - g.t0 < HOLD_M) next.t0 = Math.min(g.t0 + HOLD_M, (next.t0 + next.t1) / 2); });
   const keys = [];
   if (merged.length && merged[0].t0 > 0.02) keys.push([0, 'X']);
   for (const g of merged) keys.push([r2(g.t0), g.s]);
