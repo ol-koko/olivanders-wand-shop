@@ -358,7 +358,7 @@ function tickHat3D(t, h) {
 // The voice plays through the page's sound, so the sound button mutes it. Without sound, or if a file is slow, the Hat stays silent and the game goes on.
 // Each line may have its mouth keyframes next to it (<id>.lips.json). Without them the mouth follows the voice's level as before.
 const VOICE = { files: new Map(), buffers: new Map(), lipsFiles: new Map(), src: null, n: 0, chain: null, played: [], lips: null, t0: 0 };
-const LIPS_LANGS = ['en']; // the voices that have .lips.json; add 'ua' once scripts/align-hat.mjs --lang ua has run
+const LIPS_LANGS = ['en', 'ua']; // the voices that have .lips.json, from scripts/align-hat.mjs
 const voiceUrl = id => `/audio/hat/${lang === 'ua' ? 'ua/' : ''}${id}.mp3`, lipsUrl = id => voiceUrl(id).replace(/\.mp3$/, '.lips.json');
 const readLips = k => fetch(k).then(r => r.ok ? r.json() : null).then(j => j && Array.isArray(j.k) && j.k.length ? j : null).catch(() => null);
 function prefetch(ids) { if (A.on) ids.forEach(id => { const k = voiceUrl(id), l = lipsUrl(id); if (!VOICE.files.has(k)) VOICE.files.set(k, fetch(k).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)); if (!VOICE.lipsFiles.has(l)) VOICE.lipsFiles.set(l, LIPS_LANGS.includes(lang) ? readLips(l) : Promise.resolve(null)); }); }

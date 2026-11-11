@@ -25,6 +25,14 @@ console.log('== with the keyframes');
   check(after === null || after < .05, `the mouth closes after the line: ${after}`);
   check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close(); }
 
+console.log('== in Ukrainian');
+{ const { browser, page, errors } = await open(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, locale: 'uk-UA', init: SAMPLE });
+  await enterHall(page); await page.waitForFunction(() => __hall.VOICE.played.includes('ua/introI') && !__hall.VOICE.playing, null, { timeout: 20000 });
+  const s = await page.evaluate(() => __mouth), on = s.filter(x => x.lips), by = k => on.filter(x => x.shape === k);
+  check(s.length > 60 && on.length / s.length > .9, `the Ukrainian keyframes drive the mouth: ${on.length}/${s.length} frames`);
+  check(mean(by('A').map(x => x.open)) > mean([...by('M'), ...by('X')].map(x => x.open)) + .1, 'open on vowels, closing between words');
+  check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close(); }
+
 console.log('== without the keyframes');
 { const { browser, page, errors } = await open(url + 'sorting', { viewport: { width: 390, height: 844 }, mobile: true, locale: 'en-US', init: SAMPLE, route: p => p.route(u => /\.lips\.json$/.test(u.pathname), r => r.abort()) });
   await enterHall(page); await page.waitForFunction(() => __hall.VOICE.played.includes('introI') && !__hall.VOICE.playing, null, { timeout: 20000 });
