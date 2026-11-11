@@ -453,7 +453,7 @@ function loadWand() { const w = recall('wand-last'), ok = w && w.traits && Date.
 function startCeremony() {
   st.phase = 'hall'; st.step = 0; st.answers = []; st.picking = false; st.house = null; st.wand = loadWand();
   const wi = st.wand ? Math.floor(Math.random() * HAT.wand.length) : -1, line = wi >= 0 ? HAT.wand[wi] : null, ids = ['introH', ...(line ? ['wand' + (wi + 1)] : []), 'introI'];
-  setNote(() => ({ kicker: T('hatK'), hand: T('introH'), instr: line ? pickLang(line[0], line[1]) + ' ' + T('introI') : T('introI'), btns: [{ label: T('bStart'), fn: beginQuestions }] }));
+  setNote(() => ({ kicker: T('hatK'), hand: T('introH'), instr: line ? pickLang(line[0], line[1]) + ' ' + T('introI') : T('introI'), btns: [{ label: T('bStart'), fn: beginQuestions }, ...(typeof headPossible === 'function' && headPossible() ? [{ label: T('bHead'), ghost: true, fn: () => startHead() }] : [])] })); // head mode lives in head.js
   prefetch(ids); sayAll(ids);
 }
 function beginQuestions() {
@@ -488,7 +488,7 @@ function tapHouse(h) {
   showWish();
 }
 async function decide() {
-  if (st.deciding) return; st.deciding = true;
+  if (st.deciding) return; st.deciding = true; if (typeof headDone === 'function') headDone(); // the answers are in: the camera goes off
   const open = !st.wish && !st.avoid, first = open ? pick(HAT.decide) : null;
   setNote(() => ({ kicker: T('hatK'), hand: first ? pickLang(first[0], first[1]) : T('thinkH') })); startPonder();
   await sayStep(first ? 'decide1' : 'think', 1400, reduceMotion ? 500 : 2000);
@@ -539,7 +539,7 @@ function stampSeal(seal, card, landed = () => { }) {
 }
 $('#bAgain').addEventListener('click', () => {
   stopVoice(); uncrownHat(); COIN.turn = 0; $('.topbar').classList.remove('away'); const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700);
-  $('#rSaved').hidden = true; setTimeout(beginQuestions, 500);
+  $('#rSaved').hidden = true; setTimeout(() => typeof HEAD !== 'undefined' && HEAD.wanted && headPossible() ? startHead(true) : beginQuestions(), 500); // a head-mode game asks for the camera again, with no practice
 });
 // Turning the crest: one slow turn after the stamp, then drag to spin it, with a little momentum. It stops drawing when still.
 const COIN = { yaw: 0, pitch: 0, vy: 0, drag: null, turn: 0, raf: 0, last: 0 };
