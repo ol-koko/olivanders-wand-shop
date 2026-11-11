@@ -2,8 +2,9 @@
 const SortingLogic = (() => {
 'use strict';
 const HOUSES = ['G', 'S', 'R', 'H'], CATEGORIES = [1, 2, 3];
-// Tuned with tools/simulate-sorting.js: about 25% per house on random answers, about 65% for a wished house, about 5% for an unwanted one.
-const TEMP = 1.25, WISH = 2.5, AVOID = 2.5, WAND = .4;
+// Tuned with tools/simulate-sorting.js: about 25% per house on random answers, about 40% for a wished house, about 5% for an unwanted one.
+// The scores go through a softmax, so a wish multiplies that house's odds by e^(WISH / TEMP): 2.2 times at 1, where 2.5 gave 7.4 times and about 65%.
+const TEMP = 1.25, WISH = 1, AVOID = 2.5, WAND = .4;
 
 const shuffled = (a, rnd = Math.random) => { const o = a.slice(); for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; } return o; };
 // One question per category, unseen ones first. A category that has run out starts over and forgets its seen ids.
