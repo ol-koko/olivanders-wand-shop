@@ -22,7 +22,7 @@ Object.assign(S, {
 const HEAD_MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 const HEAD_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
 // Which way is right and which is up, as MediaPipe's angles read on the mirrored picture. TEMPORARY: ?debug=head can flip them while testing on a phone.
-const HEAD_SIGN = { x: -1, y: 1 };
+const HEAD_SIGN = { x: -1, y: -1 }; // y from the owner's test on a computer: lifting the head lowers the pitch MediaPipe reports
 const HEAD_CALM = 30; // frames with a face to learn the neutral pose
 const HEAD = { on: false, wanted: false, failed: false, phase: null, worker: null, stream: null, token: 0, busy: false, sentAt: 0, lastT: -1, lastFrame: 0, fresh: false, lastTs: 0,
   zero: null, samples: [], tracker: null, items: null, aim: null, seenAt: 0, lostSince: 0, intro: null, resume: false, warmed: null };
