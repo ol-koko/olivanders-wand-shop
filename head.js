@@ -21,7 +21,7 @@ Object.assign(S, {
 
 const HEAD_MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 const HEAD_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
-// Which way is right and which is up, as MediaPipe's angles read on the mirrored picture. TEMPORARY: ?debug=head can flip them while testing on a phone.
+// Which way is right and which is up, as MediaPipe's angles read on the mirrored picture.
 const HEAD_SIGN = { x: -1, y: deviceType() === 'desktop' ? -1 : 1 }; // y from the owner's tests: up is the other sign on a computer than on a phone held below the face
 const HEAD_CALM = 30; // frames with a face to learn the neutral pose
 const HEAD = { on: false, wanted: false, failed: false, phase: null, worker: null, stream: null, token: 0, busy: false, sentAt: 0, lastT: -1, lastFrame: 0, fresh: false, lastTs: 0,
@@ -102,7 +102,7 @@ function headOff(msg) {
 function headDone() { if (!HEAD.on) return; HEAD.token++; HEAD.on = false; HEAD.phase = null; headClear(); headCamOff(); note.classList.remove('head'); }
 function headCamOff() {
   try { HEAD.stream && HEAD.stream.getTracks().forEach(t => t.stop()); } catch (_) { }
-  HEAD.stream = null; headVideo.srcObject = null; headMirror.hidden = true; headVideo.classList.remove('seen'); headTimer(0); HEAD.busy = false; headDebug(null);
+  HEAD.stream = null; headVideo.srcObject = null; headMirror.hidden = true; headVideo.classList.remove('seen'); headTimer(0); HEAD.busy = false;
 }
 function headClear() { if (HEAD.items) HEAD.items.forEach(b => b.classList.remove('aim')); headTimer(0); HEAD.items = null; HEAD.aim = null; HEAD.tracker = null; HEAD.shape = ''; }
 
@@ -149,25 +149,25 @@ function headAngle(a, t) {
     if (HEAD.tracker) HEAD.tracker.reset(); headUi(null, 0); HEAD.sm = null; // looking away resets the timer at once
     if (t - HEAD.lostSince > 1500 && $('#nStatus').textContent !== T('headLost')) setStatus(T('headLost'));
     if (t - HEAD.lostSince > 25000) headOff('headFail');
-    return headDebug(null);
+    return;
   }
   if (HEAD.lostSince && $('#nStatus').textContent === T('headLost')) setStatus('');
   HEAD.lostSince = 0;
   if (!HEAD.zero || HEAD.recal) {
     if (HEAD.recal) { HEAD.recal = false; HEAD.zero = null; HEAD.samples = []; HEAD.sm = null; }
-    HEAD.samples.push(a); headDebug(a); if (HEAD.samples.length < HEAD_CALM) return;
+    HEAD.samples.push(a); if (HEAD.samples.length < HEAD_CALM) return;
     HEAD.zero = { yaw: median(HEAD.samples, 'yaw'), pitch: median(HEAD.samples, 'pitch'), roll: median(HEAD.samples, 'roll') }; HEAD.samples = [];
     return headReady();
   }
   const raw = { dx: (a.yaw - HEAD.zero.yaw) * HEAD_SIGN.x, dy: (a.pitch - HEAD.zero.pitch) * HEAD_SIGN.y }, sm = HEAD.sm;
   const d = HEAD.sm = sm ? { dx: sm.dx + (raw.dx - sm.dx) * .4, dy: sm.dy + (raw.dy - sm.dy) * .4 } : raw; // smoothed: the model's angles shake, most of all with the head turned
   const items = headTargets();
-  if (!items.length) { headUi(null, 0); HEAD.tracker = null; return headDebug(a, d); }
+  if (!items.length) { headUi(null, 0); HEAD.tracker = null; return; }
   // The grid as the page shows it right now: one column on a phone, two on a computer, four banners in a row.
   const grid = HeadLogic.gridOf(items.map(b => { const r = b.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })), shape = grid.cols + 'x' + grid.rows;
   if (!HEAD.tracker || !HEAD.items || items[0] !== HEAD.items[0] || items.length !== HEAD.items.length || shape !== HEAD.shape) { headClear(); HEAD.items = items; HEAD.shape = shape; HEAD.tracker = HeadLogic.createPointer({ cols: grid.cols, rows: grid.rows }); } // a new screen: the head first comes back to neutral
   const u = HEAD.tracker.update(t, d), i = u.col === null ? -1 : grid.at(u.col, u.row);
-  headUi(i < 0 ? null : i, i < 0 ? 0 : u.fill); headDebug(a, d, grid, i, u.fill);
+  headUi(i < 0 ? null : i, i < 0 ? 0 : u.fill);
   if (u.picked && i >= 0) headPick(items[i]);
 }
 function headUi(aim, fill) {
@@ -183,24 +183,3 @@ function headPick(b) {
   if (wish) setTimeout(() => { if (HEAD.on && st.wish && !st.deciding) decide(); }, 700); // a banner picked by the head is the wish, and the Hat goes on: the other buttons there are tap only
 }
 (function loop(t) { requestAnimationFrame(loop); headTick(t); })(performance.now());
-
-/* ===== TEMPORARY: debug overlay for testing on a phone, behind ?debug=head. Remove before merge. ===== */
-const HEAD_DEBUG = /(^|[?&])debug=head(&|$)/.test(location.search) ? document.createElement('div') : null;
-if (HEAD_DEBUG) {
-  HEAD_DEBUG.id = 'headDebug'; document.body.appendChild(HEAD_DEBUG);
-  HEAD_DEBUG.innerHTML = '<b>TEMPORARY head debug</b><pre></pre><button data-k="x">flip ↔</button><button data-k="y">flip ↕</button><button data-k="z">neutral again</button>';
-  HEAD_DEBUG.addEventListener('pointerdown', e => e.stopPropagation()); // not a swipe
-  HEAD_DEBUG.addEventListener('click', e => { e.stopPropagation(); const k = e.target.dataset && e.target.dataset.k; if (k === 'x' || k === 'y') HEAD_SIGN[k] *= -1; if (k === 'z') HEAD.recal = true; if (HEAD.tracker) HEAD.tracker.reset(); });
-}
-function headDebug(a, d, grid, i, fill) {
-  if (!HEAD_DEBUG) return; const f = v => v === undefined || v === null ? '—' : (v >= 0 ? '+' : '') + v.toFixed(1), z = HEAD.zero;
-  HEAD_DEBUG.querySelector('pre').textContent = [
-    `phase ${HEAD.phase || 'off'}  face ${a ? 'yes' : 'no'}`,
-    `raw     yaw ${f(a && a.yaw)} pitch ${f(a && a.pitch)} roll ${f(a && a.roll)}`,
-    `neutral yaw ${f(z && z.yaw)} pitch ${f(z && z.pitch)} roll ${f(z && z.roll)}${HEAD.samples.length ? '  learning ' + HEAD.samples.length + '/' + HEAD_CALM : ''}`,
-    `delta   dx ${f(d && d.dx)} dy ${f(d && d.dy)}  (dead ±${HeadLogic.DEAD})`,
-    `grid ${grid ? grid.cols + '×' + grid.rows : '—'}  answer ${i === undefined || i < 0 ? '—' : i + 1}  hold ${Math.round((fill || 0) * 100)}%`,
-    `sign ↔ ${HEAD_SIGN.x > 0 ? '+' : '−'}  ↕ ${HEAD_SIGN.y > 0 ? '+' : '−'}`,
-  ].join('\n');
-}
-/* ===== end TEMPORARY ===== */
