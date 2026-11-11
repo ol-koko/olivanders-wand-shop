@@ -77,8 +77,12 @@ waves trial wands, and one of 16 character wands eventually chooses them.
 - Talk to the user in Ukrainian. UI copy must exist in both UA and EN.
 - Keep the visual style: warm candlelight, gold #d9b46a, parchment notes, Cormorant Garamond + Marck Script.
 - Test on desktop (1440×900) and phone (390×844) after changes.
+- Headless runs and phone emulation don't show stutter on a real phone. For jank, make a temporary URL variant with numbers on screen and ask the owner to check it on the phone.
+- `tools/e2e/hat.mjs` takes about 280 s: run it on its own, not together with the other checks.
+- jsDelivr serves `.cjs` with a type that `importScripts` rejects, so workers load such files with fetch and a Blob URL.
 
 ## Git & GitHub workflow
 - One branch and one PR per task. No direct commits to `main`, no force-push, no pushing to other remotes.
 - Nothing is pushed without the owner's approval.
+- At most two open PRs at a time. Merge one at a time, only after the owner writes "merge #N".
 - No AI attribution anywhere: no "Co-Authored-By", "Generated with Claude Code" or similar lines in commits, PR titles or PR descriptions.
