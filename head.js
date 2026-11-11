@@ -10,7 +10,7 @@ Object.assign(S, {
   bTap: ['Без камери? Відповідати дотиком', 'No camera? Tap instead'],
   headLoad: ['Готую чари. Якщо браузер спитає про камеру, дозволь її.', 'Preparing the charm. If your browser asks about the camera, allow it.'],
   headPriv: ['Камера бачить лише, куди дивиться голова. Нічого не записується й не надсилається.', 'The camera only reads where your head points. Nothing is recorded or sent.'],
-  headLook: ['Подивись прямо на мене й не рухайся.', 'Look straight at me and hold still.'],
+  headLook: ['Подивись сюди, на сувій, і не рухайся.', 'Look here at the scroll and hold still.'], // neutral is the middle of the answers, which sit on the scroll: on a computer the Hat is far above them
   headTry: ['Поверни обличчя до відповіді й потримай.', 'Point your face at an answer and hold still.'],
   headL: ['Ця', 'This one'],
   headR: ['Або ця', 'Or this one'],
