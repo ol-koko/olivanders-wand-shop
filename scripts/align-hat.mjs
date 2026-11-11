@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2), DRY = args.includes('--dry'), REBUILD = args.includes('--rebuild');
@@ -80,8 +81,11 @@ function toKeys(al) {
   return { v: 1, d: r2(end), k: keys.filter((k, i) => i === 0 || k[1] !== keys[i - 1][1]) };
 }
 
+const rel = p => path.relative(ROOT, p);
 const lines = readLines(SCRIPT);
-const mp3s = fs.readdirSync(DIR).filter(f => f.endsWith('.mp3')).sort();
+// Only recordings in git: takes the owner didn't pick stay out. Without git, every mp3 in the folder.
+const tracked = (() => { try { return new Set(execFileSync('git', ['ls-files', '--', rel(DIR)], { cwd: ROOT, encoding: 'utf8' }).split('\n').map(f => path.basename(f))); } catch (_) { return null; } })();
+const all = fs.readdirSync(DIR).filter(f => f.endsWith('.mp3')).sort(), mp3s = tracked ? all.filter(f => tracked.has(f)) : all;
 const jobs = [], noLine = [];
 for (const f of mp3s) {
   const name = f.slice(0, -4), id = name.replace(/-\d+$/, ''); // takes like houseG-2 share their id's line
@@ -89,10 +93,9 @@ for (const f of mp3s) {
   if (!text) { noLine.push(f); continue; }
   jobs.push({ file: f, name, text, out: path.join(DIR, name + '.lips.json'), cache: path.join(CACHE, name + '.json') });
 }
-const rel = p => path.relative(ROOT, p);
 const write = (j, al) => fs.writeFileSync(j.out, JSON.stringify(toKeys(al)) + '\n');
 
-console.log(`${LANG === 'ua' ? 'Ukrainian' : 'English'}: ${mp3s.length} mp3 files in ${rel(DIR)}, ${jobs.length} with a line in the script.`);
+console.log(`${LANG === 'ua' ? 'Ukrainian' : 'English'}: ${mp3s.length} mp3 files in ${rel(DIR)}, ${jobs.length} with a line in the script.${all.length > mp3s.length ? ` ${all.length - mp3s.length} not in git, left out.` : ''}`);
 if (noLine.length) console.log(`No line in the script, skipped: ${noLine.join(', ')}`);
 
 if (REBUILD) {
