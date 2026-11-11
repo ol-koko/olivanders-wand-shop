@@ -146,7 +146,7 @@ function headAngle(a, t) {
   headVideo.classList.toggle('seen', !!a);
   if (!a) {
     if (!HEAD.lostSince) HEAD.lostSince = t;
-    if (HEAD.tracker) HEAD.tracker.reset(); headUi(null, 0); // looking away resets the timer at once
+    if (HEAD.tracker) HEAD.tracker.reset(); headUi(null, 0); HEAD.sm = null; // looking away resets the timer at once
     if (t - HEAD.lostSince > 1500 && $('#nStatus').textContent !== T('headLost')) setStatus(T('headLost'));
     if (t - HEAD.lostSince > 25000) headOff('headFail');
     return headDebug(null);
@@ -154,12 +154,13 @@ function headAngle(a, t) {
   if (HEAD.lostSince && $('#nStatus').textContent === T('headLost')) setStatus('');
   HEAD.lostSince = 0;
   if (!HEAD.zero || HEAD.recal) {
-    if (HEAD.recal) { HEAD.recal = false; HEAD.zero = null; HEAD.samples = []; }
+    if (HEAD.recal) { HEAD.recal = false; HEAD.zero = null; HEAD.samples = []; HEAD.sm = null; }
     HEAD.samples.push(a); headDebug(a); if (HEAD.samples.length < HEAD_CALM) return;
     HEAD.zero = { yaw: median(HEAD.samples, 'yaw'), pitch: median(HEAD.samples, 'pitch'), roll: median(HEAD.samples, 'roll') }; HEAD.samples = [];
     return headReady();
   }
-  const d = { dx: (a.yaw - HEAD.zero.yaw) * HEAD_SIGN.x, dy: (a.pitch - HEAD.zero.pitch) * HEAD_SIGN.y };
+  const raw = { dx: (a.yaw - HEAD.zero.yaw) * HEAD_SIGN.x, dy: (a.pitch - HEAD.zero.pitch) * HEAD_SIGN.y }, sm = HEAD.sm;
+  const d = HEAD.sm = sm ? { dx: sm.dx + (raw.dx - sm.dx) * .4, dy: sm.dy + (raw.dy - sm.dy) * .4 } : raw; // smoothed: the model's angles shake, most of all with the head turned
   const items = headTargets();
   if (!items.length) { headUi(null, 0); HEAD.tracker = null; return headDebug(a, d); }
   // The grid as the page shows it right now: one column on a phone, two on a computer, four banners in a row.

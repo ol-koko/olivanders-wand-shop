@@ -23,6 +23,9 @@ r = play([[0, 0, 0], [300, 0, 12], [700, 0, 12], [200, 0, 0], [1500, 0, 0]], col
 r = play([[0, 0, 0], [300, 0, 12], [800, 0, 12], [200, 0, -12], [800, 0, -12]], col4); check(!r.picks.length, 'moving to another answer starts the timer again');
 r = play([[0, 0, 12], [2500, 0, 12]]); check(!r.picks.length, 'on a new screen a head already pointing picks nothing');
 r = play([[0, 0, 12], [300, 0, 0], [300, 0, 0], [300, 0, 12], [2000, 0, 12]], col4); check(r.picks.join() === '0,0', 'after coming back to neutral it picks');
+{ const p = createPointer(col4); let t = 1000, max = 0, picks = 0; for (let i = 0; i < 70; i++) { const shake = i % 9 === 4 ? 0 : -12; const u = p.update(t += 33, { dx: 0, dy: i < 10 ? 0 : shake }); max = Math.max(max, u.fill); if (u.picked) picks++; } check(picks === 1, `a single shaky reading neither resets the timer nor stops the pick (${picks} pick)`); }
+r = play([[0, 0, 0], [300, 0, 12], [1700, 0, 12], [300, 0, -12], [2000, 0, -12]], col4); check(r.picks.join(' ') === '0,0 0,3', `after a pick, going straight to another answer picks it, no stop at neutral needed: ${r.picks.join(' ')}`);
+r = play([[0, 0, -6], [500, 0, -6], [300, 0, -12], [2000, 0, -12]], { cols: 2, rows: 2 }); check(!r.picks.length, 'pointing at the same cell the screen opened on stays unarmed');
 { const g = gridOf([{ x: 100, y: 10 }, { x: 300, y: 10 }, { x: 100, y: 60 }, { x: 300, y: 60 }]); check(g.cols === 2 && g.rows === 2 && g.at(1, 1) === 3, 'the grid is read from where the answers stand'); }
 { const a = anglesFrom([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); check(Math.abs(a.roll) + Math.abs(a.yaw) + Math.abs(a.pitch) < 1e-6, 'a head facing straight reads zero'); }
 
@@ -31,7 +34,7 @@ const PHONE = { viewport: { width: 390, height: 844 }, mobile: true, locale: 'uk
 const toIntro = async page => { await page.evaluate(() => document.querySelector('#cta').click()); await page.waitForFunction(() => __hall.st.phase === 'hall' && document.querySelector('#nBtns button'), null, { timeout: 25000 }); await sleep(500); };
 const btns = page => page.$$eval('#nBtns button', b => b.map(x => x.textContent));
 // Readings go straight into the game, as dx / dy; the camera's own frames are held back so they can't interfere.
-const hold = page => page.evaluate(() => { __head.HEAD.busy = true; __head.HEAD.sentAt = Infinity; });
+const hold = page => page.evaluate(() => { __head.HEAD.busy = true; __head.HEAD.sentAt = Infinity; __head.HEAD.token++; }); // a frame still in the worker is dropped too
 const feed = (page, keys) => page.evaluate(async keys => { const S = __head.HEAD_SIGN, m = document.querySelector('#headMirror'), out = { ring: 0, inButton: 0 }; let t = window.__ft || performance.now(); for (const [ms, dx, dy] of keys) for (let e = 0; e < ms; e += 33) { t += 33; __head.headAngle(dx === null ? null : { yaw: dx / S.x, pitch: dy / S.y, roll: 0 }, t); if (m.classList.contains('hold') && +m.style.getPropertyValue('--f') > 0) out.ring++; if (document.querySelector('#nBtns .hglass')) out.inButton++; const lit = document.querySelector('#nBtns .aim'); if (lit) out.lit = lit.textContent; await new Promise(r => setTimeout(r, 4)); } window.__ft = t; return out; }, keys);
 const look = (page, dx, dy) => feed(page, [[500, 0, 0], [300, dx, dy], [2000, dx, dy], [400, 0, 0]]);
 
