@@ -247,6 +247,9 @@ const SOURCE = findSource(); try { sessionStorage.setItem('wand-src', SOURCE || 
 function playNo(key) { try { const n = Math.min(32767, (parseInt(localStorage.getItem(key), 10) || 0) + 1); localStorage.setItem(key, n); return n; } catch (_) { return null; } }
 function postRow(table, row, plays) {
   if (location.hostname !== LOG.host) return;
-  row.play_no = playNo(plays); row.source = SOURCE;
+  if (plays) row.play_no = playNo(plays); row.source = SOURCE;
   fetch(LOG.url + table, { method: 'POST', keepalive: true, credentials: 'omit', headers: { apikey: LOG.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(row) }).catch(() => { });
 }
+// The steps a player reaches, one row each and once per page load. Rows are not linked: those who left at a step are those who reached it minus those who reached the next.
+const STEPS = new Set();
+function logStep(game, step) { try { if (STEPS.has(step)) return; STEPS.add(step); postRow('game_steps', { game, step, device_type: deviceType(), language: lang }); } catch (_) { } }

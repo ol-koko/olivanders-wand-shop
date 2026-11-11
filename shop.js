@@ -816,14 +816,14 @@ async function flyOut(el, w) {
 function pickNo(arr, used, keep) { const pool = arr.map((_, i) => i).filter(i => !used.includes(i)); const i = pick(pool.length ? pool : arr.map((_, i) => i)); used.push(i); while (used.length > keep) used.shift(); return i; }
 // lastWave comes from the game before, after Try again: it stands in for the warm-up, so a known hand goes straight to the wands.
 async function ritual(lastWave) {
-  setRecentWins(recentWins());
+  setRecentWins(recentWins()); logStep('wand', 'input');
   st.obs = []; st.traits = null; st.tried = []; st.attempt = 0; st.history = []; st.stroke = null; st.winner = null; st.camHelp = false;
   let r;
   if (lastWave) { st.obs.push(lastWave); st.traits = mergeTraits(); }
   else {
     setNote(() => ({ kicker: T('warmK'), hand: T('warmH'), instr: T(st.input === 'cam' ? 'warmIcam' : 'warmIdraw') }));
     await wait(450);
-    r = await captureWave(null); st.obs.push(r.m); st.traits = mergeTraits(); st.stroke = r.pts;
+    r = await captureWave(null); logStep('wand', 'warmup'); st.obs.push(r.m); st.traits = mergeTraits(); st.stroke = r.pts;
     SFX.chime(); spark(r.pts[r.pts.length - 1].x, r.pts[r.pts.length - 1].y, 24, 3);
     setNote(() => ({ kicker: T('warmK'), hand: T('warmDone') }));
     await wait(1700);
@@ -834,10 +834,10 @@ async function ritual(lastWave) {
     const oi = pickNo(OFFER, st.usedOffers, 4), offer = () => ({ kicker: T('ollK'), spec: cand.spec ? specText(cand) : '', hand: L(OFFER[oi]) });
     setNote(offer);
     const el = pullShelfBox(cand); await wait(650); await flyOut(el, cand);
-    r = await captureWave(cand);
+    r = await captureWave(cand); logStep('wand', 'attempt');
     st.obs.push(r.m); st.traits = mergeTraits();
     const best = bestWand(st.traits);
-    if (isChosen(cand, best, st.attempt)) { rememberWin(cand.id); logResult(cand, st.attempt, st.traits); stopCamera(); st.stroke = r.pts; await success(cand); return; }
+    if (isChosen(cand, best, st.attempt)) { rememberWin(cand.id); logResult(cand, st.attempt, st.traits); logStep('wand', 'result'); stopCamera(); st.stroke = r.pts; await success(cand); return; }
     st.tried.push(cand);
     await REACT[pickReact(isNearMiss(cand, best, st.traits))](cand);
     await wait(500);
@@ -917,6 +917,7 @@ function showResult() {
   });
 }
 $('#bAgain').addEventListener('click', () => {
+  logStep('wand', 'again');
   $('.topbar').classList.remove('away');
   const res = $('#result'); res.classList.remove('show'); setTimeout(() => { res.hidden = true; }, 700); hide3D();
   st.replay = null; st.trails = []; st.halo = null; st.winner = null;
@@ -962,7 +963,7 @@ document.querySelectorAll('#lang button').forEach(b => b.addEventListener('click
 
 /* ================= enter ================= */
 async function enterShop() {
-  if (st.phase !== 'street') return; st.phase = 'entering';
+  if (st.phase !== 'street') return; st.phase = 'entering'; logStep('wand', 'enter');
   // Browsers allow sound only after a tap, so the entry tap is what starts it.
   if (A.on) { audioInit(); if (A.ctx && A.ctx.state === 'suspended') A.ctx.resume(); SFX.bell(); }
   $('#cta').style.opacity = 0; $('#stFan').style.opacity = 0; $('#stTitle').style.opacity = 0; $('#stTitle').style.transform = 'translateY(-20px)';
@@ -1036,7 +1037,7 @@ street.addEventListener('click', e => {
 addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && st.phase === 'street' && !e.target.closest?.('a')) enterShop(); });
 // To the Sorting Ceremony: the street fades out first. Coming back with the browser's Back button shows the street again.
 function toHall() {
-  if (st.phase !== 'street') return; st.phase = 'leaving';
+  if (st.phase !== 'street') return; st.phase = 'leaving'; logStep('wand', 'to_sorting');
   const go = () => { location.href = '/sorting'; };
   if (reduceMotion) return go();
   const app = $('#app'); app.style.transition = 'opacity .45s'; app.style.opacity = 0; setTimeout(go, 430);
@@ -1064,3 +1065,4 @@ function frame(t) {
   if (st.shopVisible && fxc) { liveTick(t); drawFX(t, dt); if (A.on && t > A.nextCrackle) { SFX.crackle(); A.nextCrackle = t + 120 + Math.random() * 500; } }
 }
 requestAnimationFrame(frame);
+logStep('wand', 'open');

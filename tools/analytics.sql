@@ -45,3 +45,22 @@ select 'sorting', coalesce(source, 'direct / unknown'), count(*),
        round(100.0 * count(*) / sum(count(*)) over (), 1)
 from public.sorting_results where play_no is not null group by 2
 order by 1, 3 desc;
+
+-- 6. Where players leave, per game: how many reached each step and how many went no further.
+-- Steps are sent once per page load and rows are not linked. 'open' also counts bots and stray opens, so read the funnel from 'enter'.
+-- 'again' and 'to_sorting' are not part of the path: they are counted at the end.
+with path(game, step, ord) as (values
+  ('wand', 'open', 1), ('wand', 'enter', 2), ('wand', 'input', 3), ('wand', 'warmup', 4), ('wand', 'attempt', 5), ('wand', 'result', 6),
+  ('sorting', 'open', 1), ('sorting', 'enter', 2), ('sorting', 'hat', 3), ('sorting', 'start', 4), ('sorting', 'q1', 5), ('sorting', 'q2', 6), ('sorting', 'q3', 7), ('sorting', 'wish', 8), ('sorting', 'result', 9)),
+c as (select p.game, p.step, p.ord, count(s.id) as reached from path p left join public.game_steps s on s.game = p.game and s.step = p.step group by 1, 2, 3)
+select a.game, a.ord, a.step, a.reached,
+       case when b.step is null then null else a.reached - b.reached end as left_here,
+       case when b.step is null or a.reached = 0 then null else round(100.0 * (a.reached - b.reached) / a.reached, 1) end as left_pct
+from c a left join c b on b.game = a.game and b.ord = a.ord + 1
+order by a.game, a.ord;
+
+-- 6b. The same path cut by device, language or source: add the column to both selects in "c" and to the join, or filter, for example:
+--     ... left join public.game_steps s on s.game = p.game and s.step = p.step and s.device_type = 'phone' ...
+
+-- 7. Side steps: Try again, and the signpost to Hogwarts.
+select game, step, count(*) as times from public.game_steps where step in ('again', 'to_sorting') group by 1, 2 order by 1, 2;
