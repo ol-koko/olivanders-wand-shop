@@ -230,7 +230,23 @@ $('#bDown').addEventListener('click', async () => {
 // Anonymous results for later recalibration, from the live site only. The key can only insert. Nothing waits for this and a failure stays silent.
 const LOG = { host: 'olivanders-wand-shop.vercel.app', url: 'https://qozvbqhdavsazopdwrys.supabase.co/rest/v1/', key: 'sb_publishable__F3xGYcGMqsHdp-lHQtMbA_YgLToaBS' };
 function deviceType() { return !matchMedia('(pointer:coarse)').matches ? 'desktop' : Math.min(screen.width, screen.height) < 600 ? 'phone' : 'tablet'; }
-function postRow(table, row) {
+// Where the visit came from, as one of a few names and never the link itself: a tag in the link (?s=tg, th, li, ig), then the app's own browser, then the referrer.
+// Kept for the tab, so it survives the walk from the street to /sorting. null is a direct visit or unknown.
+function findSource() {
+  const tag = (/[?&]s=([a-z]+)/.exec(location.search) || [])[1]; if (tag) return { tg: 'telegram', th: 'threads', li: 'linkedin', ig: 'instagram' }[tag] || 'other';
+  try { const saved = sessionStorage.getItem('wand-src'); if (saved !== null) return saved || null; } catch (_) { }
+  const ua = navigator.userAgent;
+  if (/Barcelona/.test(ua)) return 'threads'; if (/Instagram/.test(ua)) return 'instagram'; if (/LinkedInApp/.test(ua)) return 'linkedin'; // Threads names itself Barcelona
+  if (window.TelegramWebviewProxy || window.TelegramWebview || /Telegram/i.test(ua)) return 'telegram';
+  let h = ''; try { h = new URL(document.referrer).hostname; } catch (_) { }
+  if (/(^|\.)(t\.me|telegram\.(org|me))$/.test(h)) return 'telegram'; if (/(^|\.)threads\.(net|com)$/.test(h)) return 'threads'; if (/(^|\.)(linkedin\.com|lnkd\.in)$/.test(h)) return 'linkedin'; if (/(^|\.)instagram\.com$/.test(h)) return 'instagram';
+  return IN_APP || (h && h !== location.hostname) ? 'other' : null;
+}
+const SOURCE = findSource(); try { sessionStorage.setItem('wand-src', SOURCE || ''); } catch (_) { }
+// How many games of this kind this browser has logged: a plain counter kept only in the browser, never an ID. It grows only when a row is really sent, and is null when storage is closed.
+function playNo(key) { try { const n = Math.min(32767, (parseInt(localStorage.getItem(key), 10) || 0) + 1); localStorage.setItem(key, n); return n; } catch (_) { return null; } }
+function postRow(table, row, plays) {
   if (location.hostname !== LOG.host) return;
+  row.play_no = playNo(plays); row.source = SOURCE;
   fetch(LOG.url + table, { method: 'POST', keepalive: true, credentials: 'omit', headers: { apikey: LOG.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(row) }).catch(() => { });
 }
