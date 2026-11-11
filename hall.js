@@ -322,23 +322,6 @@ addEventListener('pointerup', e => endSwipe(e, true)); addEventListener('pointer
 addEventListener('click', e => { if (e.isTrusted && performance.now() < SWIPE.swallow) { SWIPE.swallow = 0; e.stopPropagation(); e.preventDefault(); } }, true); // the browser's own click after a slide isn't a tap
 
 /* ================= the Hat in 3D ================= */
-// DEBUG ?debug=hat (&delay=ms holds three.js back): a readout of the load and the 3D/2D choice. Remove before merge.
-const DEBUG_HAT = /[?&]debug=hat\b/.test(location.search) ? { delay: +(/[?&]delay=(\d+)/.exec(location.search) || [])[1] || 0 } : null;
-if (DEBUG_HAT) addEventListener('load', () => {
-  const b = document.createElement('pre'); b.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:99999;margin:0;padding:6px 8px;background:rgba(0,0,0,.78);color:#ffe9b0;font:11px/1.35 ui-monospace,Menlo,monospace;border-radius:6px;pointer-events:none;white-space:pre-wrap;max-width:calc(100vw - 12px);box-sizing:border-box'; document.body.appendChild(b);
-  const ms = v => v == null ? '…' : Math.round(v) + ' ms';
-  setInterval(() => {
-    const t = H3.t, e = performance.getEntriesByName(HAT3D_URL)[0], n = navigator.connection, f = H3.frames.length ? Math.round(1000 / (H3.frames.reduce((a, x) => a + x, 0) / H3.frames.length)) : 0;
-    b.textContent = [
-      'three.js: ' + (e ? ms(e.duration) + (e.transferSize ? ', ' + Math.round(e.transferSize / 1024) + ' kB from network' : ', from cache') : t.three ? ms(t.three - t.start) : H3.done ? 'none' : '…') + (DEBUG_HAT.delay ? ' (+' + DEBUG_HAT.delay + ' debug delay)' : ''),
-      'build: ' + (t.built ? ms(t.built - t.three) : H3.done ? 'none' : '…'),
-      '3D ready at: ' + (t.built ? ms(t.built) : H3.done ? 'never (' + H3.why + ')' : '…') + ' from page start',
-      'Hat due at: ' + ms(t.due) + (t.shown ? ', waited ' + ms(t.shown - t.due) : ''),
-      'decision: ' + (H3.mode ? H3.mode.toUpperCase() + (H3.why ? ' (' + H3.why + ')' : '') : 'not yet') + (H3.mode === '3d' && !H3.on ? ' -> context lost, drawn' : ''),
-      'net: ' + (n ? (n.effectiveType || '?') + (n.saveData ? ', Save-Data' : '') : 'n/a') + (H3.on ? ' | ' + f + ' fps, ratio ' + H3.ratio : '')
-    ].join('\n');
-  }, 300);
-});
 // three.js starts downloading with the page and the model is built in the background. The drawn Hat stays underneath: it remains if WebGL or the CDN fails, on Save-Data, or if the phone can't keep up.
 // 3D or the drawing is chosen once, in settleHat just before the Hat is first shown, and never changes while the Hat is on screen (only a lost WebGL context still drops to the drawing).
 // The face follows the same signals as the drawing, so everything that moves the drawn Hat moves this one.
@@ -353,7 +336,6 @@ const h3Three = h3Can ? (H3.t.start = performance.now(), import(HAT3D_URL)) : nu
 async function loadHat3D() {
   try {
     if (!h3Can) return h3Off(window.WebGLRenderingContext ? 'Save-Data' : 'no WebGL');
-    if (DEBUG_HAT && DEBUG_HAT.delay) await wait(DEBUG_HAT.delay); // DEBUG ?debug=hat: remove before merge
     const THREE = await withTimeout(h3Three, 15000), c = document.createElement('canvas'); c.id = 'hat3d'; c.setAttribute('aria-hidden', 'true'); H3.t.three = performance.now();
     if (H3.mode) return; // the drawn Hat is already on screen
     const api = await Hat3D.create(THREE, c); H3.t.built = performance.now();
