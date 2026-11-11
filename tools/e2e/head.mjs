@@ -26,7 +26,7 @@ const toIntro = async page => { await page.evaluate(() => document.querySelector
 const btns = page => page.$$eval('#nBtns button', b => b.map(x => x.textContent));
 // Readings go straight into the game; the camera's own frames are held back so they can't interfere.
 const hold = page => page.evaluate(() => { __head.HEAD.busy = true; __head.HEAD.sentAt = Infinity; });
-const feed = (page, keys) => page.evaluate(async keys => { const out = { fills: 0 }; let t = performance.now(); for (const [ms, roll] of keys) for (let e = 0; e < ms; e += 33) { t += 33; __head.headAngle(roll === null ? null : { roll, yaw: 0, pitch: 0 }, t); if (document.querySelector('#nBtns .hfill')) out.fills++; await new Promise(r => setTimeout(r, 4)); } return out; }, keys);
+const feed = (page, keys) => page.evaluate(async keys => { const out = { fills: 0 }; let t = performance.now(); for (const [ms, roll] of keys) for (let e = 0; e < ms; e += 33) { t += 33; __head.headAngle(roll === null ? null : { roll, yaw: 0, pitch: 0 }, t); if (+(document.querySelector('#nBtns .hglass') || { style: { getPropertyValue: () => 0 } }).style.getPropertyValue('--f') > 0) out.fills++; await new Promise(r => setTimeout(r, 4)); } return out; }, keys);
 const tilt = (page, roll) => feed(page, [[500, 0], [300, roll], [2000, roll], [400, 0]]);
 
 console.log('== a whole ceremony with the head');
@@ -37,9 +37,9 @@ console.log('== a whole ceremony with the head');
   check(await page.evaluate(() => !document.querySelector('#headCam').hidden && !!__head.HEAD.stream), 'the little mirror shows the camera');
   await hold(page); await feed(page, [[1100, 0]]);
   check(await page.waitForFunction(() => __head.HEAD.phase === 'try' && document.querySelectorAll('#nBtns .hp').length === 2, null, { timeout: 3000 }).then(() => true, () => false), 'after learning straight comes the practice, with two answers');
-  let f = await tilt(page, 14); check(await page.evaluate(() => __hall.st.picking), 'tilting and holding finishes the practice'); check(f.fills > 5, `the gold line runs while it is held: ${f.fills} frames`);
-  await sleep(600); const row = await page.$$eval('#nBtns button', b => b.map(x => Math.round(x.getBoundingClientRect().top)));
-  check(row.length === 4 && new Set(row).size === 1, `the four answers stand in one row: ${row.join(' ')}`);
+  let f = await tilt(page, 14); check(await page.evaluate(() => __hall.st.picking), 'tilting and holding finishes the practice'); check(f.fills > 5, `the hourglass runs while it is held: ${f.fills} frames`);
+  await sleep(600); const rows = await page.$$eval('#nBtns button', b => b.map(x => Math.round(x.getBoundingClientRect().top)));
+  check(rows.length === 4 && new Set(rows).size === 4, `the answers keep their places, one under another on a phone: ${rows.join(' ')}`);
   for (let i = 0; i < 3; i++) {
     await page.waitForFunction(n => __hall.st.picking && __hall.st.step === n, i, { timeout: 15000 }); await sleep(600);
     const first = (await btns(page))[0]; await tilt(page, -15);

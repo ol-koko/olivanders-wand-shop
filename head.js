@@ -1,12 +1,12 @@
 'use strict';
-// Answering the Hat with the head: tilt toward an option and hold it, and a gold line runs around it until it's picked.
+// Answering the Hat with the head: lean toward an option and hold it, and an hourglass on it runs out until it's picked.
 // Runs after hall.js and reads its names directly. The camera starts only on the player's tap. Only the head's tilt is read, on its own thread
 // (head-worker.js): no face analysis, nothing recorded or sent, and the picture never leaves the browser. Taps and swipes keep working throughout.
 // Any trouble (no camera, a refused prompt, a slow model, a lost face for too long, a hidden tab that can't come back) turns it off quietly: the player taps instead.
 
 Object.assign(S, {
   bHead: ['Відповідати головою', 'Answer with my head'],
-  bTap: ['Відповідати дотиком', 'Tap instead'],
+  bTap: ['Без камери? Відповідати дотиком', 'No camera? Tap instead'],
   headLoad: ['Готую чари. Якщо браузер спитає про камеру, дозволь її.', 'Preparing the charm. If your browser asks about the camera, allow it.'],
   headPriv: ['Камера бачить лише нахил голови. Нічого не записується й не надсилається.', 'The camera only reads the tilt of your head. Nothing is recorded or sent.'],
   headLook: ['Подивись прямо на мене.', 'Look straight at me.'],
@@ -25,6 +25,13 @@ const HEAD_CALM = 30; // frames with a face to learn where straight is
 const HEAD = { on: false, wanted: false, failed: false, phase: null, worker: null, stream: null, token: 0, busy: false, sentAt: 0, lastT: -1, lastFrame: 0, fresh: false, lastTs: 0,
   zero: null, samples: [], tracker: null, items: null, aim: null, seenAt: 0, lostSince: 0, intro: null, resume: false, warmed: null };
 const headVideo = $('#headCam');
+// The hourglass that runs out on the option being held: sand falls from the top bulb to the bottom one.
+HEAD.glass = document.createElement('span'); HEAD.glass.className = 'hglass'; HEAD.glass.setAttribute('aria-hidden', 'true');
+HEAD.glass.innerHTML = '<svg viewBox="0 0 20 30"><defs><clipPath id="hgClip"><path d="M4.5 3.5C4.5 10.5 9 12.5 9 15S4.5 19.5 4.5 26.5h11C15.5 19.5 11 17.5 11 15s4.5-4.5 4.5-11.5z"/></clipPath></defs>'
+  + '<path d="M4.5 3.5C4.5 10.5 9 12.5 9 15S4.5 19.5 4.5 26.5h11C15.5 19.5 11 17.5 11 15s4.5-4.5 4.5-11.5z" fill="rgba(255,248,230,.55)"/>'
+  + '<g clip-path="url(#hgClip)"><rect class="sand top" x="0" y="7" width="20" height="8" fill="#e2b04f"/><rect class="sand bot" x="0" y="18" width="20" height="8.5" fill="#e2b04f"/><rect class="fall" x="9.4" y="15" width="1.2" height="11.5" fill="#e2b04f"/></g>'
+  + '<path d="M4.5 3.5C4.5 10.5 9 12.5 9 15S4.5 19.5 4.5 26.5h11C15.5 19.5 11 17.5 11 15s4.5-4.5 4.5-11.5z" fill="none" stroke="#7a5428" stroke-width=".9"/>'
+  + '<rect x="2" y="1" width="16" height="2.6" rx="1.2" fill="#6b4320"/><rect x="2" y="26.4" width="16" height="2.6" rx="1.2" fill="#6b4320"/></svg>';
 // The way in shows only where it can work: a secure page with a camera API, workers and frame grabbing, outside the in-app browsers that block cameras.
 const headPossible = () => !IN_APP && !HEAD.failed && window.isSecureContext && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && !!window.Worker && !!window.createImageBitmap;
 
@@ -64,10 +71,10 @@ async function startHead(again = false) {
   if (!headPossible()) return beginQuestions();
   const tok = ++HEAD.token; HEAD.wanted = true; HEAD.on = true; HEAD.phase = 'load'; if (!again) HEAD.intro = st.noteFn; HEAD.again = again;
   note.classList.add('head');
-  setNote(() => ({ kicker: T('hatK'), hand: T('headLoad'), instr: T('headPriv'), btns: [{ label: T('bTap'), ghost: true, fn: () => { headOff(); beginQuestions(); } }] }));
+  setNote(() => ({ kicker: T('hatK'), hand: T('headLoad'), instr: T('headPriv'), btns: [{ label: T('bTap'), cls: 'tapLink', fn: () => { headOff(); beginQuestions(); } }] }));
   try { if (!await headCamera(tok)) return; }
   catch (e) { if (tok === HEAD.token) headOff(e && (e.name === 'NotAllowedError' || e.name === 'SecurityError') ? 'headDenied' : 'headFail'); return; }
-  HEAD.phase = 'look'; setNote(() => ({ kicker: T('hatK'), hand: T('headLook'), btns: [{ label: T('bTap'), ghost: true, fn: () => { headOff(); beginQuestions(); } }] }));
+  HEAD.phase = 'look'; setNote(() => ({ kicker: T('hatK'), hand: T('headLook'), btns: [{ label: T('bTap'), cls: 'tapLink', fn: () => { headOff(); beginQuestions(); } }] }));
   if (document.hidden) headSuspend();
 }
 // Straight is learned: a short practice the first time, then the questions.
@@ -75,7 +82,7 @@ function headReady() {
   if (HEAD.phase !== 'look') return;
   if (HEAD.again) { HEAD.phase = 'play'; return beginQuestions(); }
   HEAD.phase = 'try'; HEAD.tracker = null;
-  setNote(() => ({ kicker: T('hatK'), hand: T('headTry'), cls: 'try', btns: [{ label: '← ' + T('headL'), ghost: true, cls: 'hp', fn: headPracticeDone }, { label: T('headR') + ' →', ghost: true, cls: 'hp', fn: headPracticeDone }, { label: T('bTap'), ghost: true, cls: 'wide', fn: () => { headOff(); beginQuestions(); } }] }));
+  setNote(() => ({ kicker: T('hatK'), hand: T('headTry'), cls: 'try', btns: [{ label: '← ' + T('headL'), ghost: true, cls: 'hp', fn: headPracticeDone }, { label: T('headR') + ' →', ghost: true, cls: 'hp', fn: headPracticeDone }, { label: T('bTap'), cls: 'tapLink', fn: () => { headOff(); beginQuestions(); } }] }));
 }
 function headPracticeDone() { if (HEAD.phase !== 'try') return; HEAD.phase = 'play'; beginQuestions(); }
 
@@ -95,7 +102,7 @@ function headCamOff() {
   try { HEAD.stream && HEAD.stream.getTracks().forEach(t => t.stop()); } catch (_) { }
   HEAD.stream = null; headVideo.srcObject = null; headVideo.hidden = true; headVideo.classList.remove('seen'); HEAD.busy = false;
 }
-function headClear() { if (HEAD.items) HEAD.items.forEach(b => { b.classList.remove('aim', 'hfill'); b.style.removeProperty('--f'); }); HEAD.items = null; HEAD.aim = null; HEAD.tracker = null; }
+function headClear() { if (HEAD.items) HEAD.items.forEach(b => b.classList.remove('aim')); HEAD.glass.remove(); HEAD.items = null; HEAD.aim = null; HEAD.tracker = null; }
 
 // A hidden tab stops the camera; coming back starts it again and learns straight again, on the same screen.
 function headSuspend() { if (!HEAD.on) return; HEAD.resume = HEAD.phase; HEAD.token++; headClear(); headCamOff(); }
@@ -157,7 +164,8 @@ function headAngle(a, t) {
 }
 function headUi(aim, fill) {
   const items = HEAD.items || [];
-  items.forEach((b, i) => { const on = i === aim; b.classList.toggle('aim', on); b.classList.toggle('hfill', on && fill > 0); b.style.setProperty('--f', on ? fill.toFixed(3) : 0); });
+  items.forEach((b, i) => b.classList.toggle('aim', i === aim));
+  const g = HEAD.glass; if (aim === null || !items[aim]) g.remove(); else { if (g.parentNode !== items[aim]) items[aim].appendChild(g); g.style.setProperty('--f', fill.toFixed(3)); g.classList.toggle('run', fill > 0 && fill < 1); }
   const b = aim !== null && items[aim]; if (b && b.isConnected) { const r = b.getBoundingClientRect(); FACE.focus = { x: r.left + r.width / 2, y: r.top + r.height / 2, at: now }; } // the Hat looks at it, as with a swipe
   HEAD.aim = aim;
 }
