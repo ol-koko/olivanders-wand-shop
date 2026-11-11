@@ -230,7 +230,10 @@ $('#bDown').addEventListener('click', async () => {
 // Anonymous results for later recalibration, from the live site only. The key can only insert. Nothing waits for this and a failure stays silent.
 const LOG = { host: 'olivanders-wand-shop.vercel.app', url: 'https://qozvbqhdavsazopdwrys.supabase.co/rest/v1/', key: 'sb_publishable__F3xGYcGMqsHdp-lHQtMbA_YgLToaBS' };
 function deviceType() { return !matchMedia('(pointer:coarse)').matches ? 'desktop' : Math.min(screen.width, screen.height) < 600 ? 'phone' : 'tablet'; }
-function postRow(table, row) {
+// How many games of this kind this browser has logged: a plain counter kept only in the browser, never an ID. It grows only when a row is really sent, and is null when storage is closed.
+function playNo(key) { try { const n = Math.min(32767, (parseInt(localStorage.getItem(key), 10) || 0) + 1); localStorage.setItem(key, n); return n; } catch (_) { return null; } }
+function postRow(table, row, plays) {
   if (location.hostname !== LOG.host) return;
+  row.play_no = playNo(plays);
   fetch(LOG.url + table, { method: 'POST', keepalive: true, credentials: 'omit', headers: { apikey: LOG.key, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(row) }).catch(() => { });
 }

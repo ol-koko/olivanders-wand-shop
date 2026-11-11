@@ -849,7 +849,7 @@ function logResult(w, attempts, tr) {
     for (const k of ['speed', 'amp', 'sharp', 'flow', 'curl']) row[k] = +clamp(tr[k]).toFixed(3);
     const mean = f => st.obs.reduce((s, o) => s + f(o), 0) / st.obs.length;
     row.wave_len = +clamp(mean(o => o.len / MIN), 0, 100).toFixed(2); row.wave_dur = +clamp(mean(o => o.dur), 0, 60).toFixed(2);
-    postRow('wand_results', row);
+    postRow('wand_results', row, 'wand-plays');
   } catch (_) { }
 }
 function recentWins() { try { const a = JSON.parse(localStorage.getItem('wand-recent')); return Array.isArray(a) ? a : []; } catch (_) { return []; } }
