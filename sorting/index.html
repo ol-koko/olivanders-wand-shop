@@ -91,11 +91,9 @@
 #nBtns .ban{display:flex;flex-direction:column;align-items:center;gap:3px;background:transparent;border:2px solid transparent;color:#2a170b;padding:3px 0;font-size:14px;border-radius:10px}
 #nBtns .ban svg{height:70px;width:auto;filter:drop-shadow(0 2px 3px rgba(40,20,5,.45))}
 #nBtns .ban.want{border-color:#b07c38;background:rgba(176,124,56,.2)}
-#nBtns .ban.nope svg{opacity:.3;filter:grayscale(1)}
-#nBtns .ban.nope span{text-decoration:line-through}
 #nBtns .wide{grid-column:1/-1}
 @media (max-width:360px){#nBtns .ban{font-size:11.5px}#nBtns .ban svg{height:50px}#nBtns.wish{gap:3px}}
-@media (max-height:480px){#nBtns .ban svg{height:30px}#nBtns .wide{grid-column:span 2}#nBtns .btn{padding:6px 10px;font-size:15px}.hand{font-size:22px}}
+@media (max-height:480px){#nBtns .ban svg{height:30px}#nBtns .btn{padding:6px 10px;font-size:15px}.hand{font-size:22px}}
 /* answering with the head: the answer pointed at gets the usual highlight; the timer lives in the mirror, the shop's portrait frame (ring filling, hourglass pouring over the picture) */
 #nBtns .btn,#nBtns .ban{position:relative}
 #headMirror{position:fixed;z-index:30;top:calc(env(safe-area-inset-top) + 10px);left:calc(env(safe-area-inset-left) + 10px);width:clamp(96px,min(36vw,17vh),170px);aspect-ratio:4/5;pointer-events:none;filter:drop-shadow(0 8px 14px rgba(0,0,0,.65));transition:filter .4s}
