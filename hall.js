@@ -492,13 +492,20 @@ function ask() {
   say(q.id, 900);
 }
 async function answer(q, o) {
-  if (!st.picking) return; st.picking = false; st.answers.push(o.w); logStep('sorting', 'q' + st.answers.length); if (typeof HEAD !== 'undefined' && HEAD.on) st.heads++; leanTo(o); // heads: answers given with head mode on, for the log
+  if (!st.picking) return; st.picking = false; const turn = st.turn = (st.turn || 0) + 1; st.answers.push(o.w); logStep('sorting', 'q' + st.answers.length); if (typeof HEAD !== 'undefined' && HEAD.on) st.heads++; leanTo(o); // heads: answers given with head mode on, for the log
   let r, id; // a few lines answer one option only
   if (o.r) { r = o.r; id = o.r[2]; } else if (Math.random() < .85) { const i = Math.floor(Math.random() * q.r.length); r = q.r[i]; id = q.id + 'r' + (i + 1); } else { const i = Math.floor(Math.random() * SHARED.length); r = SHARED[i]; id = 'any' + (i + 1); }
   setNote(() => ({ kicker: T('hatK'), hand: pickLang(r[0], r[1]) }));
   await sayStep(id, 1000, 1900);
+  if (turn !== st.turn) return; // the answer was taken back meanwhile
   if (++st.step < st.questions.length) return ask();
   $('#hat').style.rotate = '0deg'; showWish(true);
+}
+// Takes the last answer back and asks its question again: for an answer the head picked by accident (the back arrow in head.js).
+// Steps are logged once per page load and the result once per ceremony, so asking again counts nothing twice.
+function undoAnswer() {
+  if (st.deciding || !st.questions || !st.answers.length) return;
+  st.turn = (st.turn || 0) + 1; st.answers.pop(); st.heads = Math.max(0, st.heads - 1); st.step = st.answers.length; st.wish = st.avoid = null; st.avoiding = false; ask();
 }
 function showWish(first) {
   setNote(() => ({ kicker: T('hatK'), hand: pickLang(HAT.yes.ua, HAT.yes.en), instr: st.avoiding ? pickLang(...HAT.no.hint) : '', cls: 'wish', btns: wishBtns() }), !first);
