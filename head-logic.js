@@ -15,7 +15,8 @@
       return cellOf(a);
     };
   }
-  function createPointer({ cols = 1, rows = 4, rangeX = RANGE_X, rangeY = RANGE_Y } = {}) {
+  // `hold` and `grace` are the page's timings (HEAD_TIMING in head.js). `free`: the pointer starts armed, for a screen that opens with its own reading pause.
+  function createPointer({ cols = 1, rows = 4, rangeX = RANGE_X, rangeY = RANGE_Y, hold = HOLD, grace = GRACE, free = false } = {}) {
     const ax = axis(cols, rangeX), ay = axis(rows, rangeY);
     let col = null, row = null, last = 0, on = 0, held = 0, armed = false, stay, away = 0, next = null;
     return {
@@ -26,16 +27,16 @@
         if (nc === null || nr === null) nc = nr = null;
         const key = nc === null ? '-' : nc + ',' + nr, cur = col === null ? '-' : col + ',' + row;
         // Armed once the head leaves where it pointed when the screen opened or at the last pick: no pick carried over, none twice.
-        if (stay === undefined) { stay = key; armed = key === '-'; } else if (!armed && key !== stay) armed = true;
+        if (stay === undefined) { stay = key; armed = free || key === '-'; } else if (!armed && key !== stay) armed = true;
         // A change counts only after it lasts SETTLE ms: one shaky reading neither moves the light nor resets the timer.
         if (key !== cur) {
           if (key !== next) { next = key; away = 0; } away += dt;
-          if (away < SETTLE && cur !== '-') return { col, row, fill: armed && on >= GRACE ? held / HOLD : 0, picked: null };
+          if (away < SETTLE && cur !== '-') return { col, row, fill: armed && on >= grace ? held / hold : 0, picked: null };
           col = nc; row = nr; on = held = away = 0; next = null;
         } else { away = 0; next = null; }
         if (col === null || !armed) return { col, row, fill: 0, picked: null };
-        on += dt; if (on < GRACE) return { col, row, fill: 0, picked: null };
-        held += dt; if (held < HOLD) return { col, row, fill: held / HOLD, picked: null };
+        on += dt; if (on < grace) return { col, row, fill: 0, picked: null };
+        held += dt; if (held < hold) return { col, row, fill: held / hold, picked: null };
         armed = false; stay = key; on = held = 0; return { col, row, fill: 1, picked: { col, row } };
       },
     };

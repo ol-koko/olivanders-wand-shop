@@ -1,19 +1,23 @@
 'use strict';
-// Answering the Hat with the head: point the face at an answer and hold still. The answer lights up, and the timer runs in the camera mirror:
-// an hourglass over the picture and the gold ring filling around it. A full ring picks the answer exactly as a tap does.
+// Answering the Hat with the head: point the face at an answer and hold still. Reading is not choosing: every screen first gives time to read, when nothing lights up
+// and nothing can be picked. Then the answer pointed at lights up and the timer runs in the camera mirror: an hourglass over the picture, the gold ring filling around it
+// and 3-2-1 at the end. A full ring picks the answer exactly as a tap does, and a back arrow takes an answer picked by the head back.
 // Runs after hall.js and reads its names directly. The camera starts only on the player's tap. Only where the head points is read, on its own thread
 // (head-worker.js): no face analysis, nothing recorded or sent, and the picture never leaves the browser. Taps and swipes keep working throughout.
 // Any trouble (no camera, a refused prompt, a slow model, a lost face for too long, a hidden tab that can't come back) turns it off quietly: the player taps instead.
 
 Object.assign(S, {
-  bHead: ['Відповідати головою', 'Answer with my head'],
-  bTap: ['Без камери? Відповідати дотиком', 'No camera? Tap instead'],
+  bHead: ['Почати з камерою', 'Start with camera'],
+  bTap: ['Пройти без камери', 'Continue without camera'],
   headLoad: ['Готую чари. Якщо браузер спитає про камеру, дозволь її.', 'Preparing the charm. If your browser asks about the camera, allow it.'],
   headPriv: ['Камера бачить лише, куди дивиться голова. Нічого не записується й не надсилається.', 'The camera only reads where your head points. Nothing is recorded or sent.'],
-  headLook: ['Подивись сюди, на сувій, і не рухайся.', 'Look here at the scroll and hold still.'], // neutral is the middle of the answers, which sit on the scroll: on a computer the Hat is far above them
-  headTry: ['Поверни обличчя до відповіді й потримай.', 'Point your face at an answer and hold still.'],
-  headL: ['Ця', 'This one'],
-  headR: ['Або ця', 'Or this one'],
+  // The intro scroll: the neutral pose is learned while the player reads it. Neutral is the middle of the answers, which sit on the scroll: on a computer the Hat is far above them.
+  headIntroH: ['Ну що, почнемо?', 'Shall we begin?'],
+  headIntroI: ['<ol><li>Прочитай запитання. Відлік почнеться, коли можна буде відповісти.</li><li>Поверни голову в бік своєї відповіді й дочекайся кінця відліку в дзеркалі. Якщо відвернешся, відлік почнеться заново.</li><li>Щоб підтвердити вибір, нахили голову до кнопки й затримайся на мить або натисни її.</li></ol>',
+    '<ol><li>Read the question. The countdown won’t start until it’s time to answer.</li><li>Turn your head toward your answer and hold until the countdown in the mirror ends. If you turn away, the countdown resets.</li><li>To confirm your choice, tilt your head down toward the button and hold briefly, or tap or click it.</li></ol>'],
+  bGo: ['Почати церемонію', 'Begin the ceremony'],
+  headBack: ['Повернутися до попереднього запитання', 'Back to the previous question'],
+  headBackWish: ['Скасувати вибір факультету', 'Take the house back'],
   headLost: ['Не бачу обличчя. Подивись на екран.', 'I can’t see your face. Look at the screen.'],
   headDenied: ['Без камери теж можна: просто торкнись відповіді.', 'No camera is fine too: just tap your answer.'],
   headFail: ['Камера не відповідає, тож відповідай дотиком.', 'The camera isn’t answering, so tap your answers.'],
@@ -24,17 +28,35 @@ const HEAD_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmar
 // Which way is right and which is up, as MediaPipe's angles read on the mirrored picture.
 const HEAD_SIGN = { x: -1, y: deviceType() === 'desktop' ? -1 : 1 }; // y from the owner's tests: up is the other sign on a computer than on a phone held below the face
 const HEAD_CALM = 30; // frames with a face to learn the neutral pose
+
+/* ===== Head mode timings: tune here. All in milliseconds. ===== */
+const HEAD_TIMING = {
+  readMs: 5000,      // a question or the four banners: time to read before any answer can light up or be picked
+  introArmMs: 4000,  // the intro scroll: time to read before «Почати церемонію» can be held with the head
+  graceMs: 450,      // the face rests on an answer this long before the hold starts
+  holdMs: 3500,      // the hold: the ring fills over this time, and a full ring picks the answer
+  countdownMs: 3000, // the end of the hold, shown as 3-2-1 in the mirror
+  wishGoMs: 2500,    // after the head picks a banner, how long the back arrow can take it back before the Hat goes on
+};
 const HEAD = { on: false, wanted: false, failed: false, phase: null, worker: null, stream: null, token: 0, busy: false, sentAt: 0, lastT: -1, lastFrame: 0, fresh: false, lastTs: 0,
-  zero: null, samples: [], tracker: null, items: null, aim: null, seenAt: 0, lostSince: 0, intro: null, resume: false, warmed: null };
+  zero: null, samples: [], tracker: null, items: null, aim: null, seenAt: 0, lostSince: 0, intro: null, resume: false, warmed: null, readUntil: 0, digit: 0, undo: null, wishT: 0 };
 const headVideo = $('#headCam');
-// The mirror: the camera picture in the shop's portrait frame, glowing when a face is seen. While an answer is held, a gold ring fills like a clock hand and an hourglass pours, both over the picture.
+// The mirror: the camera picture in the shop's portrait frame, glowing when a face is seen. While the player reads, a calm ring and a still hourglass. While an answer is held,
+// the ring fills like a clock hand and the hourglass pours, and the last seconds count 3-2-1, all over the picture.
 const headMirror = $('#headMirror'), HG = 'M4.5 3.5C4.5 10.5 9 12.5 9 15S4.5 19.5 4.5 26.5h11C15.5 19.5 11 17.5 11 15s4.5-4.5 4.5-11.5z';
 headMirror.insertAdjacentHTML('beforeend', PORTRAIT_FRAME);
 headMirror.firstElementChild.insertAdjacentHTML('beforeend', '<svg class="ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" pathLength="1"/></svg>'
   + `<svg class="hglass" viewBox="0 0 20 30" aria-hidden="true"><defs><clipPath id="hgClip"><path d="${HG}"/></clipPath></defs><path d="${HG}" fill="rgba(255,248,230,.35)"/>`
   + '<g clip-path="url(#hgClip)"><rect class="sand top" x="0" y="7" width="20" height="8"/><rect class="sand bot" x="0" y="18" width="20" height="8.5"/><line class="fall" x1="10" y1="15" x2="10" y2="26.5"/></g>'
   + `<path d="${HG}" fill="none" stroke="#f3dca8" stroke-width=".9"/><rect x="2" y="1" width="16" height="2.6" rx="1.2" fill="#d9b46a"/><rect x="2" y="26.4" width="16" height="2.6" rx="1.2" fill="#d9b46a"/></svg>`);
-function headTimer(fill) { headMirror.style.setProperty('--f', fill.toFixed(3)); headMirror.classList.toggle('hold', fill > 0 && fill < 1); }
+headMirror.firstElementChild.insertAdjacentHTML('beforeend', '<div class="count"></div>');
+const headCount = headMirror.querySelector('.count');
+// `state`: 'reading' while nothing can be picked. `digit`: 3, 2, 1 at the end of a hold, with a soft tick when the sound is on.
+function headTimer(fill, state = '', digit = 0) {
+  headMirror.style.setProperty('--f', fill.toFixed(3)); headMirror.classList.toggle('hold', fill > 0 && fill < 1);
+  headMirror.classList.toggle('read', state === 'reading'); headMirror.classList.toggle('count', digit > 0);
+  if (digit !== HEAD.digit) { HEAD.digit = digit; if (digit) { headCount.textContent = digit; if (A.on && A.ctx) tone(digit === 1 ? 990 : 780, .07, { vol: .045 }); } }
+}
 // The way in shows only where it can work: a secure page with a camera API, workers and frame grabbing, outside the in-app browsers that block cameras.
 const headPossible = () => !IN_APP && !HEAD.failed && window.isSecureContext && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && !!window.Worker && !!window.createImageBitmap;
 
@@ -69,7 +91,7 @@ async function headCamera(tok) {
   return true;
 }
 
-// The player's choice on the Hat's first screen. `again`: a new game after a head-mode game, with no practice.
+// The player's choice on the Hat's first screen. `again`: a new game after a head-mode game.
 async function startHead(again = false) {
   if (!headPossible()) return beginQuestions();
   const tok = ++HEAD.token; HEAD.wanted = true; HEAD.on = true; HEAD.phase = 'load'; if (!again) HEAD.intro = st.noteFn; HEAD.again = again;
@@ -77,22 +99,18 @@ async function startHead(again = false) {
   setNote(() => ({ kicker: T('hatK'), hand: T('headLoad'), instr: T('headPriv'), btns: [{ label: T('bTap'), cls: 'tapLink', fn: () => { headOff(); beginQuestions(); } }] }));
   try { if (!await headCamera(tok)) return; }
   catch (e) { if (tok === HEAD.token) headOff(e && (e.name === 'NotAllowedError' || e.name === 'SecurityError') ? 'headDenied' : 'headFail'); return; }
-  HEAD.phase = 'look'; setNote(() => ({ kicker: T('hatK'), hand: T('headLook'), btns: [{ label: T('bTap'), cls: 'tapLink', fn: () => { headOff(); beginQuestions(); } }] }));
+  HEAD.phase = 'intro'; setNote(headIntroNote);
   if (document.hidden) headSuspend();
 }
-// Straight is learned: a short practice the first time, then the questions.
-function headReady() {
-  if (HEAD.phase !== 'look') return;
-  if (HEAD.again) { HEAD.phase = 'play'; return beginQuestions(); }
-  HEAD.phase = 'try'; HEAD.tracker = null;
-  setNote(() => ({ kicker: T('hatK'), hand: T('headTry'), btns: [{ label: T('headL'), ghost: true, cls: 'hp', fn: headPracticeDone }, { label: T('headR'), ghost: true, cls: 'hp', fn: headPracticeDone }, { label: T('bTap'), cls: 'tapLink', fn: () => { headOff(); beginQuestions(); } }] }));
-}
-function headPracticeDone() { if (HEAD.phase !== 'try') return; HEAD.phase = 'play'; beginQuestions(); }
+// The intro scroll: how it works, with «Почати церемонію». It never goes on by itself. The neutral pose is learned while the player reads it; then, after a reading pause,
+// lowering the face toward the button and holding presses it. A tap works at once.
+const headIntroNote = () => ({ kicker: T('hatK'), hand: T('headIntroH'), instr: T('headIntroI'), btns: [{ label: T('bGo'), cls: 'hgo', fn: headStart }, { label: T('bTap'), cls: 'tapLink', fn: () => { headOff(); beginQuestions(); } }] });
+function headStart() { if (HEAD.phase !== 'intro') return; HEAD.phase = 'play'; beginQuestions(); }
 
 // Turns head mode off. With a message, the player learns why; during the set-up, back to the Hat's first screen without the head button.
 function headOff(msg) {
-  const was = HEAD.on, setup = HEAD.phase === 'load' || HEAD.phase === 'look' || HEAD.phase === 'try';
-  HEAD.token++; HEAD.on = false; HEAD.wanted = false; HEAD.phase = null; HEAD.resume = false; headClear(); headCamOff(); note.classList.remove('head');
+  const was = HEAD.on, setup = HEAD.phase === 'load' || HEAD.phase === 'intro';
+  HEAD.token++; HEAD.on = false; HEAD.wanted = false; HEAD.phase = null; HEAD.resume = false; headClear(); headCamOff(); note.classList.remove('head'); headSync();
   if (msg) { HEAD.failed = true; if (HEAD.worker) { HEAD.worker.terminate(); HEAD.worker = null; } }
   if (!was || !msg) return;
   if (setup && !HEAD.again && HEAD.intro) { setNote(HEAD.intro); setTimeout(() => setStatus(T(msg)), 400); return; } // the first screen again, now without the head button
@@ -100,12 +118,12 @@ function headOff(msg) {
   if (st.noteFn) renderNote(); setStatus(T(msg));
 }
 // The Hat has its answers: the camera goes off, and a new game asks for it again.
-function headDone() { if (!HEAD.on) return; HEAD.token++; HEAD.on = false; HEAD.phase = null; headClear(); headCamOff(); note.classList.remove('head'); }
+function headDone() { if (!HEAD.on) return; HEAD.token++; HEAD.on = false; HEAD.phase = null; headClear(); headCamOff(); note.classList.remove('head'); headSync(); }
 function headCamOff() {
   try { HEAD.stream && HEAD.stream.getTracks().forEach(t => t.stop()); } catch (_) { }
   HEAD.stream = null; headVideo.srcObject = null; headMirror.hidden = true; headMirror.classList.remove('seen'); headTimer(0); HEAD.busy = false;
 }
-function headClear() { if (HEAD.items) HEAD.items.forEach(b => b.classList.remove('aim')); headTimer(0); HEAD.items = null; HEAD.aim = null; HEAD.tracker = null; HEAD.shape = ''; }
+function headClear() { if (HEAD.items) HEAD.items.forEach(b => b.classList.remove('aim', 'soon')); headTimer(0); HEAD.state = ''; HEAD.items = null; HEAD.aim = null; HEAD.tracker = null; HEAD.shape = ''; }
 
 // A hidden tab stops the camera; coming back starts it again and learns the neutral pose again, on the same screen.
 function headSuspend() { if (!HEAD.on) return; HEAD.resume = HEAD.phase; HEAD.token++; headClear(); headCamOff(); }
@@ -113,13 +131,13 @@ document.addEventListener('visibilitychange', async () => {
   if (document.hidden) return headSuspend();
   if (!HEAD.on || !HEAD.resume) return; const phase = HEAD.resume, tok = ++HEAD.token; HEAD.resume = false;
   try { if (!await headCamera(tok)) return; } catch (_) { if (tok === HEAD.token) headOff('headFail'); return; }
-  HEAD.phase = phase === 'load' ? 'look' : phase; HEAD.recal = true;
+  HEAD.phase = phase === 'load' ? 'intro' : phase; HEAD.recal = true; if (phase === 'load') setNote(headIntroNote);
 });
 
-// What the head can pick on the current screen: the practice, the answers, or the four banners. Nothing while the Hat talks or thinks.
+// What the head can pick on the current screen: «Почати церемонію» on the intro scroll, the answers, or the four banners. Nothing while the Hat talks or thinks.
 function headTargets() {
   if (noteIn.classList.contains('fade')) return []; // between two screens the old buttons are still there for a moment
-  if (HEAD.phase === 'try') return [...document.querySelectorAll('#nBtns .hp')];
+  if (HEAD.phase === 'intro') return [...document.querySelectorAll('#nBtns .hgo')];
   if (HEAD.phase !== 'play' || st.phase !== 'hall' || st.deciding) return [];
   if (st.picking) return [...document.querySelectorAll('#nBtns button:not(.tapLink)')];
   const w = $('#nBtns.wish'); return w && !st.avoiding ? [...w.querySelectorAll('.ban')] : [];
@@ -158,29 +176,59 @@ function headAngle(a, t) {
     if (HEAD.recal) { HEAD.recal = false; HEAD.zero = null; HEAD.samples = []; HEAD.sm = null; }
     HEAD.samples.push(a); if (HEAD.samples.length < HEAD_CALM) return;
     HEAD.zero = { yaw: median(HEAD.samples, 'yaw'), pitch: median(HEAD.samples, 'pitch'), roll: median(HEAD.samples, 'roll') }; HEAD.samples = [];
-    return headReady();
+    return;
   }
   const raw = { dx: (a.yaw - HEAD.zero.yaw) * HEAD_SIGN.x, dy: (a.pitch - HEAD.zero.pitch) * HEAD_SIGN.y }, sm = HEAD.sm;
   const d = HEAD.sm = sm ? { dx: sm.dx + (raw.dx - sm.dx) * .4, dy: sm.dy + (raw.dy - sm.dy) * .4 } : raw; // smoothed: the model's angles shake, most of all with the head turned
   const items = headTargets();
   if (!items.length) { headUi(null, 0); HEAD.tracker = null; return; }
-  // The grid as the page shows it right now: one column on a phone, two on a computer, four banners in a row.
-  const grid = HeadLogic.gridOf(items.map(b => { const r = b.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })), shape = grid.cols + 'x' + grid.rows;
-  if (!HEAD.tracker || !HEAD.items || items[0] !== HEAD.items[0] || items.length !== HEAD.items.length || shape !== HEAD.shape) { headClear(); HEAD.items = items; HEAD.shape = shape; HEAD.tracker = HeadLogic.createPointer({ cols: grid.cols, rows: grid.rows }); } // a new screen: the head first comes back to neutral
+  // The grid as the page shows it right now: one column on a phone, two on a computer, four banners in a row. On the intro scroll the text is the upper half and «Почати церемонію» the lower:
+  // only a face lowered toward the button points at it, so reading the scroll points at nothing.
+  const intro = HEAD.phase === 'intro', TM = HEAD_TIMING;
+  const grid = intro ? { cols: 1, rows: 2, at: (c, r) => r === 1 ? 0 : -1 } : HeadLogic.gridOf(items.map(b => { const r = b.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })), shape = intro ? 'intro' : grid.cols + 'x' + grid.rows;
+  if (!HEAD.tracker || !HEAD.items || items[0] !== HEAD.items[0] || items.length !== HEAD.items.length || shape !== HEAD.shape) { // a new screen starts with time to read
+    headClear(); HEAD.items = items; HEAD.shape = shape; HEAD.tracker = HeadLogic.createPointer({ cols: grid.cols, rows: grid.rows, hold: TM.holdMs, grace: TM.graceMs, free: true }); HEAD.readUntil = t + (intro ? TM.introArmMs : TM.readMs);
+  }
+  if (t < HEAD.readUntil) return headUi(null, 0, 'reading', HEAD.readUntil - t); // reading is not choosing: nothing lights up, nothing is picked
   const u = HEAD.tracker.update(t, d), i = u.col === null ? -1 : grid.at(u.col, u.row);
   headUi(i < 0 ? null : i, i < 0 ? 0 : u.fill);
   if (u.picked && i >= 0) headPick(items[i]);
 }
-function headUi(aim, fill) {
-  const items = HEAD.items || [];
-  items.forEach((b, i) => b.classList.toggle('aim', i === aim));
-  headTimer(aim === null ? 0 : fill);
+// `state` is given only for 'reading'; otherwise it follows the hold: armed (nothing held yet), holding, countdown (the last seconds, 3-2-1 in the mirror and a glow on the answer).
+function headUi(aim, fill = 0, state = '', left = 0) {
+  const items = HEAD.items || [], TM = HEAD_TIMING, on = aim !== null && fill > 0 && fill < 1, remain = on ? (1 - fill) * TM.holdMs : 0, count = on && remain <= TM.countdownMs;
+  items.forEach((b, i) => { b.classList.toggle('aim', i === aim); b.classList.toggle('soon', count && i === aim); });
+  headTimer(aim === null ? 0 : fill, state, count ? Math.max(1, Math.ceil(remain / 1000)) : 0);
   const b = aim !== null && items[aim]; if (b && b.isConnected) { const r = b.getBoundingClientRect(); FACE.focus = { x: r.left + r.width / 2, y: r.top + r.height / 2, at: now }; } // the Hat looks at it, as with a swipe
-  HEAD.aim = aim;
+  HEAD.aim = aim; HEAD.state = state || (!HEAD.tracker ? '' : count ? 'countdown' : on ? 'holding' : 'armed'); HEAD.left = state ? left : remain;
 }
 function headPick(b) {
   if (!b || !b.isConnected) return;
-  const wish = b.classList.contains('ban'); headUi(null, 0); b.click();
-  if (wish) setTimeout(() => { if (HEAD.on && st.wish && !st.deciding) decide(); }, 700); // a banner picked by the head is the wish, and the Hat goes on: the other buttons there are tap only
+  const wish = b.classList.contains('ban'), question = !wish && st.picking, before = HEAD.undo; headUi(null, 0); b.click();
+  if (question) HEAD.undo = { kind: 'q', n: st.answers.length }; // the back arrow can take this answer back
+  if (wish) { // a banner picked by the head is the wish, and the Hat goes on after a moment in which the arrow can still take it back: the other buttons there are tap only
+    HEAD.undo = st.wish ? { kind: 'wish', n: st.answers.length, wish: st.wish, prev: before && before.kind === 'q' ? before : null } : before;
+    clearTimeout(HEAD.wishT); HEAD.wishT = setTimeout(() => { if (HEAD.on && st.wish && !st.deciding) decide(); }, HEAD_TIMING.wishGoMs);
+  }
+  headSync();
 }
-(function loop(t) { requestAnimationFrame(loop); headTick(t); })(performance.now());
+
+// The back arrow: shown only after the head picked an answer, so an accidental pick can be taken back. Tap and keyboard only: the head can't point at it.
+// A question's answer goes back to that question (undoAnswer in hall.js keeps the scoring right); a banner just stops being the wish.
+const headBack = $('#headBack');
+function headUndo() {
+  const u = HEAD.undo; if (!u || !headUndoLive()) return;
+  if (u.kind === 'wish') { clearTimeout(HEAD.wishT); HEAD.undo = u.prev; st.wish = null; showWish(); } else { HEAD.undo = null; undoAnswer(); }
+  headSync();
+}
+const headUndoLive = () => { const u = HEAD.undo; return !!u && HEAD.on && st.phase === 'hall' && !st.deciding && st.answers.length === u.n && (u.kind !== 'wish' || st.wish === u.wish); };
+// The arrow goes as soon as its answer is no longer the last one: a tap answered the next question, the Hat started thinking, or the camera went off.
+function headSync() {
+  if (HEAD.undo && !headUndoLive()) HEAD.undo = null;
+  const u = HEAD.undo, label = u ? T(u.kind === 'wish' ? 'headBackWish' : 'headBack') : '';
+  if (headBack.hidden !== !u) { headBack.hidden = !u; note.classList.toggle('back', !!u); } // the heading makes room for the arrow
+  if (u && headBack.getAttribute('aria-label') !== label) { headBack.setAttribute('aria-label', label); headBack.title = label; }
+}
+headBack.addEventListener('click', e => { e.stopPropagation(); headUndo(); });
+
+(function loop(t) { requestAnimationFrame(loop); headTick(t); headSync(); })(performance.now());
