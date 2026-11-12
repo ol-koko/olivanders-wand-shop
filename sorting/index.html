@@ -130,6 +130,8 @@
 #headBack svg{width:20px;height:20px}
 #headBack::before{content:'';position:absolute;inset:-6px}
 #headBack:focus-visible{outline:3px solid #d9b46a;outline-offset:2px}
+/* TEMPORARY: ?debug=head readout, removed before merge */
+#headDbg{position:fixed;z-index:60;left:8px;top:8px;max-width:70vw;padding:6px 9px;border-radius:8px;background:rgba(0,0,0,.78);color:#9f9;font:12px/1.35 ui-monospace,Menlo,monospace;white-space:pre;pointer-events:none}
 #nBtns .btn.tapLink{grid-column:1/-1;justify-self:center;background:none;border:0;box-shadow:none;color:#7a5428;font-size:15px;padding:4px 6px;text-decoration:underline;text-underline-offset:3px}
 #rSeal{position:relative;margin:clamp(6px,1.4vh,14px) auto 0;height:clamp(150px,calc(150px + (var(--h) - 568px)*.22),230px);aspect-ratio:240/300;opacity:0;transform-origin:50% 92%}
 #rSeal{perspective:900px;touch-action:none;cursor:grab}

@@ -232,3 +232,9 @@ function headSync() {
 headBack.addEventListener('click', e => { e.stopPropagation(); headUndo(); });
 
 (function loop(t) { requestAnimationFrame(loop); headTick(t); headSync(); })(performance.now());
+
+// TEMPORARY: ?debug=head shows the current phase, the time left and the answer pointed at. Removed before merge.
+if (/[?&]debug=head\b/.test(location.search)) {
+  const box = document.createElement('div'); box.id = 'headDbg'; document.body.appendChild(box);
+  setInterval(() => { box.style.top = (headMirror.hidden ? 8 : headMirror.getBoundingClientRect().bottom + 6) + 'px'; const it = HEAD.items && HEAD.aim !== null && HEAD.items[HEAD.aim]; box.textContent = !HEAD.on ? 'head: off' : `screen: ${HEAD.phase}${HEAD.zero ? '' : ' (learning neutral)'}\nphase: ${HEAD.state || '-'}\nleft: ${HEAD.state && HEAD.state !== 'armed' ? (HEAD.left / 1000).toFixed(1) + ' s' : '-'}\nanswer: ${it ? it.textContent.trim().slice(0, 28) : '-'}`; }, 100);
+}
