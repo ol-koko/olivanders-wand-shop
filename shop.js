@@ -652,6 +652,7 @@ function liveTick(t) {
 /* ================= input: camera (MediaPipe) ================= */
 const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+$('#camBox').insertAdjacentHTML('beforeend', PORTRAIT_FRAME);
 const cam = { on: false, hl: null, worker: null, busy: false, sentAt: 0, warmed: null, loading: null, video: $('#camv'), stream: null, token: 0, fresh: false, lastT: -1, lastTs: 0, lastFrame: 0, errs: 0, fps: 0, fpsN: 0, fpsT: 0, sm: null, seen: -1e9, firstSeen: 0, hist: [] };
 // Hand tracking runs on its own thread (hand-worker.js), so preparing the model can't freeze the game or stop its sound. If the worker can't start, it runs on the page as before.
 function loadWorker() {

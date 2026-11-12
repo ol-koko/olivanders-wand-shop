@@ -50,6 +50,8 @@ console.log('== a whole ceremony with the head, on a phone');
   check(f.ring > 5 && !f.inButton, `the timer runs in the mirror, not in the button: ${f.ring} frames`);
   await sleep(600); const rows = await page.$$eval('#nBtns button', b => b.map(x => Math.round(x.getBoundingClientRect().top)));
   check(rows.length === 4 && new Set(rows).size === 4, `the answers keep their places, one under another: ${rows.join(' ')}`);
+  { const m = await page.evaluate(() => { const r = s => document.querySelector(s).getBoundingClientRect(), a = r('#headMirror'), t = r('.topbar'), h = r('#hat'), n = r('#noteIn'); return { w: Math.round(a.width), frame: !!document.querySelector('#headMirror svg.cam-frame'), flip: getComputedStyle(document.querySelector('#headCam')).transform, clear: a.right < t.left && a.bottom < h.top && a.bottom < n.top, wide: document.documentElement.scrollWidth > innerWidth }; });
+    check(m.frame && m.w >= 130 && m.clear && !m.wide && /^matrix\(-1/.test(m.flip), `it is the shop's portrait, mirrored, ${m.w}px wide, clear of the buttons, the Hat and the scroll`); }
   for (let i = 0; i < 3; i++) {
     await page.waitForFunction(n => __hall.st.picking && __hall.st.step === n, i, { timeout: 15000 }); await sleep(600);
     const want = (await btns(page))[3]; await look(page, 0, -12);
