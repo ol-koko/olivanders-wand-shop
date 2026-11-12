@@ -140,7 +140,7 @@ function headTargets() {
   if (HEAD.phase === 'intro') return [...document.querySelectorAll('#nBtns .hgo')];
   if (HEAD.phase !== 'play' || st.phase !== 'hall' || st.deciding) return [];
   if (st.picking) return [...document.querySelectorAll('#nBtns button:not(.tapLink)')];
-  const w = $('#nBtns.wish'); return w && !st.avoiding ? [...w.querySelectorAll('.ban')] : [];
+  const w = $('#nBtns.wish'); return w ? [...w.querySelectorAll('.ban')] : [];
 }
 
 function headTick(t) {

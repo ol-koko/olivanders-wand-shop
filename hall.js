@@ -26,7 +26,7 @@ Object.assign(S, {
   bAgain: ['Ще раз', 'Once more'],
 });
 
-const st = { phase: 'castle', cap: null, noteFn: null, input: 'pointer', questions: [], step: 0, answers: [], picking: false, wand: null, wandId: null, house: null, wish: null, avoid: null, avoiding: false, deciding: false, take: 1, heads: 0 };
+const st = { phase: 'castle', cap: null, noteFn: null, input: 'pointer', questions: [], step: 0, answers: [], picking: false, wand: null, wandId: null, house: null, wish: null, deciding: false, take: 1, heads: 0 };
 const { POOL, WISH: HAT, SHARED } = SortingQuestions;
 const pickLang = (ua, en) => lang === 'en' ? en : ua;
 
@@ -223,15 +223,14 @@ function buildHat() {
 }
 // The tallest note this screen can show, measured on a hidden copy, so the Hat keeps one place while notes change.
 const houseName = h => pickLang(HAT.houses[h][0], HAT.houses[h][1]);
-const wishBtns = () => ['G', 'S', 'R', 'H'].map(h => ({ cls: 'ban' + (st.wish === h ? ' want' : '') + (st.avoid === h ? ' nope' : ''), html: `${Crests.svg(h)}<span>${houseName(h)}</span>`, fn: () => tapHouse(h) })).concat([
+const wishBtns = () => ['G', 'S', 'R', 'H'].map(h => ({ cls: 'ban' + (st.wish === h ? ' want' : ''), html: `${Crests.svg(h)}<span>${houseName(h)}</span>`, fn: () => tapHouse(h) })).concat([
   { cls: 'wide', label: pickLang(...(st.wish ? HAT.yes.go : HAT.yes.skip)), fn: decide },
-  { cls: 'wide', ghost: true, label: st.avoiding ? pickLang(...HAT.no.back) : pickLang(HAT.no.ua, HAT.no.en), fn: () => { st.avoiding = !st.avoiding; showWish(); if (st.avoiding) say('unwant', 900); } },
 ]);
 function tallestNote() {
   const pool = POOL.slice().sort((a, b) => b.o.reduce((n, o) => n + pickLang(o.u, o.e).length, 0) - a.o.reduce((n, o) => n + pickLang(o.u, o.e).length, 0)).slice(0, 4);
   const c = note.cloneNode(true); c.style.visibility = 'hidden'; note.after(c); let max = 0;
   for (const q of pool) { c.querySelector('.hand').textContent = pickLang(q.ua, q.en); const b = c.querySelector('.nbtns'); b.className = 'nbtns eq'; b.innerHTML = q.o.map(o => `<button class="btn ghost">${pickLang(o.u, o.e)}</button>`).join(''); max = Math.max(max, c.offsetHeight); }
-  { const b = c.querySelector('.nbtns'), inst = c.querySelector('.instr'); c.querySelector('.hand').textContent = pickLang(HAT.yes.ua, HAT.yes.en); inst.textContent = pickLang(...HAT.no.hint); b.className = 'nbtns eq wish'; b.innerHTML = wishBtns().map(x => `<button class="btn ${x.cls}${x.ghost ? ' ghost' : ''}">${x.html || x.label}</button>`).join(''); max = Math.max(max, c.offsetHeight); }
+  { const b = c.querySelector('.nbtns'); c.querySelector('.hand').textContent = pickLang(HAT.yes.ua, HAT.yes.en); b.className = 'nbtns eq wish'; b.innerHTML = wishBtns().map(x => `<button class="btn ${x.cls}${x.ghost ? ' ghost' : ''}">${x.html || x.label}</button>`).join(''); max = Math.max(max, c.offsetHeight); }
   c.remove(); return max;
 }
 function placeHat() {
@@ -481,9 +480,9 @@ function beginQuestions() {
   logStep('sorting', 'start');
   const seen = recall('hat-seen'), p = SortingLogic.pickQuestions(POOL, Array.isArray(seen) ? seen : []);
   try { localStorage.setItem('hat-seen', JSON.stringify(p.seen)); } catch (_) { }
-  st.questions = p.questions.map(q => ({ ...q, o: SortingLogic.shuffled(q.o) })); st.step = 0; st.answers = []; st.heads = 0; st.house = null; st.wish = st.avoid = null; st.avoiding = st.deciding = false;
+  st.questions = p.questions.map(q => ({ ...q, o: SortingLogic.shuffled(q.o) })); st.step = 0; st.answers = []; st.heads = 0; st.house = null; st.wish = null; st.deciding = false;
   st.take = 1 + Math.floor(Math.random() * 3);
-  prefetch([...st.questions.flatMap(q => [q.id, q.id + 'r1', q.id + 'r2', ...q.o.filter(o => o.r).map(o => o.r[2])]), 'wish', 'unwant', 'think', 'decide1', ...HAT.build.map((_, i) => take('build' + (i + 1))), ...'GSRH'.split('').map(h => take('house' + h)), 'got2', 'denied1', 'denied2', 'denied3', 'avoided1', 'overruled1']);
+  prefetch([...st.questions.flatMap(q => [q.id, q.id + 'r1', q.id + 'r2', ...q.o.filter(o => o.r).map(o => o.r[2])]), 'wish', 'think', 'decide1', ...HAT.build.map((_, i) => take('build' + (i + 1))), ...'GSRH'.split('').map(h => take('house' + h)), 'got2', 'denied1', 'denied2', 'denied3']);
   ask();
 }
 function ask() {
@@ -505,28 +504,27 @@ async function answer(q, o) {
 // Steps are logged once per page load and the result once per ceremony, so asking again counts nothing twice.
 function undoAnswer() {
   if (st.deciding || !st.questions || !st.answers.length) return;
-  st.turn = (st.turn || 0) + 1; st.answers.pop(); st.heads = Math.max(0, st.heads - 1); st.step = st.answers.length; st.wish = st.avoid = null; st.avoiding = false; ask();
+  st.turn = (st.turn || 0) + 1; st.answers.pop(); st.heads = Math.max(0, st.heads - 1); st.step = st.answers.length; st.wish = null; ask();
 }
 function showWish(first) {
-  setNote(() => ({ kicker: T('hatK'), hand: pickLang(HAT.yes.ua, HAT.yes.en), instr: st.avoiding ? pickLang(...HAT.no.hint) : '', cls: 'wish', btns: wishBtns() }), !first);
+  setNote(() => ({ kicker: T('hatK'), hand: pickLang(HAT.yes.ua, HAT.yes.en), cls: 'wish', btns: wishBtns() }), !first);
   if (first) { logStep('sorting', 'wish'); say('wish', 900); }
 }
 function tapHouse(h) {
-  if (st.avoiding) { st.avoid = st.avoid === h ? null : h; if (st.wish === h) st.wish = null; }
-  else { st.wish = st.wish === h ? null : h; if (st.avoid === h) st.avoid = null; }
+  st.wish = st.wish === h ? null : h;
   showWish();
 }
 async function decide() {
   if (st.deciding) return; st.deciding = true; if (typeof headDone === 'function') headDone(); // the answers are in: the camera goes off
-  const open = !st.wish && !st.avoid, first = open ? pick(HAT.decide) : null;
+  const open = !st.wish, first = open ? pick(HAT.decide) : null;
   setNote(() => ({ kicker: T('hatK'), hand: first ? pickLang(first[0], first[1]) : T('thinkH') })); startPonder();
   await sayStep(first ? 'decide1' : 'think', 1400, reduceMotion ? 500 : 2000);
   const bi = Math.floor(Math.random() * HAT.build.length), build = HAT.build[bi]; setNote(() => ({ kicker: T('hatK'), hand: pickLang(build[0], build[1]) }));
   await sayStep(take('build' + (bi + 1)), 1300, reduceMotion ? 500 : 1800);
-  st.house = SortingLogic.sortHouse({ answers: st.answers, wand: st.wand, wish: st.wish, avoid: st.avoid });
-  const kind = st.wish ? (st.house === st.wish ? 'got' : 'denied') : st.avoid ? (st.house === st.avoid ? 'overruled' : 'avoided') : null, li = kind === 'got' ? 1 : kind ? Math.floor(Math.random() * HAT[kind].length) : -1, line = kind ? HAT[kind][li] : null; // a granted wish always hears «Ти просиш. І це в тобі є»
+  st.house = SortingLogic.sortHouse({ answers: st.answers, wand: st.wand, wish: st.wish });
+  const kind = st.wish ? (st.house === st.wish ? 'got' : 'denied') : null, li = kind === 'got' ? 1 : kind ? Math.floor(Math.random() * HAT[kind].length) : -1, line = kind ? HAT[kind][li] : null; // a granted wish always hears «Ти просиш. І це в тобі є»
   stopPonder();
-  postRow('sorting_results', { house: st.house, wish: st.wish, unwanted: st.avoid, wand_prior: !!st.wand, device_type: deviceType(), language: lang, input_mode: st.answers.length && st.heads === st.answers.length ? 'head' : 'pointer' }, 'hat-plays'); logStep('sorting', 'result');
+  postRow('sorting_results', { house: st.house, wish: st.wish, unwanted: null, wand_prior: !!st.wand, device_type: deviceType(), language: lang, input_mode: st.answers.length && st.heads === st.answers.length ? 'head' : 'pointer' }, 'hat-plays'); logStep('sorting', 'result');
   // The Hat's line about the wish if there is one, a held breath, then the house as it rises in gold with the chime, then the card.
   if (line) { setNote(() => ({ kicker: T('hatK'), hand: pickLang(line[0], line[1]) })); await Promise.all([wait(reduceMotion ? 800 : 1300), say(kind + (li + 1), 1200)]); await wait(reduceMotion ? 250 : GAP + 200); }
   setNote(() => ({ kicker: T('doneK'), hand: houseName(st.house) + '!' })); crownHat(); if (A.on && A.ctx) SFX.reveal();
