@@ -8,14 +8,14 @@
 
 Object.assign(S, {
   bHead: ['Відповідати головою', 'Answer with my head'],
-  bTap: ['Без камери? Відповідати дотиком', 'No camera? Tap instead'],
+  bTap: ['Пройти без камери', 'Continue without camera'],
   headLoad: ['Готую чари. Якщо браузер спитає про камеру, дозволь її.', 'Preparing the charm. If your browser asks about the camera, allow it.'],
   headPriv: ['Камера бачить лише, куди дивиться голова. Нічого не записується й не надсилається.', 'The camera only reads where your head points. Nothing is recorded or sent.'],
   // The intro scroll: the neutral pose is learned while the player reads it. Neutral is the middle of the answers, which sit on the scroll: on a computer the Hat is far above them.
-  headIntroH: ['Читай спокійно. Поки читаєш, нічого не вибирається.', 'Read calmly. Nothing is chosen while you read.'],
-  headIntroI: ['Щоб відповісти, поверни обличчя до відповіді й тримай, доки в дзеркалі мине 3-2-1. Відвернешся, і відлік скинеться. Готово? Опусти обличчя до кнопки й потримай, або торкнись її.',
-    'To answer, point your face at an answer and hold until the mirror counts 3-2-1. Look away and the count resets. Ready? Lower your face toward the button and hold, or tap it.'],
-  bGo: ['Почати', 'Start'],
+  headIntroH: ['Ну що, почнемо?', 'Shall we begin?'],
+  headIntroI: ['<ol><li>Прочитай запитання. Відлік почнеться, коли можна буде відповісти.</li><li>Поверни голову в бік своєї відповіді й дочекайся кінця відліку в дзеркалі. Якщо відвернешся, відлік почнеться заново.</li><li>Щоб підтвердити вибір, нахили голову до кнопки й затримайся на мить або натисни її.</li></ol>',
+    '<ol><li>Read the question. The countdown won’t start until it’s time to answer.</li><li>Turn your head toward your answer and hold until the countdown in the mirror ends. If you turn away, the countdown resets.</li><li>To confirm your choice, tilt your head down toward the button and hold briefly, or tap or click it.</li></ol>'],
+  bGo: ['Почати церемонію', 'Begin the ceremony'],
   headBack: ['Повернутися до попереднього запитання', 'Back to the previous question'],
   headBackWish: ['Скасувати вибір факультету', 'Take the house back'],
   headLost: ['Не бачу обличчя. Подивись на екран.', 'I can’t see your face. Look at the screen.'],
@@ -32,7 +32,7 @@ const HEAD_CALM = 30; // frames with a face to learn the neutral pose
 /* ===== Head mode timings: tune here. All in milliseconds. ===== */
 const HEAD_TIMING = {
   readMs: 5000,      // a question or the four banners: time to read before any answer can light up or be picked
-  introArmMs: 4000,  // the intro scroll: time to read before «Почати» can be held with the head
+  introArmMs: 4000,  // the intro scroll: time to read before «Почати церемонію» can be held with the head
   graceMs: 450,      // the face rests on an answer this long before the hold starts
   holdMs: 3500,      // the hold: the ring fills over this time, and a full ring picks the answer
   countdownMs: 3000, // the end of the hold, shown as 3-2-1 in the mirror
@@ -102,7 +102,7 @@ async function startHead(again = false) {
   HEAD.phase = 'intro'; setNote(headIntroNote);
   if (document.hidden) headSuspend();
 }
-// The intro scroll: how it works, with «Почати». It never goes on by itself. The neutral pose is learned while the player reads it; then, after a reading pause,
+// The intro scroll: how it works, with «Почати церемонію». It never goes on by itself. The neutral pose is learned while the player reads it; then, after a reading pause,
 // lowering the face toward the button and holding presses it. A tap works at once.
 const headIntroNote = () => ({ kicker: T('hatK'), hand: T('headIntroH'), instr: T('headIntroI'), btns: [{ label: T('bGo'), cls: 'hgo', fn: headStart }, { label: T('bTap'), cls: 'tapLink', fn: () => { headOff(); beginQuestions(); } }] });
 function headStart() { if (HEAD.phase !== 'intro') return; HEAD.phase = 'play'; beginQuestions(); }
@@ -134,7 +134,7 @@ document.addEventListener('visibilitychange', async () => {
   HEAD.phase = phase === 'load' ? 'intro' : phase; HEAD.recal = true; if (phase === 'load') setNote(headIntroNote);
 });
 
-// What the head can pick on the current screen: «Почати» on the intro scroll, the answers, or the four banners. Nothing while the Hat talks or thinks.
+// What the head can pick on the current screen: «Почати церемонію» on the intro scroll, the answers, or the four banners. Nothing while the Hat talks or thinks.
 function headTargets() {
   if (noteIn.classList.contains('fade')) return []; // between two screens the old buttons are still there for a moment
   if (HEAD.phase === 'intro') return [...document.querySelectorAll('#nBtns .hgo')];
@@ -182,7 +182,7 @@ function headAngle(a, t) {
   const d = HEAD.sm = sm ? { dx: sm.dx + (raw.dx - sm.dx) * .4, dy: sm.dy + (raw.dy - sm.dy) * .4 } : raw; // smoothed: the model's angles shake, most of all with the head turned
   const items = headTargets();
   if (!items.length) { headUi(null, 0); HEAD.tracker = null; return; }
-  // The grid as the page shows it right now: one column on a phone, two on a computer, four banners in a row. On the intro scroll the text is the upper half and «Почати» the lower:
+  // The grid as the page shows it right now: one column on a phone, two on a computer, four banners in a row. On the intro scroll the text is the upper half and «Почати церемонію» the lower:
   // only a face lowered toward the button points at it, so reading the scroll points at nothing.
   const intro = HEAD.phase === 'intro', TM = HEAD_TIMING;
   const grid = intro ? { cols: 1, rows: 2, at: (c, r) => r === 1 ? 0 : -1 } : HeadLogic.gridOf(items.map(b => { const r = b.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })), shape = intro ? 'intro' : grid.cols + 'x' + grid.rows;
@@ -226,7 +226,7 @@ const headUndoLive = () => { const u = HEAD.undo; return !!u && HEAD.on && st.ph
 function headSync() {
   if (HEAD.undo && !headUndoLive()) HEAD.undo = null;
   const u = HEAD.undo, label = u ? T(u.kind === 'wish' ? 'headBackWish' : 'headBack') : '';
-  if (headBack.hidden !== !u) headBack.hidden = !u;
+  if (headBack.hidden !== !u) { headBack.hidden = !u; note.classList.toggle('back', !!u); } // the heading makes room for the arrow
   if (u && headBack.getAttribute('aria-label') !== label) { headBack.setAttribute('aria-label', label); headBack.title = label; }
 }
 headBack.addEventListener('click', e => { e.stopPropagation(); headUndo(); });

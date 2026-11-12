@@ -113,6 +113,10 @@
 /* reading: a calm full ring and a still hourglass, nothing can be picked. The end of a hold: 3-2-1 over the picture and a glow on the answer */
 #headMirror{container-type:inline-size}
 #note.head #nInstr{font-variant-numeric:lining-nums}
+#nInstr ol{margin:0;padding-left:1.25em}#nInstr li::marker{font-variant-numeric:lining-nums}#nInstr li{margin-top:.3em;padding-left:.15em}
+#nBtns .hgo{grid-column:1/-1}
+@media (min-width:600px){#nBtns .hgo{justify-self:center;min-width:260px}}
+@media (max-height:620px){#note.head #nInstr{font-size:15px;line-height:1.24}}
 #headMirror.read .ring circle{opacity:.4;stroke-dashoffset:0;stroke-width:2.6;filter:none}
 #headMirror.read .hglass{opacity:.55}
 #headMirror.read .fall{display:none}
@@ -125,8 +129,9 @@
 @media (prefers-reduced-motion:no-preference){#headMirror.read .ring circle{animation:hgCalm 1.6s ease-in-out infinite alternate}#nBtns .soon{animation:hgSoon 1s ease-in-out infinite}}
 @media (prefers-reduced-motion:reduce){#headMirror .hglass{display:none}#headMirror .ring circle{transition:none}}
 /* the back arrow after an answer picked by the head: on the scroll's top right corner, tap and keyboard only */
-#headBack{position:absolute;z-index:2;right:12px;top:19px;width:36px;height:36px;border-radius:50%;border:1.5px solid #8a6a3a;background:rgba(244,231,198,.9);color:#3a2516;display:grid;place-items:center;cursor:pointer;pointer-events:auto;padding:0;box-shadow:0 2px 6px rgba(40,20,5,.35)}
+#headBack{position:absolute;z-index:2;right:16px;top:45px;width:36px;height:36px;border-radius:50%;border:1.5px solid #8a6a3a;background:rgba(244,231,198,.9);color:#3a2516;display:grid;place-items:center;cursor:pointer;pointer-events:auto;padding:0;box-shadow:0 2px 6px rgba(40,20,5,.35)}
 #headBack[hidden]{display:none}
+#note.back .kicker,#note.back .hand{padding-right:44px}
 #headBack svg{width:20px;height:20px}
 #headBack::before{content:'';position:absolute;inset:-6px}
 #headBack:focus-visible{outline:3px solid #d9b46a;outline-offset:2px}
