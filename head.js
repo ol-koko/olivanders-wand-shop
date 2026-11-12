@@ -27,9 +27,10 @@ const HEAD_CALM = 30; // frames with a face to learn the neutral pose
 const HEAD = { on: false, wanted: false, failed: false, phase: null, worker: null, stream: null, token: 0, busy: false, sentAt: 0, lastT: -1, lastFrame: 0, fresh: false, lastTs: 0,
   zero: null, samples: [], tracker: null, items: null, aim: null, seenAt: 0, lostSince: 0, intro: null, resume: false, warmed: null };
 const headVideo = $('#headCam');
-// The mirror: the camera picture in a gold ring. While an answer is held, the ring fills like a clock hand and an hourglass pours over the picture.
+// The mirror: the camera picture in the shop's portrait frame, glowing when a face is seen. While an answer is held, a gold ring fills like a clock hand and an hourglass pours, both over the picture.
 const headMirror = $('#headMirror'), HG = 'M4.5 3.5C4.5 10.5 9 12.5 9 15S4.5 19.5 4.5 26.5h11C15.5 19.5 11 17.5 11 15s4.5-4.5 4.5-11.5z';
-headMirror.insertAdjacentHTML('beforeend', '<svg class="ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" pathLength="1"/></svg>'
+headMirror.insertAdjacentHTML('beforeend', PORTRAIT_FRAME);
+headMirror.firstElementChild.insertAdjacentHTML('beforeend', '<svg class="ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" pathLength="1"/></svg>'
   + `<svg class="hglass" viewBox="0 0 20 30" aria-hidden="true"><defs><clipPath id="hgClip"><path d="${HG}"/></clipPath></defs><path d="${HG}" fill="rgba(255,248,230,.35)"/>`
   + '<g clip-path="url(#hgClip)"><rect class="sand top" x="0" y="7" width="20" height="8"/><rect class="sand bot" x="0" y="18" width="20" height="8.5"/><line class="fall" x1="10" y1="15" x2="10" y2="26.5"/></g>'
   + `<path d="${HG}" fill="none" stroke="#f3dca8" stroke-width=".9"/><rect x="2" y="1" width="16" height="2.6" rx="1.2" fill="#d9b46a"/><rect x="2" y="26.4" width="16" height="2.6" rx="1.2" fill="#d9b46a"/></svg>`);
@@ -102,7 +103,7 @@ function headOff(msg) {
 function headDone() { if (!HEAD.on) return; HEAD.token++; HEAD.on = false; HEAD.phase = null; headClear(); headCamOff(); note.classList.remove('head'); }
 function headCamOff() {
   try { HEAD.stream && HEAD.stream.getTracks().forEach(t => t.stop()); } catch (_) { }
-  HEAD.stream = null; headVideo.srcObject = null; headMirror.hidden = true; headVideo.classList.remove('seen'); headTimer(0); HEAD.busy = false;
+  HEAD.stream = null; headVideo.srcObject = null; headMirror.hidden = true; headMirror.classList.remove('seen'); headTimer(0); HEAD.busy = false;
 }
 function headClear() { if (HEAD.items) HEAD.items.forEach(b => b.classList.remove('aim')); headTimer(0); HEAD.items = null; HEAD.aim = null; HEAD.tracker = null; HEAD.shape = ''; }
 
@@ -143,7 +144,7 @@ function onHeadWorker(e) {
 // One reading of the head: learn the neutral pose, then light, time and pick the answer it points at.
 const median = (list, k) => { const v = list.map(x => x[k]).sort((p, q) => p - q); return v[v.length >> 1]; }; // a glance away while it learns doesn't count
 function headAngle(a, t) {
-  headVideo.classList.toggle('seen', !!a);
+  headMirror.classList.toggle('seen', !!a);
   if (!a) {
     if (!HEAD.lostSince) HEAD.lostSince = t;
     if (HEAD.tracker) HEAD.tracker.reset(); headUi(null, 0); HEAD.sm = null; // looking away resets the timer at once

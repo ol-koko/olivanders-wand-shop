@@ -86,3 +86,9 @@ html,body{height:100%;background:#07060a;overflow:hidden;color:#f3e6c8;font-fami
 .r-credit{display:inline-block;margin-top:clamp(8px,calc(8px + (var(--h) - 568px)*.145),48px);font-size:12px;font-style:italic;color:#c9b48c}
 #rSaved{margin-top:12px}
 #rSaved img{width:100%;max-width:280px;border-radius:6px;display:block;margin:0 auto;-webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default}
+
+/* the camera's portrait: the picture inside a carved gold frame (PORTRAIT_FRAME in core.js), in the shop and at the Sorting */
+.cam-view{position:absolute;left:19%;right:19%;top:17%;bottom:17%;overflow:hidden;background:#120a06}
+.cam-view video{width:100%;height:100%;display:block;object-fit:cover;transform:scaleX(-1);filter:sepia(.45) saturate(.8) contrast(1.05) brightness(.92)}
+.cam-view::after{content:'';position:absolute;inset:0;background:radial-gradient(75% 70% at 50% 45%,rgba(40,20,6,0) 55%,rgba(30,14,4,.5) 100%);box-shadow:inset 0 0 5px rgba(0,0,0,.7)}
+.cam-frame{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
