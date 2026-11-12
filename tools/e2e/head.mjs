@@ -57,8 +57,8 @@ const logged = `window.__rows = []; addEventListener('DOMContentLoaded', () => {
 
 console.log('== a whole ceremony with the head, on a phone');
 { const { browser, page, errors } = await open(url + 'sorting', { ...PHONE, init: PHONE.init + logged, fakeCam: true });
-  await toIntro(page); check((await btns(page)).includes('Відповідати головою'), 'the first screen offers the head');
-  await page.evaluate(() => [...document.querySelectorAll('#nBtns button')].find(b => /головою/.test(b.textContent)).click());
+  await toIntro(page); check((await btns(page)).includes('Почати з камерою'), 'the first screen offers the head');
+  await page.evaluate(() => [...document.querySelectorAll('#nBtns button')].find(b => /з камерою/.test(b.textContent)).click());
   await page.waitForFunction(() => __head.HEAD.phase === 'intro', null, { timeout: 60000 }); check(true, 'the camera and the model start');
   check(await page.evaluate(() => !document.querySelector('#headMirror').hidden), 'the mirror shows');
   await hold(page); await shown(page, '#nBtns .hgo'); check((await btns(page))[0] === 'Почати церемонію' && await page.$$eval('#nInstr li', l => l.length) === 3, 'the intro scroll has its three steps and «Почати церемонію»');
@@ -134,10 +134,10 @@ console.log('== reduced motion, no camera, in-app browsers');
 { const { browser, page, errors } = await open(url + 'sorting', { ...PHONE, init: PHONE.init + `navigator.mediaDevices.getUserMedia = () => Promise.reject(Object.assign(new Error('no'), { name: 'NotAllowedError' }));` });
   await toIntro(page); await page.evaluate(() => startHead()); await sleep(1500);
   const s = await page.evaluate(() => ({ on: __head.HEAD.on, status: document.querySelector('#nStatus').textContent, btns: [...document.querySelectorAll('#nBtns button')].map(b => b.textContent) }));
-  check(!s.on && /торкнись/.test(s.status) && !s.btns.some(b => /головою/.test(b)) && s.btns.length === 1, `a refused camera brings back the first screen, without the head: ${s.status}`);
+  check(!s.on && /торкнись/.test(s.status) && !s.btns.some(b => /з камерою/.test(b)) && s.btns.length === 1, `a refused camera brings back the first screen, without the head: ${s.status}`);
   check(!errors.length, 'no page errors ' + errors.join(' | ')); await browser.close(); }
 { const { browser, page } = await open(url + 'sorting', { ...PHONE, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Instagram 300.0' });
-  await toIntro(page); check(!(await btns(page)).some(b => /головою/.test(b)), 'in-app browsers don’t offer the head'); await browser.close(); }
+  await toIntro(page); check(!(await btns(page)).some(b => /з камерою/.test(b)), 'in-app browsers don’t offer the head'); await browser.close(); }
 
 await closeAll(); srv.close();
 console.log(fails.length ? `\n${fails.length} FAILED:\n- ${fails.join('\n- ')}` : '\nall passed');

@@ -7,7 +7,7 @@
 // Any trouble (no camera, a refused prompt, a slow model, a lost face for too long, a hidden tab that can't come back) turns it off quietly: the player taps instead.
 
 Object.assign(S, {
-  bHead: ['Відповідати головою', 'Answer with my head'],
+  bHead: ['Почати з камерою', 'Start with camera'],
   bTap: ['Пройти без камери', 'Continue without camera'],
   headLoad: ['Готую чари. Якщо браузер спитає про камеру, дозволь її.', 'Preparing the charm. If your browser asks about the camera, allow it.'],
   headPriv: ['Камера бачить лише, куди дивиться голова. Нічого не записується й не надсилається.', 'The camera only reads where your head points. Nothing is recorded or sent.'],
