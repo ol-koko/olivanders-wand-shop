@@ -675,7 +675,7 @@ function onWorker(e) {
   if (m.err) { if (++cam.errs >= 5) toPointer('camLost'); return; }
   // Only the newest hand counts. A result that took far longer than usual (the graphics card stalled) shows where the hand was, not where it is: drop it, or the wand would replay the past.
   const age = performance.now() - (cam.sentCap || m.t); cam.lat = cam.lat ? cam.lat * .9 + age * .1 : age;
-  if (age > Math.max(STALE_RESULT, cam.lat * 2.5)) { cam.dropR = (cam.dropR || 0) + 1; return; }
+  if (age > Math.max(STALE_RESULT, cam.lat * 2.5)) return;
   cam.errs = 0; camHand(m.marks, m.t);
 }
 function sendFrame(v, t) {
@@ -765,7 +765,7 @@ function camTick(t) {
   // Age is measured against the freshest seen, so a camera clock that runs offset doesn't count as late; the baseline creeps up in case the delay stays.
   if (cam.capT) {
     const age = performance.now() - cam.capT; cam.ageMin = Math.min(age, cam.ageMin == null ? age : cam.ageMin + 2);
-    if (age - cam.ageMin > STALE_FRAME) { cam.dropF = (cam.dropF || 0) + 1; return; }
+    if (age - cam.ageMin > STALE_FRAME) return;
   }
   if (cam.worker) return sendFrame(v, t);
   cam.lastTs = Math.max(t, cam.lastTs + 1);
@@ -1081,5 +1081,3 @@ function frame(t) {
 }
 requestAnimationFrame(frame);
 logStep('wand', 'open');
-// TEMPORARY — remove before merge: camera-mode readout
-if (/[?&]debug=hand\b/.test(location.search)) { const s = document.createElement('script'); s.src = '/hand-debug.js'; document.head.append(s); }
