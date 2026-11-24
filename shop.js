@@ -653,6 +653,7 @@ function liveTick(t) {
 const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 $('#camBox').insertAdjacentHTML('beforeend', PORTRAIT_FRAME);
+const STALE_FRAME = 250, STALE_RESULT = 750; // ms: a camera frame later than the freshest by more than this is skipped; a result older than this (or far slower than usual) is dropped
 const cam = { on: false, hl: null, worker: null, busy: false, sentAt: 0, warmed: null, loading: null, video: $('#camv'), stream: null, token: 0, fresh: false, lastT: -1, lastTs: 0, lastFrame: 0, errs: 0, fps: 0, fpsN: 0, fpsT: 0, sm: null, seen: -1e9, firstSeen: 0, hist: [] };
 // Hand tracking runs on its own thread (hand-worker.js), so preparing the model can't freeze the game or stop its sound. If the worker can't start, it runs on the page as before.
 function loadWorker() {
@@ -668,18 +669,24 @@ function workerLost() { const w = cam.worker; cam.worker = null; cam.busy = fals
 function onWorker(e) {
   const m = e.data; if (m.type !== 'result') return;
   cam.delegate = m.delegate;
+  cam.busy = false;
   if (m.warm) { if (cam.warmed) cam.warmed(); return; }
-  cam.busy = false; if (m.tok !== cam.token || !cam.on || !st.cap) return;
+  if (m.tok !== cam.token || !cam.on || !st.cap) return;
   if (m.err) { if (++cam.errs >= 5) toPointer('camLost'); return; }
+  // Only the newest hand counts. A result that took far longer than usual (the graphics card stalled) shows where the hand was, not where it is: drop it, or the wand would replay the past.
+  const age = performance.now() - (cam.sentCap || m.t); cam.lat = cam.lat ? cam.lat * .9 + age * .1 : age;
+  if (age > Math.max(STALE_RESULT, cam.lat * 2.5)) { cam.dropR = (cam.dropR || 0) + 1; return; }
   cam.errs = 0; camHand(m.marks, m.t);
 }
 function sendFrame(v, t) {
-  cam.busy = true; cam.sentAt = t; const tok = cam.token;
+  cam.busy = true; cam.sentAt = t; cam.sentCap = cam.capT || t; const tok = cam.token;
   createImageBitmap(v).then(frame => { if (!cam.worker) { frame.close(); cam.busy = false; return; } cam.lastTs = Math.max(t, cam.lastTs + 1); cam.worker.postMessage({ type: 'frame', frame, ts: cam.lastTs, t, tok }, [frame]); })
     .catch(() => { cam.busy = false; if (++cam.errs >= 5) toPointer('camLost'); });
 }
+// The first detection compiles the model for the graphics card, which on a cold start can take longer than 8 s. The game listens only after it, and the warm-up frame counts as in flight, so no frame waits behind it.
+// The camera's own loading limits (offer the pointer at 6 s, fall back 15 s after permission) still bound the wait.
 async function warmWorker() {
-  try { const frame = await createImageBitmap(cam.video); cam.lastTs = Math.max(performance.now(), cam.lastTs + 1); await withTimeout(new Promise(r => { cam.warmed = r; cam.worker.postMessage({ type: 'frame', frame, ts: cam.lastTs, warm: true }, [frame]); }), 8000); } catch (_) { }
+  try { const frame = await createImageBitmap(cam.video); cam.lastTs = Math.max(performance.now(), cam.lastTs + 1); cam.busy = true; cam.sentAt = performance.now(); await withTimeout(new Promise(r => { cam.warmed = r; cam.worker.postMessage({ type: 'frame', frame, ts: cam.lastTs, warm: true }, [frame]); }), 30000); } catch (_) { }
   cam.warmed = null;
 }
 function loadHand() {
@@ -703,7 +710,8 @@ async function openStream(tok) {
   cam.stream = stream; cam.video.srcObject = stream; $('#camBox').hidden = false;
   stream.getVideoTracks().forEach(tr => tr.addEventListener('ended', () => { if (cam.stream === stream) toPointer('camLost'); }));
   // video.currentTime of a live stream advances with the clock, so it can't tell new frames apart at full rate; this callback can
-  if (cam.video.requestVideoFrameCallback) { const onFrame = () => { if (cam.stream === stream) { cam.fresh = true; cam.video.requestVideoFrameCallback(onFrame); } }; cam.video.requestVideoFrameCallback(onFrame); }
+  // its metadata also says when the camera took the frame, where the browser knows it
+  if (cam.video.requestVideoFrameCallback) { const onFrame = (now, md) => { if (cam.stream === stream) { cam.fresh = true; cam.capT = md && md.captureTime > 0 ? md.captureTime : 0; cam.video.requestVideoFrameCallback(onFrame); } }; cam.video.requestVideoFrameCallback(onFrame); }
   await cam.video.play();
   if (A.on && A.ctx && A.ctx.state !== 'running') A.ctx.resume().catch(() => { }); // phones can interrupt the page's sound when the camera starts
 }
@@ -714,7 +722,7 @@ async function startCamera() {
   // the first detection compiles the model and can freeze the page for seconds: do it now, while the "loading" note is up
   if (cam.worker) { await warmWorker(); if (tok !== cam.token) return false; }
   else try { cam.lastTs = Math.max(performance.now(), cam.lastTs + 1); cam.hl.detectForVideo(cam.video, cam.lastTs); } catch (_) { }
-  Object.assign(cam, { on: true, lastFrame: performance.now(), errs: 0, fps: 0, fpsN: 0, fpsT: 0, sm: null, seen: -1e9, hist: [] });
+  Object.assign(cam, { on: true, lastFrame: performance.now(), errs: 0, fps: 0, fpsN: 0, fpsT: 0, sm: null, seen: -1e9, hist: [], ageMin: null, lat: 0 });
   if (document.hidden) suspendCamera();
   return true;
 }
@@ -753,6 +761,12 @@ function camTick(t) {
   if (v.readyState < 2 || !fresh) { if (!moved && t - cam.lastFrame > 4000 && !document.hidden) toPointer('camLost'); return; }
   cam.fresh = false; cam.lastT = v.currentTime; cam.lastFrame = t;
   if (!cam.fpsT) { cam.fpsT = t; cam.fpsN = 0; } else { cam.fpsN++; if (t - cam.fpsT >= 1000) { cam.fps = cam.fpsN * 1000 / (t - cam.fpsT); cam.fpsN = 0; cam.fpsT = t; } }
+  // When the browser is choked it can hand over camera frames seconds late and then all at once. Skip those, or the wand would replay them in fast motion.
+  // Age is measured against the freshest seen, so a camera clock that runs offset doesn't count as late; the baseline creeps up in case the delay stays.
+  if (cam.capT) {
+    const age = performance.now() - cam.capT; cam.ageMin = Math.min(age, cam.ageMin == null ? age : cam.ageMin + 2);
+    if (age - cam.ageMin > STALE_FRAME) { cam.dropF = (cam.dropF || 0) + 1; return; }
+  }
   if (cam.worker) return sendFrame(v, t);
   cam.lastTs = Math.max(t, cam.lastTs + 1);
   let r; try { r = cam.hl.detectForVideo(v, cam.lastTs); cam.errs = 0; } catch (e) { if (++cam.errs >= 5) toPointer('camLost'); return; }
@@ -1067,3 +1081,5 @@ function frame(t) {
 }
 requestAnimationFrame(frame);
 logStep('wand', 'open');
+// TEMPORARY — remove before merge: camera-mode readout
+if (/[?&]debug=hand\b/.test(location.search)) { const s = document.createElement('script'); s.src = '/hand-debug.js'; document.head.append(s); }
